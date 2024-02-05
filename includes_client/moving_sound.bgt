@@ -1,0 +1,262 @@
+class msound
+{
+string id, soundloop;
+double x, y, z;
+int loopint;
+double pitch = 100.0, volume = 0.0;
+bool remove = false;
+double bend_size = 0, bend_time = 1, bend_limit = 0;
+timer bend_timer;
+bool bend_to_percent = false;
+bool stationary = false;
+bool loop_limited = false;
+
+void updateme()
+{
+if (!mpool.sound_is_active(loopint))
+{
+if (loop_limited) return;
+if (stationary) loopint = mpool.play_stationary(soundloop, true, true, 0, 0, volume, pitch);
+else loopint = mpool.play_3d(soundloop, x, y, z, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, pitch, -volume, -volume);
+return;
+}
+sound_pool_item@ temp = mpool.items[loopint];
+if (!stationary)
+{
+temp.x = x;
+temp.y = y;
+temp.z = z;
+temp.center_x = x;
+temp.center_y = y;
+temp.center_z = z;
+if (temp.in_bound)
+{
+temp.pan_step = mpool.pan_step * volume;
+temp.volume_step = mpool.volume_step * volume;
+@ temp.bounds = get_sound_boundary_names(temp.center_x, 0, temp.center_y, 0, temp.center_z, 0);
+}
+else
+{
+temp.pan_step = volume;
+temp.volume_step = volume;
+}
+}
+else
+{
+temp.start_volume = volume;
+}
+temp.start_pitch = pitch;
+temp.update(mpool);
+}
+} // class.
+
+msound@[] msounds;
+dictionary d_msounds;
+
+void createmsound(const string& in id, string loop, double x, double y, double z, double pitch = -1, double volume = -1)
+{
+loop += ".ogg";
+msound@ temp = get_msound_handle(id);
+if (temp is null)
+{
+msound m1;
+m1.id = id;
+m1.soundloop = loop;
+m1.x = x;
+m1.y = y;
+m1.z = z;
+if (pitch >= 0.0) m1.pitch = pitch;
+if (volume >= 0.01) m1.volume = volume;
+else m1.volume = 1;
+if (m1.volume < 0.01) m1.volume = 0.01;
+m1.loopint = mpool.play_3d(m1.soundloop, x, y, z, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, m1.pitch, -m1.volume, -m1.volume);
+loop_sound@ lhandle = mpool.get_loop_expression(m1.loopint);
+if (lhandle !is null)
+{
+if (lhandle.looplimit > 0) m1.loop_limited = true;
+}
+d_msounds.set(m1.id, @ m1);
+msounds.insert_last(@ m1);
+return;
+}
+temp.x = x;
+temp.y = y;
+temp.z = z;
+if (pitch >= 0.0) temp.pitch = pitch;
+if (volume >= 0.01) temp.volume = volume;
+if (temp.soundloop != loop)
+{
+temp.soundloop = loop;
+mpool.destroy_sound(temp.loopint);
+temp.loop_limited = false;
+temp.loopint = mpool.play_3d(temp.soundloop, temp.x, temp.y, temp.z, true, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, temp.pitch, -temp.volume, -temp.volume);
+loop_sound@ lhandle = mpool.get_loop_expression(temp.loopint);
+if (lhandle !is null)
+{
+if (lhandle.looplimit > 0) temp.loop_limited = true;
+}
+return;
+}
+temp.updateme();
+}
+
+void createmsound(const string& in id, string loop, double pitch = -1, double volume = -1)
+{
+loop += ".ogg";
+msound@ temp = get_msound_handle(id);
+if (temp is null)
+{
+msound m1;
+m1.stationary = true;
+m1.id = id;
+m1.soundloop = loop;
+if (pitch >= 0.0) m1.pitch = pitch;
+if (volume >= 0.0) m1.volume = volume - 100;
+else m1.volume = 0;
+m1.loopint = mpool.play_stationary(m1.soundloop, true, true, 0, 0, m1.volume, m1.pitch);
+loop_sound@ lhandle = mpool.get_loop_expression(m1.loopint);
+if (lhandle !is null)
+{
+if (lhandle.looplimit > 0) m1.loop_limited = true;
+}
+d_msounds.set(m1.id, @ m1);
+msounds.insert_last(@ m1);
+return;
+}
+if (pitch >= 0.0) temp.pitch = pitch;
+if (volume >= 0.0) temp.volume = volume - 100;
+if (temp.soundloop != loop)
+{
+temp.soundloop = loop;
+mpool.destroy_sound(temp.loopint);
+temp.loop_limited = false;
+temp.loopint = mpool.play_stationary(temp.soundloop, true, true, 0, 0, temp.volume, temp.pitch);
+loop_sound@ lhandle = mpool.get_loop_expression(temp.loopint);
+if (lhandle !is null)
+{
+if (lhandle.looplimit > 0) temp.loop_limited = true;
+}
+return;
+}
+temp.updateme();
+}
+
+msound@ get_msound_handle(const string& in id)
+{
+if (!d_msounds.exists(id)) return null;
+msound@ temp;
+d_msounds.get(id, @ temp);
+return temp;
+}
+
+void updatemsoundbend(const string& in id, double final_pitch)
+{
+// It is bendstop
+msound@ temp = get_msound_handle(id);
+if (temp is null) return;
+temp.bend_size = 0.0;
+if (final_pitch > 0.0)
+{
+temp.pitch = final_pitch;
+if (temp.loopint < 0) return;
+if (temp.loopint >= mpool.items.length) return;
+sound_pool_item@ ts = mpool.items[temp.loopint];
+if (ts.handle is null) return;
+double decrease = abs(ts.start_pitch - ts.handle.pitch);
+ts.start_pitch = temp.pitch;
+if (temp.stationary) ts.handle.pitch = temp.pitch;
+else ts.update(mpool);
+}
+}
+
+void updatemsoundbend(const string& in id, double bend_size, double bend_time, double bend_limit, bool bend_to_percent = false)
+{
+msound@ temp = get_msound_handle(id);
+if (temp is null) return;
+temp.bend_size = bend_size;
+temp.bend_time = bend_time;
+temp.bend_limit = bend_limit;
+temp.bend_to_percent = bend_to_percent;
+temp.bend_timer.force(0);
+}
+
+void updatemsoundvolume(const string& in id, double volume)
+{
+msound@ temp = get_msound_handle(id);
+if (temp is null) return;
+if (temp.stationary) temp.volume = volume - 100;
+else temp.volume = volume;
+temp.updateme();
+}
+
+void destroymsound(const string& in id)
+{
+msound@ temp = get_msound_handle(id);
+if (temp is null) return;
+mpool.destroy_sound(temp.loopint);
+d_msounds.delete(id);
+temp.remove = true;
+}
+
+void destroy_all_msounds()
+{
+int msound_len = msounds.length;
+for (uint i = 0; i < msound_len; i++)
+{
+mpool.destroy_sound(msounds[i].loopint);
+}
+msounds.resize(0);
+d_msounds.delete_all();
+}
+
+void msound_map_update()
+{
+for (int i = msounds.length - 1; i > -1; i--)
+{
+msounds[i].updateme();
+}
+}
+
+void msoundmain()
+{
+for (int i = msounds.length - 1; i > -1; i--)
+{
+msound@ this = msounds[i];
+if (this.remove)
+{
+msounds.remove_at(i);
+continue;
+}
+if (this.bend_size == 0) continue;
+if (this.bend_timer.elapsed < this.bend_time) continue;
+if (this.bend_to_percent) this.pitch += percent_pro(this.pitch, this.bend_size, this.bend_timer.elapsed);
+else this.pitch += (this.bend_size * this.bend_timer.elapsed);
+this.bend_timer.force(0);
+if (this.bend_limit > 0)
+{
+if (this.bend_size > 0)
+{
+if (this.pitch >= this.bend_limit)
+{
+this.pitch = this.bend_limit;
+this.bend_size = 0;
+}
+}
+else
+{
+if (this.pitch <= this.bend_limit)
+{
+this.pitch = this.bend_limit;
+this.bend_size = 0;
+}
+}
+}
+if (this.loopint < 0) continue;
+if (this.loopint >= mpool.items.length) continue;
+sound_pool_item@ temp = mpool.items[this.loopint];
+if (temp.handle is null) continue;
+double decrease = abs(temp.start_pitch - temp.handle.pitch);
+temp.start_pitch = this.pitch;
+temp.handle.pitch = this.pitch - decrease;
+}
+}

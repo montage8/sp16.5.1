@@ -1,0 +1,32 @@
+class plank : hittable
+{
+void onkill()
+{
+play("plank_break", this.x, this.y, this.z, this.map);
+}
+}
+void spawn_plank(int x, int y, int z, mapdata@ map)
+{
+int id;
+do
+{
+id = (1073741824 * random(0, 1)) + (32768 * random(0, 32767)) + random(0, 32767);
+}
+while (hobjs.exists(id));
+plank l;
+l.x = x;
+l.y = y;
+l.z = z;
+@ l.map = map;
+l.name = "plank";
+l.health = 1;
+l.lifetime = 300000;
+l.sound = "nosound";
+int rand = random(1, 2);
+l.tile = "plank";
+l.id = id;
+sendmap("spawnsource " + x + " " + y + " " + z + " nosound " + id + " " + l.tile, map, 4);
+play("plankhardland", x, y, z, map);
+map.hobjs.insert_last(l);
+hobjs.set(id, @ l);
+}

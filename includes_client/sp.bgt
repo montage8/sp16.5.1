@@ -1,0 +1,1201 @@
+string out_bound_delimiter = "__";
+enum soundmode
+{
+SOUND_STATIONARY, SOUND_1D, SOUND_2D, SOUND_3D
+}
+string bigsounds = "get_blade
+itemgrabberstart
+locker_placing
+shelter_burn
+enes_kill
+nuclearbomb
+nuclearbombdist
+teamcreate
+logo
+locker_hackstop
+achievement
+shelter_computerloop
+bigevent
+shelter_build
+newbiestopping
+delivery_start
+shelterfix
+updating
+event
+vomit
+delivery_drop
+sph
+vehicle_repair
+test
+store_porting
+newmotd
+store_porting_int
+update
+delivery_takeoff
+playerstats
+quizyes
+quizno
+quizdie
+teamaccept
+teamremove
+teamleave
+teamkicked
+eventover
+welcome
+achievement_complete
+auction
+delivery_drop_int
+store_port_int
+joinevent
+store_portdist
+store_spawn_int
+store_spawn
+health_box
+minigame_end
+minigame_end1
+minigame_end2
+minigame_end3
+minigame_start1
+minigame_winner";
+
+bool& bigsound(const string& in filename)
+{
+string realname = string_trim_right(filename, 4);
+if (map_preload.exists(realname)) return false_t;
+if (srclist.exists(realname)) return true_t;
+if (bigsoundlist.exists(realname)) return true_t;
+if (string_left(filename, 3) == "eat") return true_t;
+if (string_right(realname, 5) == "_loop")
+{
+if (doorlist.exists(string_trim_right(realname, 5))) return true_t;
+}
+else if (string_right(realname, 5) == "_open")
+{
+if (doorlist.exists(string_trim_right(realname, 5))) return true_t;
+}
+else if (string_right(realname, 6) == "_close")
+{
+if (doorlist.exists(string_trim_right(realname, 6))) return true_t;
+}
+return false_t;
+}
+
+bool& sound_load(const sound& in temp, const string& in filename)
+{
+if (bigsound(filename))
+{
+if (!temp.stream(sndfolder + filename)) return false_t;
+}
+else
+{
+if (preload_mode > 0)
+{
+if (!preload.exists(filename) and !map_preload.exists(filename))
+{
+sound new;
+if (!new.load(sndfolder + filename)) return false_t;
+preload.set(filename, @ new);
+}
+}
+if (!temp.load(sndfolder + filename)) return false_t;
+}
+return true_t;
+}
+
+dictionary preload, map_preload;
+void reset_preloads()
+{
+preload.delete_all();
+garbage_collect();
+}
+
+void pan_step_update(double real_pan_step)
+{
+if (real_pan_step < 0.01) return;
+double current_pan_p = p.pan_step;
+double current_pan_mpool = mpool.pan_step;
+double current_volume_p = p.volume_step;
+double current_volume_mpool = mpool.volume_step;
+p.pan_step = real_pan_step;
+mpool.pan_step = real_pan_step;
+p.volume_step = real_pan_step;
+mpool.volume_step = real_pan_step;
+p.max_distance = 100/real_pan_step;
+mpool.max_distance = 100/real_pan_step;
+int counter = p.items.length;
+for (uint i = 0; i < counter; i++)
+{
+sound_pool_item@ temp = p.items[i];
+if (temp.handle is null) continue;
+if (!temp.in_bound) continue;
+if (temp.flexible_distance) continue;
+temp.pan_step = (temp.pan_step / current_pan_p) * real_pan_step;
+temp.volume_step = (temp.volume_step / current_volume_p) * real_pan_step;
+}
+counter = mpool.items.length;
+for (uint i = 0; i < counter; i++)
+{
+sound_pool_item@ temp = mpool.items[i];
+if (temp.handle is null) continue;
+if (!temp.in_bound) continue;
+if (temp.flexible_distance) continue;
+temp.pan_step = (temp.pan_step / current_pan_mpool) * real_pan_step;
+temp.volume_step = (temp.volume_step / current_volume_mpool) * real_pan_step;
+}
+@ my_sb = get_sound_boundary_names(me.x, me.y, me.z);
+p.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+mpool.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+}
+
+void fade_pool(sound_pool@ handle, float time = 0.25, float minvol = -40)
+{
+for (float current = 0; current > minvol; current -= time)
+{
+int handleitems = handle.items.length;
+for (uint x = 0; x < handleitems; x++)
+{
+sound_pool_item@ temp = handle.items[x];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - 1;
+}
+wait(1);
+mouse_update();
+sr_loop();
+}
+handle.destroy_all();
+}
+
+void fade_all(sound_pool@ handle, sound_pool@ handle2, sound_pool@ handle3, sound_pool@ handle4, sound_pool@ handle5, float time = 0.25, float minvol = -40)
+{
+for (float current = 0; current > minvol; current -= time)
+{
+int handles1 = handle.items.length;
+int handles2 = handle2.items.length;
+int handles3 = handle3.items.length;
+int handles4 = handle4.items.length;
+int handles5 = handle5.items.length;
+for (uint x = 0; x < handles1; x++)
+{
+sound_pool_item@ temp = handle.items[x];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - time;
+}
+for (uint y = 0; y < handles2; y++)
+{
+sound_pool_item@ temp = handle2.items[y];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - time;
+}
+for (uint z = 0; z < handles3; z++)
+{
+sound_pool_item@ temp = handle3.items[z];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - time;
+}
+for (uint v = 0; v < handles4; v++)
+{
+sound_pool_item@ temp = handle4.items[v];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - time;
+}
+for (uint w = 0; w < handles5; w++)
+{
+sound_pool_item@ temp = handle5.items[w];
+if (temp.handle is null) continue;
+if (!temp.handle.playing) continue;
+temp.handle.volume = temp.handle.volume - time;
+}
+wait(1);
+mouse_update();
+}
+handle.destroy_all();
+handle2.destroy_all();
+handle3.destroy_all();
+handle4.destroy_all();
+handle5.destroy_all();
+}
+
+/* 
+Sound Pool Class
+
+This class provides a convenient way of managing sounds in an environment, both with 1 and 2 dimensions. It uses the functions found in sound_positioning.bgt to do the actual sound adjustments, so modifying these functions will affect the entire system. The sound_pool_item class holds all the information necessary for one single sound in the game world. Note that you should not make instances of the sound_pool_item class directly but always use the methods and properties provided in the sound_pool class.
+*/ 
+
+#include "sound_positioning.bgt"
+
+class sound_pool_item
+{
+sound@ handle;
+string filename;
+double x = 0;
+double y = 0;
+double z = 0;
+bool looping = false;
+double pan_step = 0.0;
+float volume_step = 0.0;
+double behind_pitch_decrease = 0.0;
+double start_pan = 0.0;
+float start_volume = 0.0;
+double start_pitch = 100.0;
+int upper_range = 0;
+int lower_range = 0;
+int left_range = 0;
+int right_range = 0;
+int backward_range = 0;
+int forward_range = 0;
+double center_x = 0, center_y = 0, center_z = 0, size_x = 0, size_y = 0, size_z = 0;
+int type = SOUND_3D;
+bool paused = false;
+double start_offset = 0.0;
+bool persistent = false;
+bool in_bound = false;
+dictionary@ bounds;
+float real_volume = 0.0;
+loop_sound@ loop_expression;
+bool in_range = true;
+bool flexible_distance = false;
+
+void soft_reset()
+{
+if (handle !is null)
+{
+handle.close();
+@ handle = null;
+}
+if (loop_expression !is null)
+{
+loop_expression.remove = true;
+@ loop_expression = null;
+}
+persistent = false;
+looping = false;
+paused = false;
+flexible_distance = false;
+}
+
+void reset()
+{
+if (handle !is null)
+{
+handle.close();
+@ handle = null;
+}
+if (loop_expression !is null)
+{
+loop_expression.remove = true;
+@ loop_expression = null;
+}
+filename.resize(0);
+x = 0; center_x = 0; size_x = 0;
+y = 0; center_y = 0; size_y = 0;
+z = 0; center_z = 0; size_z = 0;
+looping = false;
+pan_step = 0.0;
+volume_step = 0.0;
+behind_pitch_decrease = 0.0;
+start_pan = 0.0;
+start_volume = 0.0;
+start_pitch = 100.0;
+left_range = 0;
+right_range = 0;
+backward_range = 0;
+forward_range = 0;
+upper_range = 0;
+lower_range = 0;
+type = SOUND_3D;
+paused = false;
+start_offset = 0.0;
+persistent = false;
+in_bound = false;
+flexible_distance = false;
+@ bounds = null;
+}
+
+/* 
+This method updates the sound, checking if it should be closed do to out of earshot conditions etc.
+*/ 
+
+void update(double listener_x, double listener_y, double listener_z, int rotation, int max_distance, string[]@ bound_temp)
+{
+if (handle is null) return;
+if (type == SOUND_STATIONARY) return;
+if (max_distance > 0 and in_bound and !flexible_distance)
+{
+if (looping)
+{
+int total_distance = get_total_distance(listener_x, listener_y, listener_z);
+if (total_distance > max_distance)
+{
+if (handle.active)
+{
+start_offset = handle.position;
+handle.close();
+}
+in_range = false;
+return;
+}
+else
+{
+if (!handle.active)
+{
+in_range = true;
+if (!sound_load(handle, filename)) return;
+if (start_offset > 0) handle.seek(start_offset);
+real_volume = start_volume;
+if (in_bound)
+{
+int vol = get_sound_boundary_volume(bounds, bound_temp);
+real_volume -= vol;
+}
+update_listener_position(listener_x, listener_y, listener_z, rotation);
+if (!paused)
+{
+loop_expression is null ? handle.play_looped() : handle.play();
+}
+return;
+}
+}
+}
+}
+real_volume = start_volume;
+if (in_bound)
+{
+int vol = get_sound_boundary_volume(bounds, bound_temp);
+real_volume -= vol;
+}
+update_listener_position(listener_x, listener_y, listener_z, rotation);
+}
+
+void update(sound_pool@ pool)
+{
+if (handle is null) return;
+if (type == SOUND_STATIONARY) return;
+if (pool.max_distance > 0 and in_bound and !flexible_distance)
+{
+if (looping)
+{
+int total_distance = get_total_distance(pool.last_listener_x, pool.last_listener_y, pool.last_listener_z);
+if (total_distance > pool.max_distance)
+{
+if (handle.active)
+{
+start_offset = handle.position;
+handle.close();
+}
+in_range = false;
+return;
+}
+else
+{
+if (!handle.active)
+{
+in_range = true;
+if (!sound_load(handle, filename)) return;
+if (start_offset > 0) handle.seek(start_offset);
+real_volume = start_volume;
+if (in_bound)
+{
+int vol = get_sound_boundary_volume(bounds, pool.listener_bounds);
+real_volume -= vol;
+}
+update_listener_position(pool.last_listener_x, pool.last_listener_y, pool.last_listener_z, pool.last_listener_rotation);
+if (!paused)
+{
+loop_expression is null ? handle.play_looped() : handle.play();
+}
+return;
+}
+}
+}
+}
+real_volume = start_volume;
+if (in_bound)
+{
+int vol = get_sound_boundary_volume(bounds, pool.listener_bounds);
+real_volume -= vol;
+}
+update_listener_position(pool.last_listener_x, pool.last_listener_y, pool.last_listener_z, pool.last_listener_rotation);
+}
+
+/* 
+This method recalculates the position parameters including the ranges, if any. It then calls the appropriate sound positioning function on the sound handle.
+*/ 
+void update_listener_position(double listener_x, double listener_y, double listener_z, int rotation)
+{
+if (!handle.active) return;
+if (type == SOUND_1D)
+{
+if (abs(center_x - listener_x) <= size_x)
+{
+position_sound_1d(handle, listener_x, listener_x, pan_step, volume_step, start_pan, real_volume);
+return;
+}
+double delta_left = x - left_range;
+double delta_right = x + right_range;
+if (listener_x < delta_left) position_sound_1d(handle, listener_x, delta_left, pan_step, volume_step, start_pan, real_volume);
+else if (listener_x > delta_right) position_sound_1d(handle, listener_x, delta_right, pan_step, volume_step, start_pan, real_volume);
+return;
+}
+double delta_left = x - left_range;
+double delta_right = x + right_range;
+double delta_backward = y - forward_range;
+double delta_forward = y + forward_range;
+double delta_lower = z - lower_range;
+double delta_upper = z + upper_range;
+double true_x = (listener_x < delta_left ? delta_left : listener_x > delta_right ? delta_right : listener_x);
+double true_y = (listener_y < delta_backward ? delta_backward : listener_y > delta_forward ? delta_forward : listener_y);
+double true_z = (listener_z < delta_lower ? delta_lower : listener_z > delta_upper ? delta_upper : listener_z);
+position_sound_3d(handle, listener_x, listener_y, listener_z, true_x, true_y, true_z, rotation, pan_step, volume_step, behind_pitch_decrease, start_pan, real_volume, start_pitch);
+}
+
+/* 
+This method returns the total distance between the current sound and the listener in space. This is used to calculate in and out of earshot conditions.
+*/ 
+int get_total_distance(double listener_x, double listener_y, double listener_z)
+{
+if (type == SOUND_STATIONARY)
+{
+return 0;
+}
+double dx = abs(listener_x - center_x) - size_x;
+double dy = abs(listener_y - center_y) - size_y;
+double dz = abs(listener_z - center_z) - size_z;
+double final = 0.0;
+if (dx > 0) final += (dx * dx);
+if (dy > 0) final += (dy * dy);
+if (dz > 0) final += (dz * dz);
+return round(final ** 0.5, 0);
+}
+}
+
+
+/* 
+This is the actual sound_pool class. For more information on how to use the class, please see the BGT documentation.
+*/ 
+class sound_pool
+{
+string[]@ listener_bounds;
+int max_distance;
+double pan_step;
+float volume_step;
+double behind_pitch_decrease;
+
+// Default constructor, where we give the user 100 sounds.
+sound_pool()
+{
+items.reserve(1000);
+for (uint i = 0; i < 1000; i++)
+{
+sound_pool_item i1;
+items.insert_last(i1);
+}
+max_distance = 0;
+pan_step = 1.0;
+volume_step = 1.0;
+behind_pitch_decrease = 0.25;
+last_listener_x = 0;
+last_listener_y = 0;
+last_listener_z = 0;
+last_listener_rotation = 0;
+highest_slot = 0;
+}
+
+// In this constructor the user can specify how many sounds they want.
+sound_pool(int number_of_items)
+{
+items.reserve(number_of_items);
+for (uint i = 0; i < number_of_items; i++)
+{
+sound_pool_item i1;
+items.insert_last(i1);
+}
+max_distance = 0;
+pan_step = 1.0;
+volume_step = 1.0;
+behind_pitch_decrease = 0.25;
+last_listener_x = 0;
+last_listener_y = 0;
+last_listener_z = 0;
+last_listener_rotation = 0;
+highest_slot = 0;
+}
+
+int play_stationary(string filename, bool looping, bool persistent = false, double offset = 0, float start_pan = 0, float start_volume = 0, double start_pitch = 100)
+{
+int slot = reserve_slot();
+if (slot == -1)
+{
+return -1;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.looping = looping;
+filename = create_loop_sound(filename, temp_item);
+temp_item.filename = filename;
+temp_item.type = SOUND_STATIONARY;
+temp_item.start_offset = offset;
+temp_item.start_pan = start_pan;
+temp_item.start_volume = start_volume;
+temp_item.start_pitch = start_pitch;
+temp_item.persistent = persistent;
+if (!sound_load(temp_item.handle, filename))
+{
+temp_item.soft_reset();
+return -1;
+}
+if (temp_item.start_offset > 0)
+{
+temp_item.handle.seek(temp_item.start_offset);
+}
+if (start_pan != 0.0)
+{
+temp_item.handle.pan = start_pan;
+}
+if (start_volume < 0.0)
+{
+temp_item.handle.volume = start_volume;
+}
+temp_item.handle.pitch = start_pitch;
+if (looping and temp_item.loop_expression is null)
+{
+temp_item.handle.play_looped();
+}
+else
+{
+temp_item.handle.play();
+}
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+
+int play_1d(string filename, int sound_x, bool looping, bool persistent = false, int left_range = 0, int right_range = 0, double offset = 0, float start_pan = 0, float start_volume = 0, double start_pitch = 100, double pan_distance = 0, double volume_level = 0)
+{
+int slot = reserve_slot();
+if (slot == -1)
+{
+return -1;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.x = sound_x;
+bool is_out_bound = (string_left(filename, 2) == out_bound_delimiter);
+if (pan_distance > 0)
+{
+temp_item.pan_step = pan_distance;
+temp_item.flexible_distance = true;
+}
+else if (pan_distance == 0) temp_item.pan_step = pan_step;
+else temp_item.pan_step = (is_out_bound ? abs(pan_distance) : abs(pan_distance) * pan_step);
+if (volume_level > 0)
+{
+temp_item.volume_step = volume_level;
+temp_item.flexible_distance = true;
+}
+else if (volume_level == 0) temp_item.volume_step = volume_step;
+else temp_item.volume_step = (is_out_bound ? abs(volume_level) : abs(volume_level) * volume_step);
+temp_item.behind_pitch_decrease = 0.0;
+temp_item.start_pan = start_pan;
+temp_item.start_volume = start_volume;
+temp_item.start_pitch = start_pitch;
+temp_item.left_range = left_range;
+temp_item.right_range = right_range;
+temp_item.size_x = (left_range + right_range) * 0.5;
+temp_item.center_x = (sound_x - left_range) + temp_item.size_x;
+temp_item.looping = looping;
+filename = create_loop_sound(filename, temp_item);
+temp_item.in_bound = false;
+@ temp_item.bounds = null;
+if (is_out_bound) filename = string_trim_left(filename, 2);
+else 
+{
+temp_item.in_bound = true;
+@ temp_item.bounds = get_sound_boundary_names(temp_item.center_x, temp_item.size_x, 0, 0, 0, 0);
+}
+temp_item.filename = filename;
+temp_item.type = SOUND_1D;
+temp_item.start_offset = offset;
+temp_item.persistent = persistent;
+temp_item.handle.pitch = start_pitch;
+if (temp_item.in_bound and !temp_item.flexible_distance and max_distance > 0)
+{
+if (looping)
+{
+temp_item.update(this);
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+else
+{
+if (temp_item.get_total_distance(last_listener_x, last_listener_y, last_listener_z) > max_distance)
+{
+temp_item.soft_reset();
+return -2;
+}
+}
+}
+if (!sound_load(temp_item.handle, filename))
+{
+temp_item.soft_reset();
+return -1;
+}
+if (temp_item.start_offset > 0) temp_item.handle.seek(temp_item.start_offset);
+temp_item.update(this);
+if (looping and temp_item.loop_expression is null) temp_item.handle.play_looped();
+else temp_item.handle.play();
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+
+int play_2d(string filename, int sound_x, int sound_y, bool looping, bool persistent = false, int left_range = 0, int right_range = 0, int backward_range = 0, int forward_range = 0, double offset = 0, float start_pan = 0, float start_volume = 0, double start_pitch = 0, double pan_distance = 0, double volume_level = 0)
+{
+int slot = reserve_slot();
+if (slot == -1)
+{
+return -1;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.x = sound_x;
+temp_item.y = sound_y;
+bool is_out_bound = (string_left(filename, 2) == out_bound_delimiter);
+if (pan_distance > 0)
+{
+temp_item.pan_step = pan_distance;
+temp_item.flexible_distance = true;
+}
+else if (pan_distance == 0) temp_item.pan_step = pan_step;
+else temp_item.pan_step = (is_out_bound ? abs(pan_distance) : abs(pan_distance) * pan_step);
+if (volume_level > 0)
+{
+temp_item.volume_step = volume_level;
+temp_item.flexible_distance = true;
+}
+else if (volume_level == 0) temp_item.volume_step = volume_step;
+else temp_item.volume_step = (is_out_bound ? abs(volume_level) : abs(volume_level) * volume_step);
+temp_item.behind_pitch_decrease = behind_pitch_decrease;
+temp_item.start_pan = start_pan;
+temp_item.start_volume = start_volume;
+temp_item.start_pitch = start_pitch;
+temp_item.left_range = left_range;
+temp_item.right_range = right_range;
+temp_item.size_x = (left_range + right_range) * 0.5;
+temp_item.center_x = (sound_x - left_range) + temp_item.size_x;
+temp_item.backward_range = backward_range;
+temp_item.forward_range = forward_range;
+temp_item.size_y = (backward_range + forward_range) * 0.5;
+temp_item.center_y = (sound_y - backward_range) + temp_item.size_y;
+temp_item.looping = looping;
+filename = create_loop_sound(filename, temp_item);
+temp_item.in_bound = false;
+@ temp_item.bounds = null;
+if (is_out_bound) filename = string_trim_left(filename, 2);
+else 
+{
+temp_item.in_bound = true;
+@ temp_item.bounds = get_sound_boundary_names(temp_item.center_x, temp_item.size_x, temp_item.center_y, temp_item.size_y, 0, 0);
+}
+temp_item.filename = filename;
+temp_item.type = SOUND_2D;
+temp_item.start_offset = offset;
+temp_item.persistent = persistent;
+if (temp_item.in_bound and !temp_item.flexible_distance and max_distance > 0)
+{
+if (looping)
+{
+temp_item.update(this);
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+else
+{
+if (temp_item.get_total_distance(last_listener_x, last_listener_y, last_listener_z) > max_distance)
+{
+temp_item.soft_reset();
+return -2;
+}
+}
+}
+if (!sound_load(temp_item.handle, filename))
+{
+temp_item.soft_reset();
+return -1;
+}
+if (temp_item.start_offset > 0) temp_item.handle.seek(temp_item.start_offset);
+temp_item.update(this);
+if (looping and temp_item.loop_expression is null) temp_item.handle.play_looped();
+else temp_item.handle.play();
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+
+int play_3d(string filename, double sound_x, double sound_y, double sound_z, bool looping, bool persistent = false, int left_range = 0, int right_range = 0, int backward_range = 0, int forward_range = 0, int lower_range = 0, int upper_range = 0, double offset = 0, float start_pan = 0, float start_volume = 0, double start_pitch = 100, double pan_distance = 0, double volume_level = 0)
+{
+// double underbars are free of sound boundaries, So do not use filename with start to double under bar.
+int slot = reserve_slot();
+if (slot == -1)
+{
+return -1;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.x = sound_x;
+temp_item.y = sound_y;
+temp_item.z = sound_z;
+bool is_out_bound = (string_left(filename, 2) == out_bound_delimiter);
+if (pan_distance > 0)
+{
+temp_item.pan_step = pan_distance;
+temp_item.flexible_distance = true;
+}
+else if (pan_distance == 0) temp_item.pan_step = pan_step;
+else temp_item.pan_step = (is_out_bound ? abs(pan_distance) : abs(pan_distance) * pan_step);
+if (volume_level > 0)
+{
+temp_item.volume_step = volume_level;
+temp_item.flexible_distance = true;
+}
+else if (volume_level == 0) temp_item.volume_step = volume_step;
+else temp_item.volume_step = (is_out_bound ? abs(volume_level) : abs(volume_level) * volume_step);
+temp_item.behind_pitch_decrease = behind_pitch_decrease;
+temp_item.start_pan = start_pan;
+temp_item.start_volume = start_volume;
+temp_item.start_pitch = start_pitch;
+temp_item.left_range = left_range;
+temp_item.right_range = right_range;
+temp_item.size_x = (left_range + right_range) * 0.5;
+temp_item.center_x = (sound_x - left_range) + temp_item.size_x;
+temp_item.backward_range = backward_range;
+temp_item.forward_range = forward_range;
+temp_item.size_y = (backward_range + forward_range) * 0.5;
+temp_item.center_y = (sound_y - backward_range) + temp_item.size_y;
+temp_item.lower_range = lower_range;
+temp_item.upper_range = upper_range;
+temp_item.size_z = (lower_range + upper_range) * 0.5;
+temp_item.center_z = (sound_z - lower_range) + temp_item.size_z;
+temp_item.looping = looping;
+filename = create_loop_sound(filename, temp_item);
+temp_item.in_bound = false;
+@ temp_item.bounds = null;
+if (is_out_bound) filename = string_trim_left(filename, 2);
+else 
+{
+temp_item.in_bound = true;
+@ temp_item.bounds = get_sound_boundary_names(temp_item.center_x, temp_item.size_x, temp_item.center_y, temp_item.size_y, temp_item.center_z, temp_item.size_z);
+}
+temp_item.filename = filename;
+temp_item.type = SOUND_3D;
+temp_item.start_offset = offset;
+temp_item.persistent = persistent;
+if (temp_item.in_bound and !temp_item.flexible_distance and max_distance > 0)
+{
+if (looping)
+{
+temp_item.update(this);
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+else
+{
+if (temp_item.get_total_distance(last_listener_x, last_listener_y, last_listener_z) > max_distance)
+{
+temp_item.soft_reset();
+return -2;
+}
+}
+}
+if (!sound_load(temp_item.handle, filename))
+{
+temp_item.soft_reset();
+return -1;
+}
+if (temp_item.start_offset > 0) temp_item.handle.seek(temp_item.start_offset);
+temp_item.update(this);
+if (looping and temp_item.loop_expression is null) temp_item.handle.play_looped();
+else temp_item.handle.play();
+if (slot > highest_slot) highest_slot = slot;
+return slot;
+}
+
+bool& sound_is_active(int slot)
+{
+/* 
+If the looping parameter is set to true and the sound object is inactive, the sound is still considered to be active as this just means that we are currently out of earshot. A non - looping sound that has finished playing is considered to be dead, and will be cleaned up.
+*/ 
+if (!verify_slot(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+if (!temp_item.looping)
+{
+if (temp_item.handle is null)
+{
+return false_t;
+}
+if (!temp_item.handle.playing)
+{
+return false_t;
+}
+}
+return true_t;
+}
+
+bool sound_is_playing(int slot)
+{
+if (!sound_is_active(slot))
+{
+return false_t;
+}
+return items[slot].handle.playing;
+}
+
+bool& pause_sound(int slot)
+{
+if (!sound_is_active(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+if (temp_item.paused)
+{
+return false_t;
+}
+temp_item.paused = true;
+if (temp_item.handle.playing)
+temp_item.handle.pause();
+return true_t;
+}
+
+bool& resume_sound(int slot)
+{
+if (!verify_slot(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+if (!temp_item.paused)
+{
+return false_t;
+}
+temp_item.paused = false;
+if (max_distance > 0 and !temp_item.looping and temp_item.in_bound and !temp_item.flexible_distance)
+{
+if (temp_item.get_total_distance(last_listener_x, last_listener_y, last_listener_z) > max_distance)
+{
+temp_item.soft_reset();
+return true_t;
+}
+}
+temp_item.update(this);
+if (temp_item.handle.active)
+{
+if (!temp_item.handle.playing)
+{
+if (temp_item.looping and temp_item.loop_expression is null)
+{
+temp_item.handle.play_looped();
+}
+else
+{
+temp_item.handle.play();
+}
+}
+}
+return true_t;
+}
+
+void pause_all()
+{
+int currently_playing = 0;
+for (uint i = 0; i <= highest_slot; i++)
+{
+if (sound_is_playing(i))
+currently_playing++;
+pause_sound(i);
+}
+}
+
+void resume_all()
+{
+int currently_playing = 0;
+for (uint i = 0; i <= highest_slot; i++)
+{
+resume_sound(i);
+if (sound_is_playing(i))
+currently_playing++;
+}
+}
+
+void destroy_all()
+{
+for (uint i = 0; i <= highest_slot; i++)
+{
+items[i].soft_reset();
+}
+highest_slot = 0;
+cursor = 0;
+}
+
+void update_listener_3d(double listener_x, double listener_y = 0, double listener_z = 0, int rotation = 0, string[]@ temp_bounds = null)
+{
+if (items.is_empty()) return;
+last_listener_x = listener_x;
+last_listener_y = listener_y;
+last_listener_z = listener_z;
+last_listener_rotation = rotation;
+if (temp_bounds is null) @ listener_bounds = get_sound_boundary_names(last_listener_x, last_listener_y, last_listener_z);
+else @ listener_bounds = temp_bounds;
+for (uint i = 0; i <= highest_slot; i++)
+{
+items[i].update(this);
+}
+}
+
+void sound_boundary_update(string[]@ temp_bounds = null)
+{
+if (temp_bounds !is null) @ listener_bounds = temp_bounds;
+for (uint i = 0; i <= highest_slot; i++)
+{
+sound_pool_item@ new = items[i];
+if (new.handle is null) continue;
+if (!new.in_bound) continue;
+@ new.bounds = get_sound_boundary_names(new.center_x, new.size_x, new.center_y, new.size_y, new.center_z, new.size_z);
+if (temp_bounds !is null) new.update(this);
+}
+}
+
+loop_sound@ get_loop_expression(int slot)
+{
+if (!sound_is_active(slot)) return null;
+return items[slot].loop_expression;
+}
+
+bool& update_sound_3d(int slot, int x, int y = 0, int z = 0)
+{
+if (!verify_slot(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.center_x += x - temp_item.x;
+temp_item.center_y += y - temp_item.y;
+temp_item.center_z += z - temp_item.z;
+temp_item.x = x;
+temp_item.y = y;
+temp_item.z = z;
+if (temp_item.in_bound) @ temp_item.bounds = get_sound_boundary_names(temp_item.center_x, temp_item.size_x, temp_item.center_y, temp_item.size_y, temp_item.center_z, temp_item.size_z);
+temp_item.update(this);
+return true_t;
+}
+
+bool& update_sound_start_values(int slot, float start_pan, float start_volume, double start_pitch)
+{
+if (!verify_slot(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.start_pan = start_pan;
+temp_item.start_volume = start_volume;
+temp_item.start_pitch = start_pitch;
+temp_item.update(this);
+if (temp_item.type == SOUND_STATIONARY)
+{
+if (temp_item.handle !is null)
+{
+temp_item.handle.pan = start_pan;
+temp_item.handle.volume = start_volume;
+temp_item.handle.pitch = start_pitch;
+return true_t;
+}
+}
+if (temp_item.type == SOUND_1D)
+{
+if (temp_item.handle.pitch != start_pitch)
+temp_item.handle.pitch = start_pitch;
+}
+return true_t;
+}
+
+bool update_sound_range_3d(int slot, int left_range, int right_range, int backward_range = 0, int forward_range = 0, int lower_range = 0, int upper_range = 0)
+{
+if (!verify_slot(slot))
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+temp_item.left_range = left_range;
+temp_item.right_range = right_range;
+temp_item.size_x = (left_range + right_range) * 0.5;
+temp_item.center_x = (temp_item.x - left_range) + temp_item.size_x;
+temp_item.backward_range = backward_range;
+temp_item.forward_range = forward_range;
+temp_item.size_y = (backward_range + forward_range) * 0.5;
+temp_item.center_y = (temp_item.y - backward_range) + temp_item.size_y;
+temp_item.lower_range = lower_range;
+temp_item.upper_range = upper_range;
+temp_item.size_z = (lower_range + upper_range) * 0.5;
+temp_item.center_z = (temp_item.z - lower_range) + temp_item.size_z;
+if (temp_item.in_bound) @ temp_item.bounds = get_sound_boundary_names(temp_item.center_x, temp_item.size_x, temp_item.center_y, temp_item.size_y, temp_item.center_z, temp_item.size_z);
+temp_item.update(this);
+return true_t;
+}
+
+bool& destroy_sound(int slot)
+{
+if (verify_slot(slot))
+{
+items[slot].soft_reset();
+if (slot == highest_slot) find_highest_slot(highest_slot);
+if (slot < cursor) cursor = slot;
+return true_t;
+}
+return false_t;
+}
+
+// Internal properties.
+
+double last_listener_x;
+double last_listener_y;
+double last_listener_z;
+int last_listener_rotation;
+sound_pool_item@[] items;
+uint highest_slot;
+int cursor = 0;
+
+// Internal methods.
+
+void find_highest_slot(uint limit)
+{
+/* 
+If the looping parameter is set to true and the sound object is inactive, the sound is still considered to be active as this just means that we are currently out of earshot. A non - looping sound that has finished playing is considered to be dead, and will be cleaned up.
+*/ 
+highest_slot = 0;
+for (int i = limit - 1; i > -1; i--)
+{
+sound_pool_item@ current = items[i];
+if (!current.looping)
+{
+if (current.handle is null) continue;
+if (!current.handle.playing) continue;
+}
+highest_slot = i;
+break;
+}
+}
+
+void clean_unused()
+{
+/* 
+If the looping parameter is set to true and the sound object is inactive, the sound is still considered to be active as this just means that we are currently out of earshot. A non - looping sound that has finished playing is considered to be dead, and will be cleaned up if it is not set to be persistent.
+*/ 
+if (items.is_empty()) return;
+int counter = 0;
+for (uint i = 0; i <= highest_slot; i++)
+{
+sound_pool_item@ current = items[i];
+if (current.persistent)
+{
+continue;
+}
+if (current.looping)
+{
+continue;
+}
+if (current.handle is null)
+{
+continue;
+}
+if (!current.handle.active)
+{
+continue;
+}
+if (current.paused)
+{
+continue;
+}
+if (current.handle.playing)
+{
+continue;
+}
+if (i < cursor) cursor = i;
+counter = i;
+current.soft_reset();
+}
+if (counter == highest_slot) find_highest_slot(highest_slot);
+}
+
+bool& verify_slot(int slot)
+{
+// This is a security function to perform basic sanity checks.
+if (slot < 0)
+{
+return false_t;
+}
+if (slot >= items.length)
+{
+return false_t;
+}
+sound_pool_item@ temp_item = items[slot];
+if (temp_item.persistent)
+{
+return true_t;
+}
+if (temp_item.looping)
+{
+return true_t;
+}
+if (temp_item.handle !is null)
+{
+return true_t;
+}
+return false_t;
+}
+
+int reserve_slot()
+{
+// This finds the first available sound slot and prepares it for use.
+int slot = cursor;
+sound_pool_item@ current = items[slot];
+cursor = -1;
+int current_length = items.length;
+for (uint i = slot + 1; i < current_length; i++)
+{
+sound_pool_item@ new = items[i];
+if (new.persistent)
+{
+continue;
+}
+if (new.looping)
+{
+continue;
+}
+if (new.handle is null)
+{
+cursor = i;
+break;
+}
+if (!new.handle.active)
+{
+cursor = i;
+break;
+}
+if (!new.handle.playing)
+{
+cursor = i;
+break;
+}
+}
+if (cursor == -1)
+{
+sound_pool_item i1;
+items.insert_last(i1);
+cursor = current_length;
+}
+current.reset();
+sound temp;
+@ current.handle = temp;
+return slot;
+}
+}

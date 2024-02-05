@@ -1,0 +1,81 @@
+class stickybomb 
+{
+double x, y, z;
+mapdata@ map;
+string owner;
+vehicle@ v;
+impact_bomb@ im;
+remgun@ r;
+double plus_x, plus_y, plus_z;
+}
+void stickybombloop(stickybomb@[]@ sticks)
+{
+string name = "stickybomb";
+for (int j = sticks.length - 1; j > -1; j--)
+{
+stickybomb@ this = sticks[j];
+if (this.v !is null) spawn_splash(this.v.x + this.plus_x, this.v.y + this.plus_y, this.v.z + this.plus_z, this.v.map, this.owner, name);
+else if (this.r !is null) spawn_splash(this.r.x + this.plus_x, this.r.y + this.plus_y, this.r.z + this.plus_z, this.r.map, this.owner, name);
+else if (this.im !is null) spawn_splash(this.im.x + this.plus_x, this.im.y + this.plus_y, this.im.z + this.plus_z, this.im.map, this.owner, name);
+}
+sticks.resize(0);
+}
+void spawn_stickybomb(double x, double y, double z, mapdata@ map, const string& in owner)
+{
+stickybomb f1;
+f1.x = x;
+f1.y = y;
+f1.z = z;
+@ f1.map = map;
+f1.owner = owner;
+int remgunslength = map.remguns.length;
+for (uint i2 = 0; i2 < remgunslength; i2++)
+{
+remgun@ temp = map.remguns[i2];
+if (temp.hid.health <= 0) continue;
+if (temp.stickybombs.length >= 2) continue;
+double range = temp.distancecheck(x, y, z);
+if (range > 8) continue;
+f1.plus_x = x - temp.x;
+f1.plus_y = y - temp.y;
+f1.plus_z = z - temp.z;
+@ f1.r = temp;
+temp.stickybombs.insert_last(f1);
+play("stickybombstick", x, y, z, map);
+return;
+}
+int impact_bombslength = map.impact_bombs.length;
+for (uint x = 0; x < impact_bombslength; x++)
+{
+impact_bomb@ temp = map.impact_bombs[x];
+if (temp.hid.health <= 0) continue;
+if (temp.stickybombs.length >= 2) continue;
+double range = temp.distancecheck(x, y, z);
+if (range > 8) continue;
+f1.plus_x = x - temp.x;
+f1.plus_y = y - temp.y;
+f1.plus_z = z - temp.z;
+@ f1.im = temp;
+temp.stickybombs.insert_last(f1);
+play("stickybombstick", x, y, z, map);
+return;
+}
+int vslength = map.vs.length;
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.health <= 0) continue;
+if (temp.stickybombs.length >= 5) continue;
+double range = temp.distancecheck(x, y, z);
+if (range > 8) continue;
+f1.plus_x = x - temp.x;
+f1.plus_y = y - temp.y;
+f1.plus_z = z - temp.z;
+@ f1.v = temp;
+temp.stickybombs.insert_last(f1);
+play("stickybombstick", x, y, z, map);
+temp.playsound("h" + random(1, 6), false);
+return;
+}
+spawn_splash(x, y, z, map, owner, "stickybomb");
+}

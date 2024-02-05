@@ -1,0 +1,45 @@
+class impact_bomb
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+double oldhealth = 2500;
+stickybomb@[] stickybombs;
+hittable@ hid;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+
+void impact_bombloop(mapdata@ map)
+{
+string name = "impact_bomb";
+for (int i = map.impact_bombs.length - 1; i > -1; i--)
+{
+impact_bomb@ this = map.impact_bombs[i];
+if (this.oldhealth <= this.hid.health) continue;
+this.oldhealth = this.hid.health;
+if (this.hid.health > 0)
+{
+play("ibombhit" + random(1, 3), this.x, this.y, this.z, this.map);
+continue;
+}
+if (!this.stickybombs.is_empty()) stickybombloop(this.stickybombs);
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+map.impact_bombs.remove_at(i);
+}
+}
+void spawn_impact_bomb(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+impact_bomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+play("ibombplace", x, y, z, map);
+@ bomb1.hid = spawn_hobj(x, y, z, map, 2500, 86400000, empty, empty, "impact_bomb");
+map.impact_bombs.insert_last(bomb1);
+}

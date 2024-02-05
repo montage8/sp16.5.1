@@ -1,0 +1,37 @@
+timeitem@[] timeitems(0);
+class timeitem
+{
+int amount = 1;
+string itemtype;
+mapdata@ map;
+int x, y, z;
+int spawntime;
+timer stimer;
+bool should_drop;
+}
+void timeitemloop()
+{
+for (int i = timeitems.length - 1; i > -1; i--)
+{
+timeitem@ temp = timeitems[i];
+if (temp.stimer.elapsed >= temp.spawntime)
+{
+spawn_obj(temp.x, temp.y, temp.z, temp.map, temp.itemtype, temp.amount, temp.should_drop);
+timeitems.remove_at(i);
+continue;
+}
+}
+}
+void spawn_timeitem(int x, int y, int z, mapdata@ map, const string& in type, int amount = 1, int ms = 3000, bool should_drop = false)
+{
+timeitem tim;
+tim.x = x;
+tim.y = y;
+tim.z = z;
+@ tim.map = map;
+tim.itemtype = type;
+tim.amount = amount;
+tim.spawntime = ms;
+tim.should_drop = should_drop;
+timeitems.insert_last(tim);
+}

@@ -1,0 +1,92 @@
+vehicle spawn_police_car()
+{
+vehicle v;
+v.type = "police_car";
+v.maxhealth = 50000;
+v.defense = 1000;
+v.sight_range = 150;
+v.missile_range = 200;
+v.maxspeed = 24;
+v.accelpower = 0.0036;
+v.decelpower = 0.0036;
+v.breakpower = 0.008;
+v.vfueltime = 1000;
+v.vfuelspeed = 15;
+v.vfuelpitch = 2;
+v.extra_engine_sound = true;
+v.maxsiren = 2;
+v.explode_min = 13000;
+v.explode_max = 17000;
+v.maxpassengers = 5;
+vehicle_interior new1;
+new1.x=1;
+new1.y=6;
+new1.z=0;
+new1.type=INTERIOR_DOOR;
+v.interiors.insert_last(new1);
+vehicle_interior new2;
+new2.x=1;
+new2.y=5;
+new2.z=0;
+new2.type=INTERIOR_STEERING;
+v.interiors.insert_last(new2);
+vehicle_interior new3;
+new3.x=3;
+new3.y=6;
+new3.z=0;
+new3.type=INTERIOR_DOOR;
+v.interiors.insert_last(new3);
+vehicle_interior new4;
+new4.x=1;
+new4.y=3;
+new4.z=0;
+new4.type=INTERIOR_DOOR;
+v.interiors.insert_last(new4);
+vehicle_interior new5;
+new5.x=3;
+new5.y=3;
+new5.z=0;
+new5.type=INTERIOR_DOOR;
+v.interiors.insert_last(new5);
+vehicle_interior new6;
+new6.x = 3;
+new6.y = 5;
+new6.z = 0;
+new6.type = INTERIOR_WEAPON;
+new6.reusetime = 2800;
+new6.pretime = 2150;
+@ new6.prework = @ prework_police_car_weapon1;
+@ new6.work = @ work_police_car_weapon1;
+v.interiors.insert_last(new6);
+vehicle_interior lk;
+lk.x = 3;
+lk.y = 5;
+lk.z = 1;
+lk.type = INTERIOR_LOCKER;
+v.interiors.insert_last(lk);
+return v;
+}
+
+
+bool prework_police_car_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (this.fuel <= 0.3)
+{
+vi.user.alert("연료가 부족합니다.");
+return false_t;
+}
+vi.dir = vi.user.facing;
+this.playsound("police_car_weapon_power", true, true);
+return true_t;
+}
+
+bool work_police_car_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (this.fuel <= 0.3) return false_t;
+int facing = this.facing + vi.dir;
+play_dist("police_car_weapon_fire_dist", this.x, this.y, this.z, this.map, 0.25);
+this.playsound("police_car_weapon_fire", true, true);
+spawn_weapon(this.x, this.y, this.z, facing, "police_car_laser", this.map, vi.user, "police_car_weapon_fire");
+this.fuel -= 0.3;
+return true_t;
+}

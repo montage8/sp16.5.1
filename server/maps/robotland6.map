@@ -1,0 +1,18 @@
+
+mapname:robotland6
+maxx:200
+maxy:200
+maxz:200
+zone:0:200:0:200:0:200:robot land torment level
+travelpoint:0:200:0:0:0:200:세이프존:3001:3001:30:포탈:0
+zone:0:200:0:0:0:200:여기를 통해 탈출하세요.
+travelpoint:0:200:200:200:0:200:세이프존:3001:3001:30:포탈:0
+zone:0:200:200:200:0:200:여기를 통해 탈출하세요.
+tile:0:200:0:200:0:0:concrete14
+src:0:200:0:200:0:200:hospital2
+robots:0:200:0:200:0:0:8:500:bioborg,dentist,doctor,lunatic,nurse,psychiatrist,psycho,surgeon:.:1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:100
+startingy:100
+startingz:0

@@ -1,0 +1,106 @@
+dictionary compbans;
+dictionary ipbans;
+dictionary namebans;
+const uint BAN_NAME = 1;
+const uint BAN_COMPUTER = 2;
+const uint BAN_IP = 4;
+const uint BAN_PLUS_NAME = 8;
+const uint BAN_HARD = 16;
+
+void ban(const string& in name, uint flags = 11)
+{
+player@ bp = get_player_handle(name);
+if (bp is null) return;
+if (flags & BAN_NAME > 0) namebans.set(bp.name, 0);
+if (flags & BAN_COMPUTER > 0) compbans.set(bp.compid, (flags & BAN_PLUS_NAME > 0 ? "완전 차단" : bp.name));
+if (flags & BAN_IP > 0) ipbans.set(string_base64_encode(n.get_peer_address(bp.peer_id)), (flags & BAN_PLUS_NAME > 0 ? "완전 차단" : bp.name));
+if (flags & BAN_HARD > 0) bp.sendpacket("hardban");
+send(0, bp.name + "님은 이 게임에 영원히 들어올 수 없게 되었으며, 플래그는 " + flags + "번입니다.", 2);
+bp.sendpacket("killclient");
+remove_player(bp.name);
+disconnections++;
+writedata();
+}
+
+void unban(const string& in name, uint flags = 7)
+{
+if (flags & BAN_NAME > 0) namebans.delete(name);
+if (flags & BAN_PLUS_NAME > 0)
+{
+string id;
+string[]@ list = compbans.keys;
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+compbans.get(list[i], id);
+if (name == id) compbans.delete(list[i]);
+}
+@ list = ipbans.keys;
+listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+ipbans.get(list[i], id);
+if (name == id) ipbans.delete(list[i]);
+}
+}
+if (flags & BAN_COMPUTER > 0) compbans.delete(name);
+if (flags & BAN_IP > 0) ipbans.delete(name);
+if (flags & BAN_HARD > 0)
+{
+player@ temp = get_player_handle(name);
+if (temp !is null) temp.sendpacket("unhardban");
+}
+writedata();
+}
+
+uint is_banned(const string& in name, bool is_name = true)
+{
+uint result = 0;
+if (is_name)
+{
+if (namebans.exists(name)) result += BAN_NAME;
+string id;
+string[]@ list = compbans.keys;
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+compbans.get(list[i], id);
+if (name != id) continue;
+result += BAN_COMPUTER;
+break;
+}
+@ list = ipbans.keys;
+listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+ipbans.get(list[i], id);
+if (name != id) continue;
+result += BAN_IP;
+break;
+}
+}
+else
+{
+if (compbans.exists(name)) result += BAN_COMPUTER;
+if (ipbans.exists(name)) result += BAN_IP;
+}
+return result;
+}
+
+string get_bans(uint flags = BAN_NAME)
+{
+string result;
+switch (flags)
+{
+case BAN_NAME:
+result += namebans.size + "개의 차단된 이름:\r" + dictionary_to_text(namebans, "\r", false);
+break;
+case BAN_COMPUTER:
+result += compbans.size + "개의 차단된 컴퓨터:\r" + dictionary_to_text(compbans);
+break;
+case BAN_IP:
+result += ipbans.size + "개의 차단된 IP:\r" + dictionary_to_text(ipbans);
+break;
+}
+return result;
+}

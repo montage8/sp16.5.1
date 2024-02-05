@@ -1,0 +1,1146 @@
+funcdef int menu_callback(dynamic_menu_pro@ , string);
+key_hold left(KEY_LEFT, 500, 50);
+key_hold right(KEY_RIGHT, 500, 50);
+key_hold up(KEY_UP, 500, 50);
+key_hold down(KEY_DOWN, 500, 50);
+tts_voice tts;
+int found_reader = 0;
+int find_under_bar_auto = 0;
+sound_pool spool;
+
+void fade(sound@ handle, float final_volume = -50, double speed = 0.1)
+{
+if (handle is null) return;
+if (!handle.active) return;
+if (handle.volume == final_volume) return;
+for (; handle.volume >= final_volume; )
+{
+handle.volume = handle.volume - speed;
+wait(connected ? maintime : 5);
+mouse_update();
+if (connected) sr_loop();
+}
+}
+
+class dynamic_menu_item
+{
+string option;
+bool is_filename = true;
+bool activate = false;
+bool checked = false;
+bool check_break = false;
+string name;
+string letter;
+}
+
+class dynamic_menu_pro
+{
+bool letters_autospeak = true;
+bool letters_autoactivate = false;
+bool speak_letter = false;
+bool click_at_edge = false;
+bool repeat_items_at_edges = false;
+bool music_added = false;
+int voltime = 50;
+timer voltimer;
+sound music;
+int volkeyup = KEY_PRIOR;
+int volkeydown = KEY_NEXT;
+int volkeycheck = KEY_F12;
+string open_sound;
+string click_sound;
+string edge_sound;
+string wrap_sound;
+string enter_sound;
+string check_sound;
+bool multi_checking = false;
+bool enable_enter = true;
+uint enable_onetouch_navigation = 3;
+bool speak_position_information = false;
+bool wrap = true;
+bool allow_escape = true;
+bool force_sapi = false;
+bool enable_home_and_end = true;
+bool enable_up_and_down = false;
+bool enable_left_and_right = false;
+bool deep_search = false;
+string find_data;
+
+void set_volume_keys(int key1, int key2, int key3)
+{
+volkeyup = key1;
+volkeydown = key2;
+volkeycheck = key3;
+}
+void fade_music(double speed, double minvol = -50)
+{
+fade(music, minvol, speed);
+music.stop();
+}
+void stop_music()
+{
+music.stop();
+}
+void play_music()
+{
+if (!music.playing)
+music.play_looped();
+}
+void add_music(const string& in musicpath)
+{
+if (!music.playing)
+{
+sound_load(music, musicpath);
+music_added = true;
+}
+}
+double get_2d_pos()
+{
+if (item_list.length <= 1) return 0;
+return (100 * (menu_position) / (item_list.length + 1)) - 50;
+}
+void play_click_sound()
+{
+if (item_list[menu_position - 1].checked)
+{
+if (enable_left_and_right) spool.play_stationary(check_sound, false, false, 0, get_2d_pos(), 0, 100);
+else spool.play_stationary(check_sound, false, false);
+}
+if (click_sound.is_empty()) return;
+if (enable_left_and_right) spool.play_stationary(click_sound, false, false, 0, get_2d_pos(), 0, 100);
+else spool.play_stationary(click_sound, false, false);
+if (connected) send_reliable("xplay " + click_sound, 2);
+}
+void play_edge_sound()
+{
+if (edge_sound.is_empty()) return;
+if (enable_left_and_right) spool.play_stationary(edge_sound, false, false, 0, get_2d_pos(), 0, 100);
+else spool.play_stationary(edge_sound, false, false);
+}
+void play_enter_sound()
+{
+if (enter_sound.is_empty()) return;
+if (enable_left_and_right) spool.play_stationary(enter_sound, false, false, 0, get_2d_pos(), 0, 100);
+else spool.play_stationary(enter_sound, false, false);
+if (connected) send_reliable("xplay " + enter_sound, 2);
+}
+
+int add_item(string filename, const string& in name = empty, string key = empty, bool act = true, bool check_break = false, bool checked = false)
+{
+if (running) return -1;
+if (filename.is_empty()) return -1;
+dynamic_menu_item new;
+new.option = filename;
+new.is_filename = true;
+new.name = (name.is_empty() ? filename : name);
+new.activate = act;
+new.check_break = check_break;
+new.checked = checked;
+if (key.is_empty())
+{
+if (filename.size == 1) key = filename[0];
+else
+{
+int index = character_to_ascii(filename[0]);
+if (index == ascii_under_bar)
+{
+if (find_under_bar_auto == 1)
+{
+filename = string_trim_left(filename, 1);
+index = character_to_ascii(filename[0]);
+}
+}
+if (index < 128 or filename.size == 1) key = filename[0];
+else key = string_left(filename, 2);
+}
+key = string_to_lower_case(key);
+}
+new.letter = key;
+item_list.insert_last(new);
+return item_list.length;
+}
+
+int add_item_tts(string text, const string& in name = empty, string key = empty, bool act = true, bool check_break = false, bool checked = false)
+{
+if (running) return -1;
+if (text.is_empty()) return -1;
+dynamic_menu_item new;
+new.option = text;
+new.is_filename = false;
+new.name = (name.is_empty() ? text : name);
+new.activate = act;
+new.check_break = check_break;
+new.checked = checked;
+if (key.is_empty())
+{
+if (text.size == 1) key = text[0];
+else
+{
+int index = character_to_ascii(text[0]);
+if (index == ascii_under_bar)
+{
+if (find_under_bar_auto == 1)
+{
+text = string_trim_left(text, 1);
+index = character_to_ascii(text[0]);
+}
+}
+if (index < 128 or text.size == 1) key = text[0];
+else key = string_left(text, 2);
+}
+key = string_to_lower_case(key);
+}
+new.letter = key;
+item_list.insert_last(new);
+return item_list.length;
+}
+
+bool& set_speech_mode(int speech_output)
+{
+if (speech_output >= 0)
+{
+if (speech_output <= 4)
+{
+this.speech_output = speech_output;
+return true_t;
+}
+}
+return false_t;
+}
+
+
+int& get_position()
+{
+if (!running)
+{
+return _neg1;
+}
+return menu_position;
+}
+
+bool& is_running()
+{
+return running;
+}
+
+bool& set_tts_object(tts_voice@ handle)
+{
+if (running)
+{
+return false_t;
+}
+@ tts_handle = handle;
+return true_t;
+}
+
+bool& set_sound_object(sound@ handle)
+{
+if (running)
+{
+return false_t;
+}
+@ sound_handle = handle;
+return true_t;
+}
+
+bool& set_callback(menu_callback@ callback, const string& in user_data)
+{
+if (running)
+{
+return false_t;
+}
+@ callback_handle = callback;
+callback_data = user_data;
+return true_t;
+}
+
+const string& get_item_name(int item)
+{
+if (item > 0)
+{
+if (item <= item_list.length)
+ref_string = item_list[item - 1].name;
+return ref_string;
+}
+return empty;
+}
+
+string[]@ get_checked_item_list()
+{
+string[] new;
+int itemlength = item_list.length;
+new.reserve(itemlength);
+for (uint i = 0; i < itemlength; i++)
+{
+if (!item_list[i].checked) continue;
+new.insert_last(item_list[i].name);
+}
+return new;
+}
+
+int[]@ get_checked_item_index(int sum = 0)
+{
+int[] new;
+int itemlength = item_list.length;
+new.reserve(itemlength);
+for (uint i = 0; i < itemlength; i++)
+{
+if (!item_list[i].checked) continue;
+new.insert_last(i + sum);
+}
+return new;
+}
+
+const string& get_checked_item_text(const string &in delimiter)
+{
+string[] new;
+ref_string.resize(0);
+int itemlength = item_list.length;
+new.reserve(itemlength);
+for (uint i = 0; i < itemlength; i++)
+{
+if (!item_list[i].checked) continue;
+if (i > 0) ref_string += delimiter;
+ref_string += item_list[i].name;
+}
+return ref_string;
+}
+
+int get_item_index(const string& in name)
+{
+if (name.is_empty()) return 0;
+for (int i = item_list.length - 1; i > -1; i--)
+{
+if (item_list[i].name == name) return i + 1;
+}
+return 0;
+}
+
+// Check to see if there's an item that needs to be spoken.
+void speak_item(bool speak_position = false)
+{
+if (speak_position_information) speak_position = true;
+if (menu_position <= 0 or menu_position > item_list.length) return;
+string secondary;
+if (speak_letter) secondary = " (" + item_list[menu_position - 1].letter + ")";
+if (item_list[menu_position - 1].is_filename)
+{
+if (internal_tts !is null) internal_tts.stop();
+if (sound_load(internal_sound, item_list[menu_position - 1].option)) internal_sound.play();
+else write_menu_error("사운드 불러오기 실패: (" + item_list[menu_position - 1].option + ")");
+}
+else
+{
+if (internal_sound.active) internal_sound.close();
+string speechinfo;
+if (speak_position) speechinfo = item_list[menu_position - 1].option + secondary + ", 「" + menu_position + " / " + item_list.length + "」";
+else speechinfo += item_list[menu_position - 1].option + secondary;
+if (speech_output_inrange(speech_output))
+{
+if (!screen_reader_speak_interrupt(speech_output, speechinfo)) write_menu_error("스크린 리더 말하기 실패: (" + speechinfo + ")");
+}
+else if (force_sapi)
+{
+if (!internal_tts.speak_interrupt(speechinfo)) write_menu_error("SAPI 말하기 실패: (" + speechinfo + ")");
+}
+else
+{
+if (!speak(speechinfo)) write_menu_error("기본 말하기 실패: (" + speechinfo + ")");
+}
+}
+}
+
+int find_menu(int start_position = 0, bool reverse = false)
+{
+int find_data_size = find_data.size;
+int items = item_list.length;
+string u_find_data = "_" + find_data;
+int u_find_data_size = find_data_size + 1;
+if (reverse)
+{
+start_position--;
+for (int i = start_position - 1; i > -1; i--)
+{
+if (deep_search)
+{
+if (string_contains(string_to_lower_case(item_list[i].option), find_data, 1) < 0) continue;
+}
+else
+{
+if (string_left(string_to_lower_case(item_list[i].option), find_data_size) != find_data)
+{
+if (find_under_bar_auto == 0) continue;
+if (string_left(string_to_lower_case(item_list[i].option), u_find_data_size) != u_find_data) continue;
+}
+}
+return i + 1;
+}
+for (int i = items - 1; i >= start_position; i--)
+{
+if (deep_search)
+{
+if (string_contains(string_to_lower_case(item_list[i].option), find_data, 1) < 0) continue;
+}
+else
+{
+if (string_left(string_to_lower_case(item_list[i].option), find_data_size) != find_data)
+{
+if (find_under_bar_auto == 0) continue;
+if (string_left(string_to_lower_case(item_list[i].option), u_find_data_size) != u_find_data) continue;
+}
+}
+return i + 1;
+}
+return 0;
+}
+for (uint i = start_position; i < items; i++)
+{
+if (deep_search)
+{
+if (string_contains(string_to_lower_case(item_list[i].option), find_data, 1) < 0) continue;
+}
+else
+{
+if (string_left(string_to_lower_case(item_list[i].option), find_data_size) != find_data)
+{
+if (find_under_bar_auto == 0) continue;
+if (string_left(string_to_lower_case(item_list[i].option), u_find_data_size) != u_find_data) continue;
+}
+}
+return i + 1;
+}
+for (uint i = 0; i < start_position; i++)
+{
+if (deep_search)
+{
+if (string_contains(string_to_lower_case(item_list[i].option), find_data, 1) < 0) continue;
+}
+else
+{
+if (string_left(string_to_lower_case(item_list[i].option), find_data_size) != find_data)
+{
+if (find_under_bar_auto == 0) continue;
+if (string_left(string_to_lower_case(item_list[i].option), u_find_data_size) != u_find_data) continue;
+}
+}
+return i + 1;
+}
+return 0;
+}
+
+int run(const string& in intro, bool is_intro_tts, int start_position = 0, bool initial = false)
+{
+if (running)
+{
+return -1;
+}
+int item_count = item_list.length;
+if (item_count == 0) return -1;
+if (item_count < start_position) start_position = item_count;
+menu_position = start_position;
+@ internal_sound = null;
+@ internal_tts = null;
+if (sound_handle is null)
+{
+sound temp_sound;
+@ internal_sound = temp_sound;
+}
+else
+{
+@ internal_sound = sound_handle;
+}
+bool has_tts_items = is_intro_tts;
+if (!has_tts_items)
+{
+for (uint i = 0; i < item_count; i++)
+{
+if (!item_list[i].is_filename) continue;
+has_tts_items = true;
+break;
+}
+}
+if (speech_output == 0)
+{
+if (!has_tts_items) {}
+else if (tts_handle is null)
+{
+tts_voice temp_voice;
+@ internal_tts = temp_voice;
+}
+else
+{
+@ internal_tts = tts_handle;
+}
+}
+if (!intro.is_empty())
+{
+if (is_intro_tts)
+{
+if (speech_output_inrange(speech_output))
+{
+if (!screen_reader_speak_interrupt(speech_output, intro)) write_menu_error("스크린 리더 말하기 실패: (" + intro + ")");
+}
+else if (force_sapi)
+{
+if (!internal_tts.speak_interrupt(intro)) write_menu_error("SAPI 말하기 실패: (" + intro + ")");
+}
+else
+{
+if (!speak(intro, 0)) write_menu_error("기본 말하기 실패: (" + intro + ")");
+}
+}
+else
+{
+if (sound_load(internal_sound, intro))
+{
+internal_sound.play();
+}
+else write_menu_error("사운드 불러오기 실패: (" + intro + ")");
+}
+}
+music.volume = menumusvol;
+spool.play_stationary(open_sound, false);
+music.play_looped();
+running = true;
+string char;
+string test;
+string keypressed;
+int keypress = 0;
+if (connected) force_all_keys_up();
+if (!characters.is_empty()) speech_stop_level = 1;
+int ret = -1;
+loop_level++;
+
+for (; ; )
+{
+if (loop_level < old_loop_level)
+{
+ret = -2;
+break;
+}
+old_loop_level = loop_level;
+wait(connected ? maintime : 5);
+mouse_update();
+keyboard_update();
+if (connected) sr_loop();
+if (dead)
+{
+ret = 0;
+break;
+}
+
+// Invoke the user callback.
+if (callback_handle !is null)
+{
+int callback_result = callback_handle(this, callback_data);
+if (callback_result != 0)
+{
+ret = callback_result;
+break;
+}
+}
+if (key_pressed(KEY_TAB)) speak_item(true);
+
+if (alt_is_down)
+{
+if (key_pressed(KEY_C))
+{
+speak("대화상자 내용을 클립보드로 복사했습니다.");
+clipboard_copy_text(intro);
+}
+}
+if (control_is_down > 0)
+{
+if (key_pressed(KEY_C))
+{
+if (menu_position > 0)
+{
+speak("커서가 위치한 항목을 클립보드로 복사했습니다.");
+clipboard_copy_text(item_list[menu_position - 1].option);
+}
+}
+if (key_pressed(KEY_F))
+{
+find_data = input_box_pro("무엇을 찾을까요? 깊게 찾으려면 앞에 /(슬래시)를 입력하세요.");
+if (!find_data.is_empty())
+{
+initial = false;
+deep_search = false;
+if (string_left(find_data, 1) == "/")
+{
+deep_search = true;
+find_data = string_trim_left(find_data, 1);
+}
+int f = 0;
+find_data = string_to_lower_case(find_data);
+int index = find_menu(menu_position);
+if (index <= 0) speak(find_data + "를 찾을 수 없습니다.");
+else
+{
+menu_position = index;
+play_click_sound();
+if (letters_autospeak) speak_item();
+}
+}
+}
+if (key_pressed(KEY_1)) keypress = 1;
+else if (key_pressed(KEY_2)) keypress = 2;
+else if (key_pressed(KEY_3)) keypress = 3;
+else if (key_pressed(KEY_4)) keypress = 4;
+else if (key_pressed(KEY_5)) keypress = 5;
+else if (key_pressed(KEY_6)) keypress = 6;
+else if (key_pressed(KEY_7)) keypress = 7;
+else if (key_pressed(KEY_8)) keypress = 8;
+else if (key_pressed(KEY_9)) keypress = 9;
+else if (key_pressed(KEY_0)) keypress = 10;
+if (keypress > 0)
+{
+int menu_position_temp = 0;
+if (keypressed.is_empty())
+{
+menu_position_temp = keypress;
+if (item_list.length < menu_position_temp)
+{
+menu_position_temp = menu_position;
+spool.play_stationary(wrap_sound, false);
+}
+else keypressed = menu_position_temp;
+}
+else
+{
+menu_position_temp = string_to_number(keypressed + empty + (keypress == 10 ? 0 : keypress));
+if (item_list.length < menu_position_temp)
+{
+menu_position_temp = keypress;
+if (item_list.length < menu_position_temp)
+{
+menu_position_temp = menu_position;
+keypressed.resize(0);
+}
+else keypressed = menu_position_temp;
+spool.play_stationary(wrap_sound, false);
+}
+else keypressed = menu_position_temp;
+}
+keypress = 0;
+if (menu_position != menu_position_temp)
+{
+menu_position = menu_position_temp;
+play_click_sound();
+speak_item();
+continue;
+}
+}
+}
+
+else if (enable_onetouch_navigation > 0)
+{
+char = input_characters();
+if (!char.is_empty())
+{
+speech_stop_level = 1;
+if ((enable_onetouch_navigation == 1 and !string_is_digits(char) and char != " ") or (enable_onetouch_navigation == 2 and string_is_digits(char)) or (enable_onetouch_navigation >= 3 and char != " "))
+{
+initial = false;
+int charsize = char.size;
+if (char.size > 2) char.resize(2);
+int f = 0;
+int counter = menu_position;
+int items = item_list.length;
+for (uint i = counter; i < items; i++)
+{
+test = item_list[i].letter;
+if (test != char) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+if (f == 0)
+{
+spool.play_stationary(wrap_sound, false);
+for (uint i = 0; i < counter; i++)
+{
+test = item_list[i].letter;
+if (test != char) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+}
+if (f == 1)
+{
+menu_position = counter;
+play_click_sound();
+if (letters_autospeak) speak_item();
+if (letters_autoactivate)
+{
+play_enter_sound();
+ret = menu_position;
+break;
+}
+}
+}
+}
+}
+
+if (enable_up_and_down and !key_pressed(KEY_UP) and up.pressing() or enable_left_and_right and !key_pressed(KEY_LEFT) and left.pressing())
+{
+initial = false;
+if (control_is_down > 0 and multi_checking)
+{
+int f = 0;
+int counter = menu_position;
+for (int i = counter - 2; i > -1; i--)
+{
+if (!item_list[i].checked) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+if (f == 0 and wrap)
+{
+spool.play_stationary(wrap_sound, false);
+for (int i = item_list.length - 1; i >= counter; i--)
+{
+if (!item_list[i].checked) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+}
+if (f == 0) speak("이전 선택된 항목이 없습니다.");
+else
+{
+menu_position = counter;
+play_click_sound();
+if (letters_autospeak) speak_item();
+}
+continue;
+}
+if (menu_position <= 0)
+{
+menu_position = item_count;
+play_click_sound();
+speak_item();
+continue;
+}
+if (menu_position == 1)
+{
+if (wrap)
+{
+menu_position = item_count;
+spool.play_stationary(wrap_sound, false);
+play_click_sound();
+speak_item();
+continue;
+}
+if (click_at_edge)
+{
+play_click_sound();
+}
+if (repeat_items_at_edges)
+{
+speak_item();
+}
+play_edge_sound();
+continue;
+}
+int amount = 1;
+if (alt_is_down) amount = 10;
+else if (shift_is_down) amount = 50;
+menu_position -= amount;
+if (menu_position <= 0) menu_position = 1;
+play_click_sound();
+speak_item();
+continue;
+}
+
+if (enable_up_and_down and !key_pressed(KEY_DOWN) and down.pressing() or enable_left_and_right and !key_pressed(KEY_RIGHT) and right.pressing())
+{
+initial = false;
+if (control_is_down > 0 and multi_checking)
+{
+int f = 0;
+int counter = menu_position;
+int items = item_list.length;
+for (uint i = counter; i < items; i++)
+{
+if (!item_list[i].checked) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+if (f == 0 and wrap)
+{
+spool.play_stationary(wrap_sound, false);
+for (uint i = 0; i < counter; i++)
+{
+if (!item_list[i].checked) continue;
+counter = i + 1;
+f = 1;
+break;
+}
+}
+if (f == 0) speak("다음 선택된 항목이 없습니다.");
+else
+{
+menu_position = counter;
+play_click_sound();
+if (letters_autospeak) speak_item();
+}
+continue;
+}
+if (menu_position >= item_count)
+{
+if (wrap)
+{
+menu_position = 1;
+spool.play_stationary(wrap_sound, false);
+play_click_sound();
+speak_item();
+continue;
+}
+if (click_at_edge)
+{
+play_click_sound();
+}
+if (repeat_items_at_edges)
+{
+speak_item();
+}
+play_edge_sound();
+continue;
+}
+int amount = 1;
+if (alt_is_down) amount = 10;
+else if (shift_is_down) amount = 50;
+menu_position += amount;
+if (menu_position > item_count) menu_position = item_count;
+play_click_sound();
+speak_item();
+continue;
+}
+
+if (enable_home_and_end)
+{
+if (key_pressed(KEY_HOME))
+{
+initial = false;
+menu_position = 1;
+play_click_sound();
+speak_item();
+continue;
+}
+else if (key_pressed(KEY_END))
+{
+initial = false;
+menu_position = item_count;
+play_click_sound();
+speak_item();
+continue;
+}
+}
+
+if (key_pressed(KEY_ESCAPE))
+{
+if (allow_escape)
+{
+ret = 0;
+break;
+}
+}
+
+if (key_pressed(KEY_SPACE))
+{
+if (multi_checking)
+{
+if (control_is_down > 0)
+{
+int itemlength = item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+dynamic_menu_item@ temp_item = item_list[i];
+if (temp_item.check_break) continue;
+if (!temp_item.checked) temp_item.checked = true;
+}
+speak("전체 선택");
+p.play_stationary("toggleon.ogg", false);
+}
+else if (shift_is_down)
+{
+int itemlength = item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+dynamic_menu_item@ temp_item = item_list[i];
+if (temp_item.check_break) continue;
+if (temp_item.checked) temp_item.checked = false;
+}
+speak("전체 선택 해제");
+p.play_stationary("toggleoff.ogg", false);
+}
+else if (alt_is_down)
+{
+int itemlength = item_list.length;
+int index1 = string_to_number(number_builder("시작 번호를 입력하세요.", menu_position));
+if (index1 <= 0) continue;
+if (index1 > itemlength) continue;
+int index2 = string_to_number(number_builder("끝 번호를 입력하세요.", index1));
+if (index2 <= 0) continue;
+if (index2 > itemlength) continue;
+if (index1 > index2)
+{
+speak("시작 번호가 끝 번호보다 크면 안 됩니다.");
+continue;
+}
+for (uint i = index1 - 1; i < index2; i++)
+{
+dynamic_menu_item@ temp_item = item_list[i];
+if (temp_item.check_break) continue;
+if (temp_item.checked) temp_item.checked = false;
+else temp_item.checked = true;
+}
+speak("해당 번호의 메뉴를 일괄 토글했습니다.");
+p.play_stationary(open_sound, false);
+}
+else
+{
+if (menu_position <= 0) continue;
+dynamic_menu_item@ temp_item = item_list[menu_position - 1];
+if (temp_item.check_break) continue;
+temp_item.checked ? temp_item.checked = false : temp_item.checked = true;
+temp_item.checked ? p.play_stationary("toggleon.ogg", false) : p.play_stationary("toggleoff.ogg", false);
+}
+}
+}
+
+if (key_pressed(KEY_F3))
+{
+if (!find_data.is_empty())
+{
+int index = find_menu(menu_position, shift_is_down);
+if (index <= 0) speak(find_data + "를 찾을 수 없습니다.");
+else
+{
+menu_position = index;
+play_click_sound();
+if (letters_autospeak) speak_item();
+}
+}
+}
+
+if (key_pressed(volkeycheck))
+{
+if (music_added)
+{
+if (speech_output_inrange(speech_output))
+screen_reader_speak_interrupt(speech_output, "BGM 볼륨: " + music.volume);
+else if (force_sapi)
+internal_tts.speak_interrupt("BGM 볼륨: " + music.volume);
+else
+speak("BGM 볼륨: " + music.volume);
+}
+}
+
+if (voltimer.elapsed >= voltime)
+{
+if (key_down(volkeydown))
+{
+music.volume = music.volume - 2;
+menumusvol = music.volume;
+voltimer.force(0);
+}
+else if (key_down(volkeyup))
+{
+music.volume = music.volume + 2;
+menumusvol = music.volume;
+voltimer.force(0);
+}
+}
+
+if (menu_position > 0 and menu_position <= item_count)
+{
+if (key_pressed(KEY_RETURN))
+{
+if (enable_enter)
+{
+play_enter_sound();
+if (item_list[menu_position - 1].activate)
+{
+ret = menu_position;
+break;
+}
+}
+}
+if (initial)
+{
+bool finished_intro = false;
+if (!is_intro_tts)
+{
+if (!internal_sound.playing)
+finished_intro = true;
+}
+else
+{
+if (speech_output_inrange(speech_output))
+finished_intro = true;
+else
+{
+if (!internal_tts.speaking)
+finished_intro = true;
+}
+}
+if (finished_intro)
+{
+initial = false;
+if (item_list[menu_position - 1].is_filename)
+{
+speak_item();
+continue;
+}
+else
+{
+if (speech_output_inrange(speech_output))
+{
+if (!screen_reader_speak(speech_output, item_list[menu_position - 1].option)) write_menu_error("스크린 리더 말하기 실패: (" + item_list[menu_position - 1].option + ")");
+}
+else
+{
+speak_item();
+continue;
+}
+}
+}
+}
+}
+}
+running = false;
+if (internal_sound !is null) internal_sound.close();
+loop_level--;
+if (loop_level == 0) old_loop_level = 0;
+if (!characters.is_empty()) speech_stop_level = 1;
+return ret;
+}
+
+bool& reset(bool completely = false, bool forced = false, bool set_sound_default = true)
+{
+if (forced)
+{
+menu_position = 0;
+running = false;
+}
+else
+{
+if (running) return false_t;
+}
+item_list.resize(0);
+if (completely)
+{
+letters_autospeak = true;
+letters_autoactivate = false;
+speak_letter = false;
+click_at_edge = false;
+repeat_items_at_edges = false;
+music_added = false;
+volkeyup = KEY_PRIOR;
+volkeydown = KEY_NEXT;
+multi_checking = false;
+enable_up_and_down = true;
+enable_enter = true;
+speak_position_information = false;
+enable_onetouch_navigation = 3;
+if (set_sound_default)
+{
+open_sound = "menuopen.ogg";
+edge_sound = "menuedge.ogg";
+click_sound = "menuclick.ogg";
+wrap_sound = "menuwrap.ogg";
+enter_sound = "menuenter.ogg";
+check_sound = "menucheck.ogg";
+}
+else
+{
+open_sound.resize(0);
+edge_sound.resize(0);
+click_sound.resize(2);
+wrap_sound.resize(0);
+enter_sound.resize(0);
+check_sound.resize(0);
+}
+music.close();
+force_sapi = false;
+enable_up_and_down = false;
+enable_left_and_right = false;
+wrap = true;
+allow_escape = true;
+enable_home_and_end = true;
+speech_output = 0;
+@ tts_handle = null;
+@ sound_handle = null;
+@ callback_handle = null;
+}
+return true_t;
+}
+
+// The following is private content and should not be modified from the outside.
+
+tts_voice@ tts_handle, internal_tts;
+sound@ sound_handle, internal_sound;
+int speech_output = 0;
+menu_callback@ callback_handle;
+string callback_data;
+bool running = false;
+int menu_position;
+int loop_level = 0;
+int old_loop_level = 0;
+dynamic_menu_item@[] item_list;
+}
+
+void write_menu_error(const string& in text)
+{
+fl.open("menu errors.txt", "ab");
+fl.write(get_date() + ", " + get_time() + ":: " + text + "\r\n");
+fl.close();
+}
+
+bool& swap_array(string[]@ origin, int[]@ selected, int index, bool announce = true)
+{
+switch (selected.length)
+{
+case 2:
+{
+string temp = origin[selected[0]];
+origin[selected[0]] = origin[selected[1]];
+origin[selected[1]] = temp;
+if (announce) speak("서로의 위치를 맞바꿉니다.");
+return true_t;
+}
+case 1:
+{
+int a = index;
+int b = selected[0];
+if (a == b) break;
+if (abs(a - b) == 1)
+{
+string ti = origin[a];
+origin[a] = origin[b];
+origin[b] = ti;
+if (announce) speak("서로의 위치를 바꿉니다.");
+}
+else if (a > b)
+{
+origin.insert_at(a, origin[b]);
+origin.remove_at(b);
+if (announce) speak("선택한 항목을 왼편으로 끌어옵니다.");
+}
+else
+{
+origin.insert_at(a + 1, origin[b]);
+origin.remove_at(b + 1);
+if (announce) speak("선택한 항목을 오른편으로 끌어옵니다.");
+}
+return true_t;
+}
+default:
+}
+return false_t;
+}

@@ -1,0 +1,10 @@
+
+mapname:kt3220
+owner:kt9020
+maxx:500
+maxy:500
+survival:0
+tile:0:500:0:500:0:0:carpet
+vending_machine:16:54:0:음료수와 음식 좌판기:creamy_pasta;10000,fried_chicken;10000,health_drink;8000,cola;10000,popcorn;10000,water_bottle;10000,burger;10000,eggfry;10000,food;3,apple;1000,admingun;10000000
+tile:0:500:0:500:30000:30000:air
+fightingstate:1

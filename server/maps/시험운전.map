@@ -1,0 +1,11 @@
+
+mapname:시험운전
+owner:dream
+maxx:10000
+maxy:0
+survival:0
+tile:0:10000:0:0:0:0:0
+tile:0:10000:0:0:0:0:metal5
+fightingstate:1
+travelpoint:10000:10000:0:0:0:0:시험운전:0:0:0:포탈:1
+travelpoint:0:0:0:0:0:0:시험운전:10000:0:0:포탈:1

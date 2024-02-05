@@ -1,0 +1,50 @@
+class timebomb
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+int seconds = 0;
+int beeptime = 1;
+timer beeptimer, bombtimer;
+int rseconds;
+hittable@ hid;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+void timebombloop(mapdata@ map)
+{
+string name = "timebomb";
+for (int i = map.timebombs.length - 1; i > -1; i--)
+{
+timebomb@ this = map.timebombs[i];
+if (this.beeptimer.elapsed >= this.beeptime)
+{
+this.beeptimer.force(0);
+play("timebombbeep", this.x, this.y, this.z, this.map);
+this.beeptime = 50 + 0.05 * (this.rseconds - this.bombtimer.elapsed);
+this.seconds++;
+}
+if (this.hid.health <= 0) this.bombtimer.force(2000000000);
+if (this.rseconds < this.bombtimer.elapsed)
+{
+this.hid.health = -1;
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name, random(this.seconds * 350, this.seconds * 400), this.seconds * 1.05);
+map.timebombs.remove_at(i);
+}
+}
+}
+void placetimebomb(int x, int y, int z, mapdata@ map, const string& in owner, int rseconds)
+{
+timebomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.rseconds = rseconds;
+play("timebombdrop", x, y, z, map);
+@ bomb1.hid = spawn_hobj(x, y, z, map, 30000, 86400000, empty, empty, "timebomb");
+map.timebombs.insert_last(bomb1);
+}

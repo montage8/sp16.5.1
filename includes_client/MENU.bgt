@@ -1,0 +1,1409 @@
+dynamic_menu_pro m;
+void mainmenu()
+{
+setupmenu(true,true);
+m.add_item_tts("현재 설정된 계정으로 로그인", "login", "l");
+m.add_item_tts("다른 계정으로 로그인", "setup", "s");
+m.add_item_tts("계정 생성", "create", "c");
+m.add_item_tts("비밀번호 재설정", "resetpass", "r");
+
+m.add_item_tts("게임 설정", "optionsmenu", "o");
+m.add_item_tts("스피커 테스트", "testspeaks", "t");
+m.add_item_tts("끝내기", "exit", "e");
+int mres = m.run("메인 메뉴", true);
+switch (string_to_hash(m.get_item_name(mres)))
+{
+case menu_testspeaks:
+{
+m.fade_music(2);
+speak("윗쪽 및 아랫쪽 방향키를 이용하여 커서를 움직여보세요. Alt키와 함께 누르면 10칸, Shift키와 함께 누르면 50칸씩 이동하며, Home키를 누르면 가장 왼쪽, End키를 누르면 가장 오른쪽으로 이동합니다. 닫으려면 ESC키 또는 Enter키를 누르세요. 현재 위치는 정중앙입니다.");
+double cursor = 0;
+sound_pool temp;
+for (; ; )
+{
+wait(1);
+if (key_pressed(KEY_DOWN))
+{
+double power = 0.5;
+if (key_down(KEY_LMENU) or key_down(KEY_RMENU)) power *= 10;
+else if (key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT)) power *= 50;
+cursor -= power;
+if (cursor < -100)
+{
+cursor = -100;
+temp.play_stationary("menuedge.ogg", false, false, 0, cursor);
+}
+else temp.play_stationary("menuclick2.ogg", false, false, 0, cursor);
+speak(cursor);
+}
+else if (key_pressed(KEY_UP))
+{
+double power = 0.5;
+if (key_down(KEY_LMENU) or key_down(KEY_RMENU)) power *= 10;
+else if (key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT)) power *= 50;
+cursor += power;
+if (cursor > 100)
+{
+cursor = 100;
+temp.play_stationary("menuedge.ogg", false, false, 0, cursor);
+}
+else temp.play_stationary("menuclick1.ogg", false, false, 0, cursor);
+speak(cursor);
+}
+else if (key_pressed(KEY_HOME))
+{
+cursor = -100;
+temp.play_stationary("menuclick.ogg", false, false, 0, cursor);
+speak(cursor);
+}
+else if (key_pressed(KEY_END))
+{
+cursor = 100;
+temp.play_stationary("menuclick.ogg", false, false, 0, cursor);
+speak(cursor);
+}
+if (key_pressed(KEY_RETURN) or key_pressed(KEY_ESCAPE)) break;
+}
+mainmenu();
+}
+break; case menu_login:
+{
+playmusic=0;
+if(macOS == 1) macOS=2;
+if(macOS == 0) macOS=3;
+m.fade_music(2);
+login();
+}
+break; case menu_create:
+{
+m.fade_music(2);
+creating = true;
+create();
+}
+break; case menu_setup:
+{
+string user = input_box_pro("계정 이름을 입력하세요.");
+if (user.is_empty()) mainmenu();
+string pass = input_box_pro("암호를 입력하세요.", empty, true);
+if (pass.is_empty()) mainmenu();
+name = string_to_lower_case(user);
+password = pass;
+writeprefs();
+dlg("재설정했습니다.");
+m.fade_music(4);
+playmusic=0;
+login();
+}
+break; case menu_resetpass:
+{
+resetpass();
+}
+break; case menu_optionsmenu:
+{
+playmusic=0;
+optionsmenu(false);
+writeprefs();
+}
+break; default:
+{
+m.fade_music(2);
+if(sp == 1) sp=0;
+writeprefs();
+
+exit();
+}
+}
+}
+void setupmenu(bool main = false, bool auto_l = false)
+{
+m.reset(true);
+if(playmusic>0)
+{
+if(main)
+{
+m.add_music(menutracks[random(0,menutracks.length-1)]);
+}
+}
+if (auto_l)
+m.letters_autoactivate = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.wrap = false;
+m.enable_home_and_end = true;
+}
+void optionsmenu(bool online, int mres = 0)
+{
+m.fade_music(2);
+setupmenu(true);
+m.speak_letter = false;
+m.set_callback(null, empty);
+m.fade_music(2);
+m.add_item_tts("서버 주소 관리","admin1","a");
+m.add_item_tts("오른쪽 컨트롤 키 사용, " + (rcontrol == 0 ? "끔" : "켬"), "rctrl", "d");
+m.add_item_tts("좌우 키보드 회전 속도, " + turnspeed, "turnspeed", "w");
+m.add_item_tts("상하 키보드 회전 속도, " + zturnspeed, "zturnspeed", "h");
+m.add_item_tts("좌우 마우스 회전 속도, " + mouse, "mouse", "m");
+m.add_item_tts("마우스 테스트", "mousetest", "u");
+m.add_item_tts("좌우 회전 업데이트 주기, " + turntime + "밀리초", "turntime", "x");
+m.add_item_tts("상하 회전 업데이트 주기, " + zturntime + "밀리초", "zturntime", "y");
+m.add_item_tts("회전 방법, " + (turnmode == 1 ? "왼손으로 회전, 오른손으로 이동" : "왼손으로 이동, 오른손으로 회전"), "turnmode", "x");
+m.add_item_tts("추적 정보를 절대 각도로 출력, " + (trackprecise == 0 ? "끔" : "켬"), "track", "k");
+m.add_item_tts("클라이언트 월드 업데이트 속도, " + maintime, "maintime", "g");
+m.add_item_tts("메뉴 항목 첫 글자 언더바 자동 제거, " + (find_under_bar_auto == 0 ? "끔" : "켬"), "fud", "f");
+m.add_item_tts("메뉴 횡스크롤, " + (sidescrolling == 0 ? "끔" : "켬"), "ss", "s");
+m.add_item_tts("알트 키 또는 시프트 키로 말하기 끊기, " + (readerinterrupt == 0 ? "끔" : "켬"), "readerinterrupt", "i");
+m.add_item_tts("전각 문자 키보드 허용, " + (use_small_letters_only == 0 ? "켬" : "끔"), "small_letters", "c");
+m.add_item_tts("접속 관련 메시지 듣기, " + (speakonlinemsgs == 0 ? "끔" : "켬"), "onoffmess", "n");
+m.add_item_tts("시스템 메시지 듣기, " + (readmessages == 0 ? "끔" : "켬"), "sysmess", "j");
+m.add_item_tts("실행시 등록된 서버로 자동접속, "+ (autoconnect==0 ?"끔": "켬"), "autoconnect", "a");
+m.add_item_tts("메인메뉴에서 배경음악 듣기, " + (macOS == 0 ? "끔" : "켬"), "macOS", "m");
+
+m.add_item_tts("버퍼 기록, " + (importbufferlogs == 0 ? "끔" : "켬"), "bflogs", "b");
+/* 
+if (!translator) m.add_item_tts("번역기, 끔", "tr");
+else
+{
+m.add_item_tts("번역기, 켬", "tr");
+m.add_item_tts("번역 언어 선택", "trfiles");
+}
+*/ 
+m.add_item_tts("사운드 출력 장치 변경", "output", "o");
+m.add_item_tts((preload_mode == 2 ? "사운드 사전 사용, 맵 입장 시 사용" : preload_mode == 1 ? "사운드 사전 사용, 중요 파일만 사용" : "사운드 사전 사용, 끔"), "preload", "p");
+m.add_item_tts("출력 메시지를 제목 표시줄에서 보기, " + (visualmode == 0 ? "끔" : "켬"), "visual", "v");
+if (visualmode == 0)
+{
+m.add_item_tts((df_s.mode == 1 ? "SAPI 사용, 켬" : "SAPI 사용, 끔"), "speechmode", "e");
+if (df_s.mode == 0 and df_s.check_available_outputs() > 0)
+{
+m.add_item_tts("점자 출력, " + (play_braille ? "켬" : "끔"), "l");
+}
+else
+{
+m.add_item_tts("SAPI 설정", "sapivoice", "t");
+}
+}
+m.add_item_tts("기본값으로 재설정", "reset", "q");
+
+m.add_item_tts("뒤로", "back", "z");
+mres=m.run("환경설정",true,mres);
+if(mres<0)
+{
+if (!online) mainmenu();
+return;
+}
+switch (string_to_hash(m.get_item_name(mres)))
+{
+case menu_preload:
+{
+if (preload_mode == 2)
+{
+preload_mode = 0;
+speak("끔");
+}
+else if (preload_mode == 1)
+{
+preload_mode = 2;
+speak("맵 입장 시 사용");
+}
+else
+{
+preload_mode = 1;
+speak("중요 파일만 사용");
+}
+writeprefs();
+optionsmenu(online, mres);
+}
+break;
+case menu_reset:
+{
+int init = yesno("정말로 설정을 초기화할까요?");
+if (init != 1)
+{
+optionsmenu(online, mres);
+return;
+}
+m.fade_music(2);
+file_delete(DIRECTORY_APPDATA + "/sp/" + (beta_server ? "beta_config" : "config") + ".dat");
+file_delete(df_s.filename);
+if (!SCRIPT_COMPILED) run("c:\\windows\\explorer.exe", "\"" + get_script_path() + "\"", false, false);
+else run(get_script_path(), crc32("restore"), false, false);
+exit();
+}
+break; case menu_sysmess:
+{
+readmessages ^= 1;
+speak((readmessages == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_track:
+{
+trackprecise ^= 1;
+speak((trackprecise == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_onoffmess:
+{
+speakonlinemsgs ^= 1;
+speak((speakonlinemsgs == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_readerinterrupt:
+{
+readerinterrupt ^= 1;
+speak((readerinterrupt == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_small_letters:
+{
+use_small_letters_only ^= 1;
+speak((use_small_letters_only == 0 ? "켬" : "끔"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_rctrl:
+{
+rcontrol ^= 1;
+speak((rcontrol == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_fud:
+{
+find_under_bar_auto ^= 1;
+speak((find_under_bar_auto == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_tr:
+{
+translator ? translator = false : translator = true;
+speak((translator ? "켬" : "끔"));
+if (!currentlangfile.is_empty()) load_lang_data();
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_trfiles:
+{
+string temp = langmenu();
+if (temp.is_empty())
+{
+speak("취소되었습니다.");
+optionsmenu(online, mres);
+}
+else
+{
+currentlangfile = temp;
+load_lang_data();
+writeprefs();
+optionsmenu(online, mres);
+}
+}
+break; case menu_braille:
+{
+play_braille ? play_braille = false : play_braille = true;
+speak((play_braille ? "켬" : "끔"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_admin2:
+{
+sp ^= 1;
+speak((sp == 1));
+
+mainmenu();
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_admin1:
+{
+listservers();
+optionsmenu(online, mres);
+}
+break; case menu_changeserver:
+{
+}
+break; case menu_maintime:
+{
+int maintemp = string_to_number(input_box_pro("클라이언트 월드 업데이트 속도를 1에서 16 밀리초 사이의 숫자로 입력하세요.", maintime));
+if (maintemp < 1 or maintemp > 16)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+maintime = maintemp;
+speak("완료.");
+writeprefs();
+}
+optionsmenu(online, mres);
+}
+break; case menu_turnspeed:
+{
+double maintemp = string_to_number(input_box_pro("좌우 회전 속도를 0보다 큰 수로 입력하세요.", turnspeed));
+if (maintemp <= 0.0)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+turnspeed = maintemp;
+speak("완료.");
+writeprefs();
+}
+optionsmenu(online, mres);
+}
+break; case menu_zturnspeed:
+{
+double maintemp = string_to_number(input_box_pro("상하 회전 속도를 0보다 큰 수로 입력하세요.", zturnspeed));
+if (maintemp <= 0.0)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+zturnspeed = maintemp;
+speak("완료.");
+writeprefs();
+}
+optionsmenu(online, mres);
+}
+break; case menu_turntime:
+{
+double maintemp = string_to_number(input_box_pro("좌우 회전 업데이트 주기를 밀리초 단위로 입력하세요. 최소 1밀리초입니다.", turntime));
+if (maintemp <= 0.0)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+turntime = maintemp;
+speak("완료.");
+writeprefs();
+}
+optionsmenu(online, mres);
+}
+break; case menu_zturntime:
+{
+double maintemp = string_to_number(input_box_pro("상하 회전 업데이트 주기를 밀리초 단위로 입력하세요. 최소 1밀리초입니다.", zturntime));
+if (maintemp <= 0.0)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+zturntime = maintemp;
+speak("완료.");
+writeprefs();
+}
+optionsmenu(online, mres);
+}
+break; case menu_mouse:
+{
+string maintemp = input_box_pro("좌우 회전 속도를 0보다 큰 수로 입력하세요. 0을 입력하면 마우스를 비활성화합니다.", mouse);
+if (maintemp.is_empty())
+{
+
+speak("취소되었습니다.");
+}
+else
+{
+double new = string_to_number(maintemp);
+if (new < 0.0)
+{
+speak("입력이 바르지 않습니다.");
+}
+else
+{
+mouse = new;
+speak("완료.");
+writeprefs();
+}
+}
+optionsmenu(online, mres);
+}
+break; case menu_mousetest:
+{
+speak("마우스 테스트. 닫으려면 ESCAPE키를 누르세요. 시작하려면 엔터 키를 누르세요. 시작 후 1초간 자유롭게 마우스를 움직여보세요. 1초 후 좌우 마우스 회전 속도에 비례하여 움직인 픽셀 수를 알려줍니다.");
+timer mtimer;
+bool moving = false;
+for (; ; )
+{
+wait(connected ? maintime : 5);
+if (connected) sr_loop();
+if (key_pressed(KEY_ESCAPE))
+{
+speak("창을 닫습니다.");
+break;
+}
+if (moving)
+{
+if (mtimer.elapsed >= 1000)
+{
+mouse_update();
+moving = false;
+speak((MOUSE_X * mouse) + ". 다시 시작하려면 엔터 키를 누르세요.");
+}
+continue;
+} 
+if (key_pressed(KEY_RETURN))
+{
+moving = true;
+mtimer.force(0);
+mouse_update();
+speak("시작");
+}
+}
+optionsmenu(online, mres);
+}
+break; case menu_upsound:
+{
+uploadedsounds ^= 1;
+speak((uploadedsounds == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_logo:
+{
+logo ^= 1;
+speak((logo == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_logo2:
+{
+mojave ^= 1;
+speak((mojave == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_macOS:
+{
+macOS ^= 1;
+speak((macOS == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_autoconnect:
+
+{
+autoconnect ^= 1;
+speak((autoconnect == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_bflogs:
+{
+importbufferlogs ^= 1;
+speak((importbufferlogs == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_ss:
+{
+sidescrolling ^= 1;
+speak((sidescrolling == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_visual:
+{
+visualmode ^= 1;
+speak((visualmode == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_output:
+{
+soundcardmenu();
+optionsmenu(online, mres);
+}
+break; case menu_speechmode:
+{
+df_s.mode ^= 1;
+speak((df_s.mode == 0 ? "끔" : "켬"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_turnmode:
+{
+turnmode ^= 1;
+speak((turnmode == 0 ? "왼손으로 이동, 오른손으로 회전" : "왼손으로 회전, 오른손으로 이동"));
+writeprefs();
+optionsmenu(online, mres);
+}
+break; case menu_sapivoice:
+{
+speak("방향키를 눌러 원하는 음성 엔진을 선택한 후 엔터를 누르세요.");
+df_s.set_voice(df_s.select_voice());
+df_s.save();
+speechvolumemenu();
+optionsmenu(online, mres);
+}
+break; default:
+{
+if(macOS == 1) playmusic=1;
+}
+if (!online) mainmenu();
+}
+
+}
+void speechvolumemenu()
+{
+setupmenu(false);
+for (int i = 0; i <= 100; i++)
+{
+m.add_item_tts(empty + i);
+}
+m.add_item_tts("취소");
+int mres = m.run("SAPI 볼륨 선택", true);
+if (mres <= 0)
+{
+return;
+}
+string result = m.get_item_name(mres);
+if (result == "취소") return;
+int nv = string_to_number(result) - 100;
+df_s.set_speech_params(df_s.rate, df_s.pitch, nv);
+df_s.save();
+speak("완료.");
+speechratemenu();
+}
+void speechratemenu()
+{
+setupmenu(false);
+for (int i = -10; i <= 10; i++)
+{
+m.add_item_tts(empty + i);
+}
+m.add_item_tts("취소");
+int mres = m.run("SAPI 속도 선택", true);
+if (mres <= 0)
+{
+return;
+}
+string result = m.get_item_name(mres);
+if (result == "취소") return;
+int nr = string_to_number(result);
+df_s.set_speech_params(nr, df_s.pitch, df_s.volume);
+df_s.save();
+speak("완료.");
+speechpitchmenu();
+}
+void speechpitchmenu()
+{
+setupmenu();
+for (int i = -10; i <= 10; i++)
+{
+m.add_item_tts(empty + i);
+}
+m.add_item_tts("취소");
+int mres = m.run("SAPI 음높이 선택", true);
+if (mres <= 0)
+{
+return;
+}
+string result = m.get_item_name(mres);
+if (result == "취소") return;
+int np = string_to_number(result);
+df_s.set_speech_params(df_s.rate, np, df_s.volume);
+df_s.save();
+speak("완료.");
+}
+int yesno(string question, int def = 0)
+{
+setupmenu(true);
+m.add_item_tts("예", "yes", "y");
+m.add_item_tts("아니요", "no", "n");
+int mres = m.run(question, true, def);
+return mres;
+}
+
+void listservers()
+{
+setupmenu();
+if (!serverlist.is_empty())
+{
+string[]@ c = string_split(serverlist, "\r\n", true);
+int clength = c.length;
+for (uint j = 0; j < clength; j++)
+{
+if (c[j] == netaddress) m.add_item_tts("선택됨, " + c[j], c[j]);
+else m.add_item_tts(c[j]);
+}
+if (serverlist != "localhost") m.add_item_tts("목록 초기화", "clear");
+}
+m.add_item_tts("새로 만들기", "new");
+m.add_item_tts("뒤로", "back");
+int mserver = m.run("서버를 선택하세요.", true);
+if (mserver <= 0) return;
+string result = m.get_item_name(mserver);
+if (result.is_empty() or result == "back") return;
+if (result == "new")
+{
+string newaddress = input_box_pro("새 서버 주소를 입력하세요.");
+if (newaddress.is_empty())
+{
+
+speak("취소되었습니다.");
+listservers();
+return;
+}
+netaddress = newaddress;
+serverlist += "\r\n" + newaddress;
+writeprefs();
+speak("완료.");
+listservers();
+return;
+}
+if (result == "clear")
+{
+int init = yesno("정말로 초기화할까요?");
+if (init == 1)
+{
+serverlist = "localhost";
+serverlist = "kt9020.org";
+writeprefs();
+}
+listservers();
+return;
+}
+netaddress = result;
+speak(netaddress + " 서버로 변경합니다.");
+writeprefs();
+}
+void soundcardmenu()
+{
+setupmenu();
+string[]@ d = list_sound_devices();
+m.add_item_tts((soundcard == -1 ? "선택됨, " : empty) + "native", "-1");
+string curr;
+int dl = d.length;
+for (uint i = 0; i < dl; i++)
+{
+curr = d[i];
+if (soundcardname == curr) m.add_item_tts("선택됨, " + curr, curr);
+else m.add_item_tts(curr, curr);
+}
+m.add_item_tts("뒤로", "back");
+int mres = m.run("사운드 출력 장치 선택.", true);
+if (mres <= 0) return;
+string result = m.get_item_name(mres);
+if (result == "back") return;
+if (result == soundcardname)
+{
+speak(d[soundcard] + " 장치를 계속 사용합니다.");
+return;
+}
+if (mres == 1)
+{
+soundcard = -1;
+soundcardname.resize(0);
+}
+else
+{
+soundcard = mres - 2;
+soundcardname = result;
+}
+writeprefs();
+wait(1);
+if (!SCRIPT_COMPILED) run("c:\\windows\\explorer.exe", "\"" + get_script_path() + "\"", false, false);
+else run(get_script_path(), crc32("soundrestart"), false, false);
+exit();
+}
+string soundsmenu()
+{
+if (!directory_exists("upsounds"))
+{
+directory_create("upsounds");
+speak("폴더가 없어 새로 만듭니다.");
+return empty;
+}
+string[]@ soundfiles = find_files("upsounds/*.ogg");
+if (soundfiles.is_empty())
+{
+speak("업로드할 사운드가 없습니다.");
+return empty;
+}
+setupmenu();
+int soundlen = soundfiles.length;
+for (uint i = 0; i < soundlen; i++)
+{
+m.add_item_tts(string_replace(soundfiles[i], ".ogg", empty, true), soundfiles[i]);
+}
+int mres = m.run(soundfiles.length + "개의 파일을 찾았습니다. 보낼 파일을 선택하세요.", true);
+if (mres <= 0)
+{
+return empty;
+}
+ref_string = m.get_item_name(mres);
+return ref_string;
+}
+
+void checkarroundmenu()
+{
+int init = 2;
+if (invehicle) init = yesno("차량 밖을 볼까요?");
+if (init == 0) return;
+setupmenu();
+m.add_item_tts("추적 중단", "stoptrack");
+if (init == 2)
+{
+int mapzonelength = mapzones.length;
+for (uint i = 0; i < mapzonelength; i++)
+{
+if (!mapzones[i].trackable) continue;
+mapzone@ temp = mapzones[i];
+m.add_item_tts(temp.text + (no_coord ? empty : ", 좌표 " + temp.center_x + ", " + temp.center_y + ", " + temp.center_z), temp.id);
+}
+}
+else
+{
+int vmapzonelength = vmapzones.length;
+for (uint i = 0; i < vmapzonelength; i++)
+{
+if (!vmapzones[i].trackable) continue;
+mapzone@ temp = vmapzones[i];
+m.add_item_tts(temp.text + (v_no_coord ? empty : ", 좌표 " + temp.center_x + ", " + temp.center_y + ", " + temp.center_z), temp.id);
+}
+}
+int mres = m.run("지역을 선택하세요.", true);
+if (mres <= 0)
+{
+stop_tracking();
+return;
+}
+string result = m.get_item_name(mres);
+if (result.is_empty() or result == "stoptrack")
+{
+stop_tracking();
+return;
+}
+if (init == 2) @ tracking = get_zone_handle(result);
+else @ tracking = get_vzone_handle(result);
+if (tracking is null)
+{
+speak("추적을 중단합니다.");
+return;
+}
+if (init == 2) tracking.tell_where(mr.x, mr.y, me.z, facing);
+else tracking.tell_where(vr.x, vr.y, vr.z, vefacing);
+}
+string langmenu()
+{
+if (!directory_exists("lang"))
+{
+directory_create("lang");
+}
+string[]@ lngfiles = find_files("lang/*.lng");
+if (lngfiles.is_empty())
+{
+dlg("언어 파일이 없습니다.");
+return empty;
+}
+setupmenu();
+int lang = lngfiles.length;
+for (uint i = 0; i < lang; i++)
+{
+m.add_item_tts(string_replace(lngfiles[i], ".lng", empty, true), lngfiles[i]);
+}
+int mres = m.run("언어를 선택하세요.", true);
+if (mres <= 0) return empty;
+return string_trim_right(m.get_item_name(mres), 4);
+}
+void inventorymenu(dictionary@ items)
+{
+string[]@ item_array = items.keys;
+m.reset(true);
+m.open_sound = "invopen.ogg";
+m.click_sound = "invmove.ogg";
+m.enter_sound.resize(0);
+m.enable_onetouch_navigation = (invmode == 0 ? 1 : 3);
+m.wrap_sound.resize(0);
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.enable_home_and_end = true;
+m.set_callback(invclb, empty);
+string itemname;
+int invlength = item_array.length;
+for (uint i = 0; i < invlength; i++)
+{
+int itemcount = 0;
+itemname = item_array[i];
+items.get(itemname, itemcount);
+m.add_item_tts(itemname + " " + itemcount + "개", itemname);
+}
+int index = 0;
+if (!focuseditem.is_empty()) index = (item_array.find(focuseditem) + 1);
+send_reliable("invopen", 2);
+int r = m.run(items.size + "종의 아이템을 가지고 있습니다.", true, index);
+send_reliable("invclose", 2);
+if (r <= 0) return;
+string ret = m.get_item_name(r);
+if (ret.is_empty()) return;
+focuseditem = ret;
+}
+void ext_fi_menu(int last_cursor = 0)
+{
+m.reset(true);
+m.open_sound = "invopen.ogg";
+m.click_sound = "invmove.ogg";
+m.enter_sound.resize(0);
+m.enable_onetouch_navigation = (invmode == 0 ? 1 : 3);
+m.wrap_sound.resize(0);
+m.multi_checking = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.enable_home_and_end = true;
+m.set_callback(invclb, empty);
+int invlength = ext_fi.length;
+for (uint i = 0; i < invlength; i++)
+{
+m.add_item_tts(ext_fi[i]);
+}
+if (last_cursor == 0)
+{
+if (!focuseditem.is_empty()) last_cursor = (ext_fi.find(focuseditem) + 1);
+if (last_cursor < 0) last_cursor = 0;
+}
+int r = m.run("확장 아이템 즐겨찾기", true, last_cursor);
+send_reliable("invclose2", 2);
+if (r <= 0) return;
+string ret = m.get_item_name(r);
+if (ret.is_empty()) return;
+int[]@ selected = m.get_checked_item_index();
+int checknum = selected.length;
+if (checknum == invlength)
+{
+ext_fi.resize(0);
+speak("모든 확장 즐겨찾기 아이템을 삭제했습니다.");
+writeprefs();
+return;
+}
+bool success = swap_array(ext_fi, selected, r - 1);
+if (success) ext_fi_menu(r);
+else focuseditem = ret;
+}
+int storeclb(dynamic_menu_pro@ im, string data)
+{
+int position = im.get_position();
+if (position < 1) return 0;
+data = im.get_item_name(position);
+if (key_pressed(KEY_SPACE))
+{
+send_reliable("describe " + data, 4);
+}
+return 0;
+}
+int invclb(dynamic_menu_pro@ im, string data)
+{
+if (key_pressed(KEY_F9))
+{
+invmode ^= 1;
+im.enable_onetouch_navigation = (invmode == 0 ? 1 : 3);
+speak((invmode == 0 ? "아이템 즐겨찾기 키 사용 켬" : "아이템 즐겨찾기 키 사용 끔"));
+writeprefs();
+return 0;
+}
+int position = im.get_position();
+if (position > 0) data = im.get_item_name(position);
+else data.resize(0);
+if (position > 0)
+{
+if (!im.multi_checking)
+{
+if (key_pressed(KEY_SPACE))
+{
+if (item_descriptions.exists(data))
+{
+string text;
+item_descriptions.get(data, text);
+speak(text);
+}
+else send_reliable("describe " + data, 4);
+}
+}
+if (key_pressed(KEY_F1)) speak(data);
+if (key_pressed(KEY_F2)) send_reliable("getamount " + data, 5);
+if (key_pressed(KEY_F5))
+{
+string amount = input_box_pro("몇 개를 줄까요?", empty, false, 0, 0, 2);
+if (amount.is_empty()) return 0;
+send_reliable("giveitem " + data + " " + amount, 4);
+return im.get_position();
+}
+if (key_pressed(KEY_F6))
+{
+string amount = input_box_pro("몇 개를 경매에 넘길까요?", empty, false, 0, 0, 2);
+if (amount.is_empty()) return 0;
+string minbid = input_box_pro("최소 입찰가는 얼마입니까?", empty, false, 0, 0, 2);
+if (minbid.is_empty()) return 0;
+send_reliable("/경매 " + data + " " + amount + " " + minbid, 1);
+return im.get_position();
+}
+if (key_pressed(KEY_F7))
+{
+string amount = input_box_pro("몇 개를 팔까요?", empty, false, 0, 0, 2);
+if (amount.is_empty()) return 0;
+send_reliable("sellitem " + data + " " + amount, 4);
+return im.get_position();
+}
+if (key_pressed(KEY_F8))
+{
+int index = ext_fi.find(data);
+if (index < 0)
+{
+ext_fi.insert_last(data);
+speak("확장 아이템 즐겨찾기에 등록했습니다.");
+return 0;
+}
+ext_fi.remove_at(index);
+speak("확장 아이템 즐겨찾기에서 제거했습니다.");
+return 0;
+}
+if (shift_is_down)
+{
+if (key_pressed(KEY_RETURN)) send_reliable(data, 6);
+}
+}
+for (uint i = KEY_1; i <= KEY_BACK; i++)
+{
+if (!key_pressed(i)) continue;
+if (alt_is_down)
+{
+if (!shift_is_down)
+{
+if (data.is_empty()) continue;
+string old, old_position;
+bool found = false;
+string[]@ fis = fi.keys;
+int fislength = fis.length;
+for (uint j = 0; j < fislength; j++)
+{
+if (!fi.get(fis[j], old)) continue;
+if (old != data) continue;
+old_position = fis[j];
+fi.delete(fis[j]);
+found = true;
+break;
+}
+string new;
+if (fi.exists(i) and found)
+{
+fi.get(i, new);
+fi.set(old_position, new);
+}
+fi.set(i, data);
+p.play_stationary("favorite_item.ogg", false);
+speak(data + " 아이템을 " + (i - 1) + "번 즐겨찾기에 등록합니다.");
+continue;
+}
+}
+if (alt_is_down) continue;
+if (invmode == 1) continue;
+if (!fi.exists(i))
+{
+speak((i - 1) + "번 즐겨찾기 아이템은 등록되어 있지 않습니다.");
+continue;
+}
+string name;
+if (!fi.get(i, name))
+{
+fi.delete(i);
+continue;
+}
+if (shift_is_down)
+{
+if (can_move) send_reliable(name, 6);
+}
+else speak(name);
+}
+return 0;
+}
+
+bool& doorcheck()
+{
+if (dmoving !is null) return false_t;
+door@[] doorhandles;
+int[] dmovings;
+int doorlength = doors.length;
+dmovings.reserve(doorlength);
+for (uint i = 0; i < doorlength; i++)
+{
+if (!doors[i].distancecheck()) continue;
+doorhandles.insert_last(doors[i]);
+dmovings.insert_last(i);
+}
+if (doorhandles.is_empty()) return false_t;
+if (doorhandles.length == 1)
+{
+@ temp_door = doorhandles[0];
+send_reliable("iamdmoving " + temp_door.limit, 0);
+return true_t;
+}
+setupmenu();
+int doorlen = doorhandles.length;
+for (uint i = 0; i < doorlen; i++)
+{
+m.add_item_tts(doorhandles[i].text, dmovings[i]);
+}
+int mres = m.run("어디로 갈까요?", true);
+if (mres <= 0) return false_t;
+@ temp_door = doorhandles[mres - 1];
+send_reliable("iamdmoving " + temp_door.limit, 0);
+return true_t;
+}
+
+void press_switch(int x, int y, int z)
+{
+mapswitch@[] ts;
+for (int i = mapswitchs.length - 1; i > -1; i--)
+{
+mapswitch@ temp = mapswitchs[i];
+if (temp.presstimer.elapsed < temp.cooldown) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ts.insert_last(temp);
+}
+int tslength = ts.length;
+if (tslength == 0) return;
+if (tslength == 1)
+{
+mapswitch@ temp = ts[0];
+temp.presstimer.force (0);
+sourcepool.play_3d(temp.press + ".ogg", temp.minx, temp.miny, temp.minz, false, false, 0, abs(temp.maxx - temp.minx), 0, abs(temp.maxy - temp.miny), 0, abs(temp.maxz - temp.minz));
+send_reliable("xplay " + temp.press + " " + temp.minx + " " + temp.maxx + " " + temp.miny + " " + temp.maxy + " " + temp.minz + " " + temp.maxz, 2);
+send_reliable("pressswitch " + temp.tminx + " " + temp.tmaxx + " " + temp.tminy + " " + temp.tmaxy + " " + temp.tminz + " " + temp.tmaxz + (temp.limit.is_empty() ? empty : " " + temp.limit), 4);
+return;
+}
+setupmenu();
+for (uint i = 0; i < tslength; i++)
+{
+m.add_item_tts(ts[i].name, i);
+}
+int mres = m.run("어떤 스위치를 누를까요?", true);
+if (mres <= 0) return;
+mapswitch@ temp = ts[mres - 1];
+temp.presstimer.force (0);
+sourcepool.play_3d(temp.press + ".ogg", temp.minx, temp.miny, temp.minz, false, false, 0, abs(temp.maxx - temp.minx), 0, abs(temp.maxy - temp.miny), 0, abs(temp.maxz - temp.minz));
+send_reliable("xplay " + temp.press + " " + temp.minx + " " + temp.maxx + " " + temp.miny + " " + temp.maxy + " " + temp.minz + " " + temp.maxz, 2);
+send_reliable("pressswitch " + temp.tminx + " " + temp.tmaxx + " " + temp.tminy + " " + temp.tmaxy + " " + temp.tminz + " " + temp.tmaxz + (temp.limit.is_empty() ? empty : " " + temp.limit), 4);
+}
+
+maptravel@ select_travel(maptravel@[]@ handles)
+{
+setupmenu();
+int tl = handles.length;
+for (uint i = 0; i < tl; i++)
+{
+m.add_item_tts(handles[i].text, i);
+}
+int mres = m.run("어디로 갈까요?", true);
+if (mres <= 0) return null;
+return handles[mres - 1];
+}
+
+string add_autopilot_char()
+{
+setupmenu();
+m.add_item_tts("가속", "+");
+m.add_item_tts("감속", "-");
+m.add_item_tts("브레이크", "_");
+m.add_item_tts("속도 고정", "=");
+m.add_item_tts("왼쪽 45도 회전", "<");
+m.add_item_tts("오른쪽 45도 회전", ">");
+m.add_item_tts("엔터", "*");
+int mres = m.run("자동 운전 경로에 추가할 명령을 선택하세요.", true);
+if (mres <= 0) return empty;
+return m.get_item_name(mres);
+}
+
+// online menus
+void serverside_menu(string sndtxt, string menu, string menuitems)
+{
+if (menuitems.is_empty()) return;
+if (sndtxt.is_empty()) return;
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+string[]@ items = string_split(menuitems, "[]", false);
+int itemlength = items.length;
+for (uint i = 0; i < itemlength; i++)
+{
+string[]@ parsed = string_split(items[i], ":", false);
+if (parsed.length < 2) continue;
+m.add_item_tts(parsed[0], parsed[1]);
+}
+int mres = m.run(menu, true);
+if (mres < 0) return;
+bool send_1 = sndtxt[0] == "/";
+if (mres == 0)
+{
+if (!send_1) send_reliable(sndtxt + " back", 4);
+return;
+}
+string result = m.get_item_name(mres);
+if (send_1) send_reliable(sndtxt + (result.is_empty() ? empty : " " + result), 1);
+else
+{
+if (result.is_empty()) send_reliable(sndtxt + " back", 4);
+else send_reliable(sndtxt + " " + result, 4);
+}
+}
+void serverside_menu_multi(string sndtxt, string menu, string menuitems)
+{
+if (menuitems.is_empty()) return;
+if (sndtxt.is_empty()) return;
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.multi_checking = true;
+string[]@ items = string_split(menuitems, "[]", false);
+int itemlength = items.length;
+for (uint i = 0; i < itemlength; i++)
+{
+string[]@ parsed = string_split(items[i], "~~", false);
+if (parsed.length < 2) continue;
+m.add_item_tts(parsed[0], parsed[1]);
+}
+int mres = m.run(menu, true);
+if (mres < 0) return;
+bool send_1 = sndtxt[0] == "/";
+if (mres == 0)
+{
+if (!send_1) send_reliable(sndtxt + " back", 4);
+return;
+}
+string result = m.get_item_name(mres);
+if (result.is_empty())
+{
+if (send_1) send_reliable(sndtxt, 1);
+else send_reliable(sndtxt + " back", 4);
+}
+else
+{
+string selected = m.get_checked_item_text("[]");
+if (selected.is_empty())
+{
+if (send_1) send_reliable(sndtxt + " " + result, 1);
+else send_reliable(sndtxt + " " + result, 4);
+return;
+}
+if (send_1) send_reliable(sndtxt + " " + selected, 1);
+else send_reliable(sndtxt + " " + selected, 4);
+}
+}
+void store_menu(string name, string storeitems)
+{
+m.reset(true);
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.wrap = false;
+m.enable_home_and_end = true;
+m.set_callback(storeclb, empty);
+string[]@ items = string_split(storeitems, "[]", true);
+int itemlength = items.length;
+for (uint i = 0; i < itemlength; i++)
+{
+string[]@ item = string_split(items[i], ":", true);
+if (item.length < 2) continue;
+m.add_item_tts(item[0], item[1]);
+}
+int mres = m.run(string_replace(name, "_", " ", true) + ", " + items.length + "종의 제품을 팔고 있습니다.", true);
+if (mres <= 0) return;
+string result = m.get_item_name(mres);
+if (result.is_empty()) return;
+string amount = input_box_pro(result + " 몇 개를 살까요?");
+if (amount.is_empty())
+{
+speak("취소되었습니다.");
+return;
+}
+send_reliable("purchase " + result + " " + amount, 4);
+}
+
+// minigame
+void minigame_side_menu(string sndtxt, string menu, string menuitems, bool direct = false)
+{
+if (menuitems.is_empty()) return;
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+string[]@ items = string_split(menuitems, "[]", false);
+int itemlength = items.length;
+for (uint i = 0; i < itemlength; i++)
+{
+string[]@ parsed = string_split(items[i], ":", false);
+if (parsed.length < 2) continue;
+m.add_item_tts(parsed[0], parsed[1]);
+}
+int mres = m.run(menu, true);
+if (mres < 0) return;
+if (mres == 0)
+{
+send_reliable((direct ? empty : sndtxt + " ") + "back", 11);
+return;
+}
+string result = m.get_item_name(mres);
+if (result.is_empty()) send_reliable((direct ? empty : sndtxt + " ") + "back", 11);
+else
+{
+send_reliable((direct ? empty : sndtxt + " ") + result, 11);
+}
+}
+void pipper_menu(string hand, string message)
+{
+if (hand.is_empty()) return;
+m.reset(true, true);
+m.wrap = true;
+m.enable_left_and_right = true;
+m.enable_onetouch_navigation = 2;
+m.multi_checking = true;
+m.set_callback(pipper_loop, hand);
+string[]@ items = string_split(hand, ",", false);
+int itemlength = items.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (items[i] == "100") m.add_item_tts("X", items[i]);
+else m.add_item_tts(items[i]);
+}
+int mres = m.run(message, true);
+if (mres == 0 or mres <= -2) return;
+if (mres == -1)
+{
+send_reliable("back", 11);
+return;
+}
+string result = m.get_item_name(mres);
+if (result.is_empty()) return;
+string selected = m.get_checked_item_text(",");
+if (selected.is_empty())
+{
+send_reliable("pipper play " + result, 10);
+return;
+}
+send_reliable("pipper play " + selected, 10);
+}
+int pipper_loop(dynamic_menu_pro@ m, string data)
+{
+if (shift_is_down)
+{
+if (key_pressed(KEY_LBRACKET)) firstbuffer();
+else if (key_pressed(KEY_RBRACKET)) lastbuffer();
+else if (key_pressed(KEY_COMMA)) topbufferitem();
+else if (key_pressed(KEY_PERIOD)) bottombufferitem();
+}
+else
+{
+if (key_pressed(KEY_LBRACKET)) bufferleft();
+else if (key_pressed(KEY_RBRACKET)) bufferright();
+else if (key_pressed(KEY_COMMA)) prevbufferitem();
+else if (key_pressed(KEY_PERIOD)) nextbufferitem();
+else if (key_pressed(KEY_SLASH))
+{
+string chat = input_box_pro("게임 방 내에 보낼 메시지를 입력하세요.");
+if (!chat.is_empty()) send_reliable("/게임말 " + chat, 1);
+}
+}
+if (key_pressed(KEY_UP))
+{
+string result;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+result += " " + m.item_list[i].option;
+}
+speak(result);
+}
+else if (key_pressed(KEY_DOWN))
+{
+if (m.menu_position <= 0) return 0;
+speak(m.item_list[m.menu_position - 1].option);
+}
+else if (key_pressed(KEY_Z))
+{
+string result;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (!m.item_list[i].checked) continue;
+result += " " + m.item_list[i].option;
+}
+if (result.is_empty()) speak("선택된 항목 없음");
+speak(result);
+}
+else if (key_pressed(KEY_X))
+{
+send_reliable("pipper view", 10);
+return 0;
+}
+else if (key_pressed(KEY_C))
+{
+send_reliable("pipper check", 10);
+return 0;
+}
+else if (key_pressed(KEY_V))
+{
+send_reliable("pipper turn", 10);
+return 0;
+}
+else if (key_pressed(KEY_P))
+{
+send_reliable("pipper pass", 10);
+return 0;
+}
+else if (key_pressed(KEY_A))
+{
+if (m.menu_position > 0)
+{
+send_reliable("pipper autoplay " + m.item_list[m.menu_position - 1].name, 10);
+force_all_keys_up();
+return -2;
+}
+}
+else if (key_pressed(KEY_M))
+{
+send_reliable("pipper mine", 10);
+force_all_keys_up();
+return -2;
+}
+else if (key_pressed(KEY_F1))
+{
+send_reliable("menu", 11);
+return -2;
+}
+else if (key_pressed(KEY_F2))
+{
+send_reliable("pipper reverse", 10);
+return -2;
+}
+return 0;
+}
+
+string create_menu(string intro, string[]@ names, string[]@ ids = null)
+{
+if (names.is_empty()) return empty;
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+int nameslength = names.length;
+for (uint i = 0; i < nameslength; i++)
+{
+m.add_item_tts(names[i], (ids is null ? names[i] : ids.length == nameslength ? names[i] : ids[i]));
+}
+int mres = m.run(intro, true);
+if (mres <= 0) return empty;
+ref_string = m.get_item_name(mres);
+return ref_string;
+}

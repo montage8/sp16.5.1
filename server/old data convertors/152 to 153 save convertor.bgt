@@ -1,0 +1,75 @@
+void main()
+{
+file fl;
+string[]@ list = find_files("chars/*.usr");
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+if (!fl.open("chars/" + list[i], "rb")) continue;
+dictionary@ data = deserialize(fl.read());
+fl.close();
+int kills = 0;
+if (!data.exists("킬")) continue;
+if (!data.get("킬", kills)) continue;
+string res;
+if (!data.exists("임무")) continue;
+if (!data.get("임무", res)) continue;
+dictionary@ a = deserialize(string_base64_decode(res));
+a.delete("10번째 승리");
+a.delete("20번째 승리");
+a.delete("30번째 승리");
+a.delete("50번째 승리");
+a.delete("70번째 승리");
+a.delete("100번째 승리");
+a.delete("150번째 승리");
+a.delete("250번째 승리");
+a.delete("350번째 승리");
+a.delete("500번째 승리");
+a.delete("700번째 승리");
+res.resize(0);
+if (!data.exists("소유")) continue;
+if (!data.get("소유", res)) continue;
+dictionary@ inv = deserialize(string_base64_decode(res));
+if (kills >= 5) a.set("5번째 승리", 0);
+if (kills >= 10) a.set("10번째 승리", 0);
+if (kills >= 20)
+{
+a.set("20번째 승리", 0);
+inv.set("gauss_gun", 1);
+}
+if (kills >= 30) a.set("30번째 승리", 0);
+if (kills >= 50) a.set("50번째 승리", 0);
+if (kills >= 70) a.set("70번째 승리", 0);
+if (kills >= 90)
+{
+a.set("90번째 승리", 0);
+inv.set("cannon", 1);
+}
+if (kills >= 120)
+{
+a.set("120번째 승리", 0);
+inv.set("street_drug_set", 20);
+}
+if (kills >= 150)
+{
+a.set("150번째 승리", 0);
+inv.set("street_lionhearted_soldier_pack", 1);
+}
+if (kills >= 180)
+{
+a.set("180번째 승리", 0);
+inv.set("m134_minigun", 1);
+}
+if (kills >= 200)
+{
+a.set("동네 총잡이 중독자", 0);
+inv.set("dong_nae_gunner", 1);
+}
+data.set("임무", string_base64_encode(serialize(a)));
+data.set("소유", string_base64_encode(serialize(inv)));
+fl.open("chars/" + list[i], "wb");
+fl.write(serialize(data));
+fl.close();
+}
+alert("성공", "성공했습니다.");
+}

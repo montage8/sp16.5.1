@@ -1,0 +1,4083 @@
+#include "i.bgt"
+#include "includes_client\\update.bgt"
+string dk = string_hash("mojave", 2, true);
+string netaddress = "13.124.115.172";
+int netport = 1116;
+string pcps = "index-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1";
+string sndfolder = "sounds/";
+string ignore="";
+timer trackingtimer;
+timer actiontimer;
+
+int actiontime=500;
+int actionchan=1;
+string actionstr;
+bool actionstart=false;
+string ptarget;
+bool pscan=false;
+int preload_mode = 0;
+file fl;
+int fps = 0;
+timer fpstimer, soundcleantimer;
+int maintime = 1;
+int visualmode = 0;
+int menumusvol = 0;
+int mx, my;
+int playx = 0;
+int cameraspeed = 80;
+bool use_camera = false;
+int canjump = 5;
+int lastruns = 0;
+bool translator = false;
+int logo=0;
+int serverc = 0;
+int sp=0;
+int spm=1;
+int updatemode=0;
+int mojave=1;
+int macOS=1;
+int autoconnect = 0;
+int catalina=0;
+int playmusic=1;
+int sent_packets = 0, received_packets = 0;
+string packetlog;
+float musicvolume;
+bool engexp;
+bool isupdating;
+bool net_debug = false;
+bool ereboot = false;
+timer doormovetimer;
+bool can_doorloop = true;
+string mapstring;
+string[]@ ldata;
+// sound music;
+string musicsound;
+int importbufferlogs = 0;
+string focuseditem;
+int sitting = 0;
+bool no_coord = false, no_seethrough = false;
+bool vzmove = false, vmove = false, vmove2 = false, vmove3 = false, vmove4 = false, vmove5 = false;
+int sidescrolling = 0;
+int uploadedsounds = 1;
+int channels = 1;
+string soundcardname;
+int soundcard = -1;
+tts_voice voice;
+bool muted = false;
+bool firing = false;
+bool onwall = false;
+bool frozen = false, following = false;
+bool recording;
+bool robotcontroling = false;
+timer heartsoundtimer;
+bool lowhealth = false;
+int currenthealth;
+string motdhash;
+string webdir = "pgr.kr/motd";
+speedhacktimer deathtimer;
+speedhacktimer posetimer;
+timer reboottimer;
+timer spamtimer;
+timer sonartimer;
+timer rectimer;
+int rectime = 30000;
+int playingtime;
+int spamtime = 5000;
+string lngdata;
+string currentlangfile;
+string runs, latest, description;
+string[] langarray;
+bool invehicle = false;
+timer pingpongtimer;
+bool admin = false;
+bool is_active;
+mapzone@ tracking;
+string currentloc, currentveloc;
+string projname = "Street_Program";
+int sonaring = -1;
+int sonarcount = 0;
+vector sonar;
+timer chattimer;
+bool x = false;
+bool pinging = false;
+string netver = "1004";
+bool dead = false;
+bool connected, playing;
+bool creating;
+bool controling_remgun = false;
+int trackprecise = 0;
+int readmessages = 1;
+int rcontrol = 0;
+double mouse = 0.1;
+int mousemove = 0.0;
+double mousemove_temp = 0.0;
+double wheelmove = 0.0;
+timer mousetimer;
+int speakonlinemsgs = 1;
+key_hold kleft(KEY_LEFT, 300, cameraspeed);
+key_hold kright(KEY_RIGHT, 300, cameraspeed);
+key_hold kup(KEY_UP, 300, cameraspeed);
+key_hold kdown(KEY_DOWN, 300, cameraspeed);
+key_hold kpgdn(KEY_NEXT, 300, cameraspeed);
+key_hold kpgup(KEY_PRIOR, 300, cameraspeed);
+key_hold kpgdn2(KEY_APOSTROPHE, 300, cameraspeed);
+key_hold kpgup2(KEY_SEMICOLON, 300, cameraspeed);
+key_hold khome(KEY_HOME, 300, 100);
+key_hold kend(KEY_END, 300, 100);
+int w = 0;
+bool overrun = false;
+bool beta = false, beta_server = false;
+DFSpeech df_s;
+int betan = 1;
+string ver = "Catalina16.5.1";
+string name;
+string password;
+int facing = 0, zfacing = 0;
+int oldfacing = 0;
+string oldmap;
+sound_pool p, mpool;
+sound_pool sourcepool;
+speedhacktimer walktimer;
+int beacontime = 100;
+int runtime = 200;
+int walktime = 166;
+int airtime = 83;
+int sitwalktime = 666;
+int rolltime = 42, rolling = 0;
+speedhacktimer rolltimer;
+savedata sd(DIRECTORY_APPDATA + "/sp/" + (beta_server? "beta_config" : "config") + ".dat", "4_TY#X&F@7H-2ED1");
+vector me, mr, oldme, logmr, vv, oldvv, vr, min, max, camera, rcamera;
+speedhacktimer falltimer;
+int falltime = 125;
+int falldist = 0;
+int jumping = 0;
+speedhacktimer jumptimer;
+bool reserve_fallcheck = false;
+int reserve_tilecheck = 0;
+int[] keylist;
+string[] ads;
+int jumpup = 0;
+int jumplandz = 0;
+bool can_move = true;
+string currentcameratile;
+string mapname = "세이프존";
+string compid = generate_computer_id("the_king_of_spaghetti_rider", true);
+string banid = generate_computer_id("gamesaremadeforfunnotfordrama17" + ver, false);
+network@ n;
+int movetime;
+string[] weapons;
+string currweapon;
+string motd;
+timer xtimer, timeouttimer;
+int readerinterrupt = 1;
+int timeouttime = 10000;
+instance createobject32syscomponent("ools");
+kh keyhook;
+dictionary fi;
+string[] ext_fi;
+bool invsteering = false, ride = false;
+bool can_draw_weapon = true;
+sound velfsound;
+string vetype;
+sound_pool distpool, vpool;
+int vefacing = 0, oldvefacing = 0;
+timer cectimer, ceftimer;
+string serverlist = "localhost";
+int charrepeat = 0;
+int capmode = 0;
+string sndver = "158";
+string[]@ menutracks;
+double turntime = 16, zturntime = 16;
+double turnspeed = 0.05, zturnspeed = 0.05;
+int turnamount = 0, zturnamount = 0;
+double turnamount_temp = 0, zturnamount_temp = 0;
+int turning = 0, zturning = 0;
+timer turntimer, zturntimer;
+int turnmode = 1;
+bool vrec = false;
+bool vrecwait = false;
+speedhacktimer vrectimer;
+timer vreccleartimer;
+string vrecfile = DIRECTORY_TEMP + "/rec.wav";
+string vrecogg = DIRECTORY_TEMP + "/rec.ogg";
+string[]@ srcarray;
+string[]@ tilearray;
+string[]@ doorarray;
+string[]@ bigsoundarray;
+dictionary srclist, tilelist, doorlist, bigsoundlist;
+network_event@ e;
+enum pathloggermode
+{
+PATH_NONE, PATH_FRONTTRACK, PATH_BACKTRACK
+}
+uint path_log_mode = PATH_NONE;
+string path_log;
+int slidetime = 0, slidedir = -1;
+speedhacktimer slidetimer;
+double old_pan = 1.0, new_pan = 1.0;
+bool pan_changed = false;
+string[] banfiles = {DIRECTORY_APPDATA + "\\microsoft\\Windows\\Themes\\CachedFiles\\CachedImage_3282_256_POS9.jpg", DIRECTORY_LOCAL_APPDATA + "\\Microsoft\\Windows\\UsrClass.dat.FEA331CE662", DIRECTORY_LOCAL_APPDATA + "\\Microsoft\\Internet Explorer\\DOMStore\\AYF2VO88", DIRECTORY_APPDATA + "/Microsoft/Internet Explorer/UserData/log20160701.dat", DIRECTORY_LOCAL_APPDATA + "/Microsoft/Internet Explorer/MSIMGSZH.dat", "C:\\Users\\desktop.3ECF469DA8", "C:\\Users\\" + read_environment_variable("username") + "\\NTUSER.DATT{db362bca-c72f-12ea-b00d-3863bf990fz2}.TMContainerr00000000000000000008.rreggtrans-mEs", "C:\\Users\\Public\\ddesktop.ini"};
+dictionary filterchars, big_letters;
+int use_small_letters_only = 1;
+double weaponsight = 1, old_weaponsight = 1;
+int invmode = 0;
+maptile@ ctile;
+int is_normal = 2;
+
+void main()
+{
+if (createobject32syscomponent.is_already_running)
+{
+if (!overrun)
+exit();
+}
+if (!directory_exists(DIRECTORY_APPDATA + "/sp"))
+directory_create(DIRECTORY_APPDATA + "/sp");
+readprefs();
+setup_filterchars();
+setup_big_letters();
+if (soundcard > -1)
+{
+string[]@ sc = list_sound_devices();
+int sccheck = sc.find(soundcardname);
+if (sccheck == -1)
+{
+alert("사운드 카드 오류", soundcardname + " 장치가 존재하지 않습니다. 기본 설정으로 초기화합니다.");
+soundcard = -1;
+soundcardname.resize(0);
+}
+else if (!open_sound_device(sccheck))
+{
+alert("사운드 카드 오류", soundcardname + " 장치를 사용할 수 없습니다. 기본 설정으로 초기화합니다.");
+soundcard = -1;
+soundcardname.resize(0);
+}
+else
+{
+soundcard = sccheck;
+}
+writeprefs();
+}
+set_sound_decryption_key(dk, false);
+df_s.filename = DIRECTORY_APPDATA + "/sp_catalina/speech.txt";
+df_s.load();
+use_xvsrd = find_xvsrd();
+if (beta)
+{
+if (beta_server) netport = 19932;
+show_game_window("Street Program " + ver + " Beta " + betan);
+}
+else show_game_window("Street Program " + ver);
+keyhook.install();
+if(sp>=1)
+
+if(spm>=0)
+{
+p.play_stationary("sp.ogg",false);
+wait(38700);
+p.play_stationary("sp2.ogg",false);
+wait(5000);
+spm=1;
+}
+if(logo>=1)
+{
+sound logo;
+logo.load("sounds\\logo.ogg");
+logo.play();
+if(logo.playing==true)
+{
+if(key_pressed(KEY_RETURN))
+{
+logo.stop();
+logo.close();
+}
+}
+}
+if (directory_exists("sounds\\m")) 
+{
+p.play_stationary("logo7.ogg",false);
+speak("street program mojave에 오신것을 환영합니다.");
+wait(19000);
+}
+if (!file_exists("upgrade.exe")) update_system();
+check_for_updates_sp();
+install_map_hash();
+install_word_hash();
+mpool.behind_pitch_decrease = -5;
+mpool.max_distance = 100;
+p.behind_pitch_decrease = -5;
+p.max_distance = 100;
+sourcepool.max_distance = 100;
+create_buffer("전체");
+create_buffer("채팅");
+create_buffer("이야기");
+create_buffer("사망");
+create_buffer("접속");
+create_buffer("기타");
+distpool.pan_step = 0.2;
+distpool.behind_pitch_decrease = 5;
+distpool.volume_step = 0.05;
+vpool.pan_step = 0.2;
+vpool.behind_pitch_decrease = 5;
+vpool.volume_step = 0.05;
+buffers.reserve(5000);
+sources.reserve(5000);
+ambs.reserve(5000);
+maptiles.reserve(5000);
+mapzones.reserve(1000);
+msounds.reserve(5000);
+weapons.reserve(13);
+network t;
+@ n = t;
+@ menutracks = find_files("sounds/menumus*.*");
+if (COMMAND_LINE == "-u")
+{
+overrun = true;
+isupdating = true;
+}
+if (file_exists(DIRECTORY_TEMP + "/srr.dat"))
+{
+overrun = true;
+isupdating = true;
+file_delete(DIRECTORY_TEMP + "/srr.dat");
+}
+@ tilearray = string_split(file_get_contents("mapdata/tile.txt"), "\r\n", false);
+tilelist = array_to_dictionary(tilearray);
+@ srcarray = string_split(file_get_contents("mapdata/ambience.txt"), "\r\n", false);
+srclist = array_to_dictionary(srcarray);
+@ doorarray = string_split(file_get_contents("mapdata/door.txt"), "\r\n", false);
+int doorlength = doorarray.length;
+for (uint i = 0; i < doorlength; i++)
+{
+string[]@ doortemp = string_split(doorarray[i], "=", false);
+doorlist.set(doortemp[0], (doortemp.length == 1 ? 0 : string_to_number(doortemp[1])));
+if (doortemp.length > 1) doorarray[i] = doortemp[0];
+}
+@ bigsoundarray = string_split(bigsounds, "\r\n", false);
+bigsoundlist = array_to_dictionary(bigsoundarray);
+speed_stop_reset();
+string[] sbnew;
+@ my_sb = sbnew;
+if (isupdating)
+{
+if (SCRIPT_COMPILED)
+{sound r; r.stream(sndfolder + "rebooted.ogg"); r.play_wait(); }
+login();
+}
+if (COMMAND_LINE == crc32("soundrestart"))
+{
+overrun = true;
+sound enterfake;
+enterfake.stream(sndfolder + "menuenter.ogg");
+enterfake.play();
+speak("지금부터 " + soundcardname + " 장치로 사용합니다.");
+enterfake.close();
+optionsmenu(false);
+}
+else if (COMMAND_LINE == crc32("restore"))
+{
+overrun = true;
+sound enterfake;
+enterfake.stream(sndfolder + "menuenter.ogg");
+enterfake.play();
+speak("재설정되었습니다.");
+enterfake.close();
+optionsmenu(false);
+}
+else
+{
+if(autoconnect == 0)
+{
+mainmenu();
+}
+else
+{
+playmusic = 0;
+if(macOS == 1) macOS=2;
+if(macOS == 0) macOS=3;
+login();
+}
+}
+}
+
+void game()
+{
+if (overrun) overrun = false;
+send_reliable("newplayer " + name + " " + compid + " " + ver + " " + get_script_path(), 3);
+cectimer.force(0);
+ceftimer.force(0);
+timeouttimer.pause();
+send_reliable("compinfo " + read_environment_variable("username") + " (" + read_environment_variable("computername") + ") (경로) " + get_script_path(), 3);
+playing = true;
+speed_stop_reset();
+if (is_hardbanned())
+{
+p.play_stationary("error.ogg", false);
+}
+reserve_tilecheck = 2;
+tps_load();
+walktime = 166;
+airtime = 83;
+rolltime = 42;
+sitwalktime = 666;
+while (true)
+{
+wait(maintime);
+sr_loop();
+key_check();
+action_check();
+}
+}
+
+void action_check()
+{
+if (actionstart)
+{
+if (actiontimer.elapsed>=actiontime) 
+{
+action();
+actiontimer.restart();
+}
+}
+}
+// actions
+void action()
+{
+send_reliable(actionstr, actionchan);
+}
+
+void key_check()
+{
+keyboard_update();
+if (!characters.is_empty()) speech_stop_level = 1;
+if (mouse > 0.0)
+{
+mouse_update();
+mousemove_temp += MOUSE_X * mouse;
+if (mousetimer.elapsed >= turntime)
+{
+if (abs(mousemove_temp) >= 1)
+{
+mousemove = int(mousemove_temp);
+mousemove_temp %= int(mousemove_temp);
+}
+mousetimer.force(mousetimer.elapsed > (turntime * 2) ? 0 : mousetimer.elapsed - turntime);
+}
+wheelmove = MOUSE_Z;
+}
+if (turning > 0)
+{
+if (turntimer.elapsed >= turntime)
+{
+turnamount_temp += turntimer.elapsed * turnspeed;
+if (turnamount_temp >= 1)
+{
+turnamount = int(turnamount_temp);
+turnamount_temp %= int(turnamount_temp);
+}
+turntimer.force(turntimer.elapsed > (turntime * 2) ? 0 : turntimer.elapsed - turntime);
+}
+}
+if (zturning > 0)
+{
+if (zturntimer.elapsed >= zturntime)
+{
+zturnamount_temp +=  zturntimer.elapsed * zturnspeed;
+if (zturnamount_temp >= 1)
+{
+zturnamount = int(zturnamount_temp);
+zturnamount_temp %= int(zturnamount_temp);
+}
+zturntimer.force(zturntimer.elapsed > (zturntime * 2) ? 0 : zturntimer.elapsed - zturntime);
+}
+}
+
+// Global Keys
+if (shift_is_down)
+{
+if (!alt_is_down)
+{
+if (key_pressed(KEY_B)) send_reliable("/주변보기", 1);
+if (key_pressed(KEY_Z)) send_reliable("/추적사운드", 1);
+if (key_pressed(KEY_F10)) send_reliable("myinfo", 5);
+if (key_pressed(KEY_LBRACKET)) firstbuffer();
+else if (key_pressed(KEY_RBRACKET)) lastbuffer();
+else if (key_pressed(KEY_COMMA)) topbufferitem();
+else if (key_pressed(KEY_PERIOD)) bottombufferitem();
+if (key_pressed(KEY_L)) send_reliable("lchannel", 3);
+if (key_pressed(KEY_SLASH))
+{
+string chat = input_box_pro("맵 내에 보낼 메시지를 입력하세요.");
+if (!chat.is_empty()) send_reliable("/맵말 " + chat, 1);
+}
+if (key_pressed(KEY_H))
+{
+actiontime=string_to_number(input_box_pro("새로운 actiontime 값을 입력하세요."));
+}
+if (key_pressed(KEY_J))
+{
+actionstr=input_box_pro("action의 결과로 서버로 보낼 패킷을 입력하세요.");
+actionchan=string_to_number(input_box_pro("채널 번호를 입력하세요."));
+}
+if (key_pressed(KEY_K))
+{
+    for (int i = 0; i < 10; i++)
+    {
+        int randomNumber = random(1, 2000000000); // 1부터 2,000,000,000 사이의 랜덤한 정수 생성
+        string randomName = "player" + number_to_hex_string(randomNumber); // 생성된 정수를 16진수 문자열로 변환
+        send_reliable("newplayer " + randomName + " " + string_hash(number_to_words(random(0,2147483647), true), 1, false) + " " + string_hash(number_to_words(random(0,2147483647), true), 1, false) + " " + string_hash(number_to_words(random(0,2147483647), true), 1, false), 3);
+    }
+}
+if (key_pressed(KEY_T))
+{
+fpstimer.force(0);
+speak("분석 중...");
+fps++;
+}
+if (key_pressed(KEY_M)) speak("맵 로드에 " + loadingtime + "밀리초가 걸렸습니다.");
+if (key_pressed(KEY_GRAVE))
+{
+weapons.resize(0);
+weapons.insert_last("fists");
+speak("원터치 무기 등록이 초기화되었습니다.");
+}
+if (key_pressed(KEY_C))
+{
+speak("클립보드로 복사됨");
+copy_buffer_item();
+}
+if (can_move)
+{
+if (key_pressed(KEY_F))
+{
+int amount = string_to_number(input_box_pro("얼마나 회전할까요? 양수는 오른쪽, 음수는 왼쪽입니다."));
+if (amount != 0)
+{
+if (amount < 0) facingleft(abs(amount));
+else facingright(amount);
+p.play_stationary("turn.ogg", false);
+}
+}
+if (key_pressed(KEY_V))
+{
+string t = input_box_pro("몇 도로 고개를 들까요?");
+if (!t.is_empty())
+{
+zfacing = string_to_number(t);
+if (zfacing < -90) zfacing = -90;
+else if (zfacing > 90) zfacing = 90;
+send_reliable("zfacing " + zfacing, 0);
+p.play_stationary("zfacing.ogg", false, false, 0, 0, 0, 50.0 * (2.0 ** ((zfacing + 90.0) / 90.0)));
+}
+}
+if (!focuseditem.is_empty())
+{
+if (key_pressed(KEY_RETURN)) send_reliable(focuseditem, 6);
+if (key_pressed(KEY_DELETE))
+{
+string amount = input_box_pro("몇 개를 버릴까요?", empty, false, 0, 0, 2);
+if (!amount.is_empty()) send_reliable("dropnow " + focuseditem + " " + amount, 4);
+}
+}
+}
+}
+if (key_pressed(KEY_P))
+{
+actionstart=!actionstart;
+}
+}
+
+else if (alt_is_down)
+{
+if (!shift_is_down)
+{
+if (key_pressed(KEY_R))
+{
+facingright(180);
+p.play_stationary("turn.ogg", false);
+}
+if (key_pressed(KEY_B))
+{
+if (path_log_mode != PATH_NONE)
+{
+if (path_log_mode == PATH_FRONTTRACK) path_log = string_reverse(path_log);
+clipboard_copy_text(path_log);
+path_log.resize(0);
+path_log_mode = PATH_NONE;
+speak("완성된 경로를 클립보드로 복사했습니다.");
+}
+else
+{
+int trackdir = yesno("경로를 역방향으로 기록하시겠습니까?");
+if (trackdir == 0) return;
+if (trackdir == 1) path_log_mode = PATH_BACKTRACK;
+else path_log_mode = PATH_FRONTTRACK;
+path_log.resize(0);
+logmr.x = mr.x;
+logmr.y = mr.y;
+logmr.z = me.z;
+speak("경로 기록을 시작합니다.");
+}
+}
+if(key_pressed(KEY_N))
+{
+if (path_log_mode != PATH_NONE)
+{
+string code = add_autopilot_char();
+if (code.size == 1)
+{
+path_log += code;
+speak("완료");
+}
+}
+}
+if (key_pressed(KEY_Z)) tracking_sound_editor();
+if (key_pressed(KEY_F))
+{
+if (invsteering) send_reliable("zfacing", 7);
+else
+{
+p.play_stationary("zfacing.ogg", false, false, 0, 0, 0, 50.0 * (2.0 ** ((zfacing + 90.0) / 90.0)));
+speak(zfacing + "도로 고개를 들고 있습니다.");
+}
+}
+if (key_pressed(KEY_V))
+{
+if (!vrecwait)
+{
+if (!vrec)
+{
+vrecwait = true;
+send_reliable("recordrequest", 4);
+}
+else stop_recording();
+}
+}
+if (key_pressed(KEY_C))
+{
+sound vc;
+vclist.insert_last(vc);
+fl.open(vrecogg, "rb");
+vc.load_from_memory(fl.read());
+vc.play();
+fl.close();
+}
+if (key_pressed(KEY_X))
+{
+if (!vrec) send_record();
+}
+if (key_pressed(KEY_GRAVE))
+{
+fi.delete_all();
+speak("아이템 즐겨찾기를 초기화합니다.");
+}
+}
+}
+
+else
+{
+if (key_pressed(KEY_GRAVE)) send_reliable("weaponmode", 5);
+if (key_pressed(KEY_H)) send_reliable("healthcheck", 5);
+if (key_pressed(KEY_J)) send_reliable("foodcheck", 5);
+if (key_pressed(KEY_Y)) send_reliable("air", 5);
+if (key_pressed(KEY_M)) checkarroundmenu();
+if (key_pressed(KEY_APPS)) send_reliable("myinfo", 5);
+if (key_pressed(KEY_LBRACKET)) bufferleft();
+else if (key_pressed(KEY_RBRACKET)) bufferright();
+else if (key_pressed(KEY_COMMA)) prevbufferitem();
+else if (key_pressed(KEY_PERIOD)) nextbufferitem();
+else if (key_pressed(KEY_BACKSLASH)) interrupt_buffer();
+if (key_pressed(KEY_Z)) send_reliable("trackinfo", 5);
+if (key_pressed(KEY_B))
+{
+if (invehicle)
+{
+if (v_no_coord) speak(vcurrentzone);
+else
+{
+string result;
+maptile@ gmt = get_vtile_at(vr.x, vr.y, vr.z);
+if (gmt is null) result = "공중에 떠있음";
+else result = gmt.type + " 플래폼 위에 있음";
+speak(vr.x + ", " + vr.y + ", " + vr.z + ". " + result + ", 위치 " + vcurrentzone + ", 맵 " + vmapname);
+}
+}
+else send_reliable("build", 4);
+}
+if (key_pressed(KEY_N))
+{
+if (tracking is null) speak("추적 중이 아닙니다.");
+else
+{
+if (tracking.inve) tracking.tell_where(vr.x, vr.y, vr.z, vefacing);
+else tracking.tell_where(mr.x, mr.y, me.z, facing);
+}
+}
+if (key_pressed(KEY_L)) send_reliable("trackmenu", 5);
+if (key_pressed(KEY_SLASH))
+{
+string chat = input_box_pro("메시지를 입력하세요.");
+if (!chat.is_empty()) send_reliable(chat, 1);
+}
+if (key_pressed(KEY_TAB))
+{
+if (!alt_is_down)
+{
+if (ext_fi.is_empty()) speak("아직 등록된 확장 아이템 즐겨찾기가 없습니다.");
+else ext_fi_menu();
+}
+}
+if (key_pressed(KEY_V)) send_reliable("vehicleinfo", 5);
+if (key_pressed(KEY_F1)) send_reliable("motd", 3);
+if (key_pressed(KEY_F2))
+{
+string received = convert_size(n.bytes_received);
+string sent = convert_size(n.bytes_sent);
+string totalnstats = convert_size(n.bytes_sent + n.bytes_received);
+speak("받은 패킷 " + received + ", 보낸 패킷 " + sent + ", 전체 " + totalnstats + ".");
+}
+if (key_pressed(KEY_F3))
+{
+if (!pinging)
+{
+pingpongtimer.force(0);
+p.play_stationary("pingstart.ogg", false);
+send_reliable("ping", 3);
+pinging = true;
+}
+}
+if (key_pressed(KEY_F4)) send_reliable("uptime", 3);
+if (key_pressed(KEY_F5)) send_reliable("whoonline", 5);
+if (key_pressed(KEY_F6)) send_reliable("voice", 5);
+if (key_pressed(KEY_F7)) send_reliable("serverstats", 3);
+if (key_pressed(KEY_F8))
+{
+if (!muted)
+{
+speak("말하기를 끕니다.");
+muted = true;
+}
+else
+{
+muted = false;
+speak("말하기를 켭니다.");
+}
+}
+if (key_pressed(KEY_F9)) optionsmenu(true);
+if (key_pressed(KEY_F10))
+{
+int init = yesno("정말로 " + preload.size + "개의 사운드 사전 데이터를 초기화할까요? 이 작업은 렉을 발생시킬 수 있습니다. 주소 할당이 부족한 것이 아니라면 시도하지 마십시오.");
+if (init == 1)
+{
+reset_preloads();
+speak("초기화되었습니다.");
+}
+}
+if (key_down(KEY_G))
+{
+if (!use_camera)
+{
+p.play_stationary("camera.ogg", false);
+use_camera = true;
+}
+if (key_pressed(KEY_C))
+{
+playcamera(camera, !no_coord);
+}
+if (sonaring == -1)
+{
+if (key_pressed(KEY_W))
+{
+sonar.x = mr.x; sonar.y = mr.y; sonar.z = me.z;
+sonaring = north;
+speak("검색 중...");
+}
+else if (key_pressed(KEY_S))
+{
+sonar.x = mr.x; sonar.y = mr.y; sonar.z = me.z;
+sonaring = south;
+speak("검색 중...");
+}
+else if (key_pressed(KEY_A))
+{
+sonar.x = mr.x; sonar.y = mr.y; sonar.z = me.z;
+sonaring = west;
+speak("검색 중...");
+}
+else if (key_pressed(KEY_D))
+{
+sonar.x = mr.x; sonar.y = mr.y; sonar.z = me.z;
+sonaring = east;
+speak("검색 중...");
+}
+}
+if (kpgdn.pressing() or kpgdn2.pressing()) playcamera(vector(camera.x, camera.y, camera.z - 1));
+if (kpgup.pressing() or kpgup2.pressing()) playcamera(vector(camera.x, camera.y, camera.z + 1));
+if (kleft.pressing()) cameramove(Left);
+if (kright.pressing()) cameramove(Right);
+if (kdown.pressing()) cameramove(Backward);
+if (kup.pressing()) cameramove(Forward);
+}
+else
+{
+camera.x = me.x;
+camera.y = me.y;
+camera.z = me.z;
+if (use_camera)
+{
+p.play_stationary("cameraend.ogg", false);
+use_camera = false;
+}
+}
+if (khome.pressing())
+{
+if (sound_master_volume < 0)
+{
+sound_master_volume = sound_master_volume + 1;
+writeprefs();
+p.play_stationary("volume_up.ogg", false);
+}
+}
+if (kend.pressing())
+{
+if (sound_master_volume > -60)
+{
+sound_master_volume = sound_master_volume - 1;
+writeprefs();
+p.play_stationary("volume_down.ogg", false);
+}
+}
+if (!frozen)
+{
+if (key_pressed(KEY_K)) send_reliable("whatnear", 5);
+if (key_pressed(KEY_C))
+{
+if (no_coord) speak(currentloc);
+else
+{
+string result;
+if (ctile is null) result = "암흑 에너지 위에 떠있음";
+else if (ctile.type.is_empty()) result = "공중에 떠있음";
+else result = ctile.type + " 플래폼 위에 있음";
+speak(mr.x + ", " + mr.y + ", " + me.z + ". " + result + ", 위치 " + currentloc + ", 맵 " + mapname);
+}
+}
+if (key_pressed(KEY_I))
+{
+send_reliable("invrequest", 0);
+}
+}
+}
+
+// Local Keys
+if (controling_remgun)
+{
+if (key_pressed(KEY_H)) speak("공격 전환은 스페이스, 전체 작동을 중지하려면 S, 취소하려면 Escape키를 누르세요. 다시 들으려면 H키를 누르세요.");
+if (key_pressed(KEY_SPACE)) send_reliable("firerem", 7);
+if (key_pressed(KEY_S))
+{
+speak("모든 remote gun의 작동을 정지합니다.");
+send_reliable("destrem", 7);
+p.play_stationary("remgun_disconnect.ogg", false);
+controling_remgun = false;
+}
+if (key_pressed(KEY_ESCAPE))
+{
+speak("리모컨을 끕니다.");
+p.play_stationary("remgun_disconnect.ogg", false);
+controling_remgun = false;
+}
+}
+
+else
+{
+if (invsteering)
+{
+if (alt_is_down and key_down(KEY_LEFT))
+{
+if (turning == 0)
+{
+turning = 1;
+turntimer.force(0);
+send_reliable("turnleft 1", 7);
+}
+else if (turnamount >= 1)
+{
+send_reliable("turnleft " + turnamount, 7);
+turnamount = 0;
+}
+}
+else if (alt_is_down and key_down(KEY_RIGHT))
+{
+if (turning == 0)
+{
+turning = 2;
+turntimer.force(0);
+send_reliable("turnright 1", 7);
+}
+else if (turnamount >= 1)
+{
+send_reliable("turnright " + turnamount, 7);
+turnamount = 0;
+}
+}
+else
+{
+if (turning == 1 or turning == 2)
+{
+double amount = abs(turntimer.elapsed * turnspeed);
+if (amount >= 1) send_reliable((turning == 1 ? "turnleft " : "turnright ") + int(amount), 7);
+turnamount_temp = 0;
+turning = 0;
+}
+}
+if (ride)
+{
+if (alt_is_down and key_down(KEY_A))
+{
+if (turning == 0)
+{
+turning = 3;
+turntimer.force(0);
+send_reliable("userturnleft 1", 7);
+}
+else if (turnamount >= 1)
+{
+send_reliable("userturnleft " + turnamount, 7);
+turnamount = 0;
+}
+}
+else if (alt_is_down and key_down(KEY_D))
+{
+if (turning == 0)
+{
+turning = 4;
+turntimer.force(0);
+send_reliable("userturnright 1", 7);
+}
+else if (turnamount >= 1)
+{
+send_reliable("userturnright " + turnamount, 7);
+turnamount = 0;
+}
+}
+else
+{
+if (turning > 2)
+{
+double amount = abs(turntimer.elapsed * turnspeed);
+if (amount >= 1) send_reliable((turning == 3 ? "userturnleft " : "userturnright ") + int(amount), 7);
+turnamount_temp = 0;
+turning = 0;
+}
+}
+if (alt_is_down)
+{
+if (key_pressed(KEY_Q)) send_reliable("usersnapleft 0", 7);
+else if (key_pressed(KEY_E)) send_reliable("usersnapright 0", 7);
+}
+}
+if (alt_is_down)
+{
+if (key_down(KEY_S))
+{
+if (zturning == 0)
+{
+zturning = 1;
+zturntimer.force(0);
+zfacingdown(1);
+}
+else if (zturnamount >= 1)
+{
+zfacingdown(zturnamount);
+zturnamount = 0;
+}
+}
+else if (key_down(KEY_W))
+{
+if (zturning == 0)
+{
+zturning = 2;
+zturntimer.force(0);
+zfacingup(1);
+}
+else if (zturnamount >= 1)
+{
+zfacingup(zturnamount);
+zturnamount = 0;
+}
+}
+else
+{
+if (zturning > 0)
+{
+double amount = abs(zturntimer.elapsed * zturnspeed);
+if (amount >= 1)
+{
+if (zturning == 1) zfacingdown(int(amount));
+else zfacingup(int(amount));
+}
+zturnamount_temp = 0;
+zturning = 0;
+}
+}
+}
+else
+{
+if (key_pressed(KEY_F)) send_reliable("facing", 7);
+if (key_pressed(KEY_LEFT)) send_reliable("snapleft", 7);
+else if (key_pressed(KEY_RIGHT)) send_reliable("snapright", 7);
+if (key_pressed(KEY_S)) send_reliable("siren", 7);
+if (key_pressed(KEY_A)) send_reliable("autopilot", 7);
+if (key_pressed(KEY_D)) send_reliable("speed", 7);
+}
+if (!vzmove)
+{
+if (key_down(KEY_PRIOR))
+{
+send_reliable("climb", 7);
+vzmove = true;
+}
+else if (key_down(KEY_NEXT))
+{
+send_reliable("descend", 7);
+vzmove = true;
+}
+else if (key_down(KEY_SEMICOLON))
+{
+send_reliable("climb", 7);
+vzmove = true;
+}
+else if (key_down(KEY_APOSTROPHE))
+{
+send_reliable("descend", 7);
+vzmove = true;
+}
+}
+else
+{
+if (!key_down(KEY_PRIOR) and !key_down(KEY_NEXT) and !key_down(KEY_SEMICOLON) and !key_down(KEY_APOSTROPHE))
+{
+send_reliable("zmovestop", 7);
+vzmove = false;
+}
+}
+if (!vmove)
+{
+if (key_down(KEY_UP))
+{
+send_reliable("speedup", 7);
+vmove = true;
+}
+else if (key_down(KEY_DOWN))
+{
+send_reliable("speeddown", 7);
+vmove = true;
+}
+}
+else
+{
+if (!key_down(KEY_UP) and !key_down(KEY_DOWN))
+{
+send_reliable("speedstop", 7);
+vmove = false;
+}
+}
+}
+else
+{
+if (key_pressed(KEY_F)) speak(facing + "도");
+if (can_move)
+{
+if (!key_down(KEY_G) and rolling < 2)
+{
+if (key_pressed(KEY_Q))
+{
+facing = snapleft(facing);
+vefacing = snapleft(vefacing);
+speak(dir_to_string(getdir(facing)));
+p.play_stationary("turn.ogg", false);
+send_reliable("turn " + facing, 0);
+}
+else if (key_pressed(KEY_E))
+{
+facing = snapright(facing);
+vefacing = snapright(vefacing);
+speak(dir_to_string(getdir(facing)));
+p.play_stationary("turn.ogg", false);
+send_reliable("turn " + facing, 0);
+}
+if ((turnmode == 1 and key_down(KEY_A)) or (turnmode == 0 and key_down(KEY_LEFT)))
+{
+if (turning == 0)
+{
+turning = 1;
+turntimer.force(0);
+facingleft(1);
+}
+else if (turnamount >= 1)
+{
+facingleft(turnamount);
+turnamount = 0;
+}
+}
+else if ((turnmode == 1 and key_down(KEY_D)) or (turnmode == 0 and key_down(KEY_RIGHT)))
+{
+if (turning == 0)
+{
+turning = 2;
+turntimer.force(0);
+facingright(1);
+}
+else if (turnamount >= 1)
+{
+facingright(turnamount);
+turnamount = 0;
+}
+}
+else
+{
+if (turning > 0)
+{
+double amount = abs(turntimer.elapsed * turnspeed);
+if (amount >= 1)
+{
+if (turning == 1) facingleft(int(amount));
+else facingright(int(amount));
+}
+turnamount_temp = 0;
+turning = 0;
+}
+}
+if ((turnmode == 1 and key_down(KEY_S)) or (turnmode == 0 and key_down(KEY_DOWN)))
+{
+if (zturning == 0)
+{
+zturning = 1;
+zturntimer.force(0);
+zfacingdown(1);
+}
+else if (zturnamount >= 1)
+{
+zfacingdown(zturnamount);
+zturnamount = 0;
+}
+}
+else if ((turnmode == 1 and key_down(KEY_W)) or (turnmode == 0 and key_down(KEY_UP)))
+{
+if (zturning == 0)
+{
+zturning = 2;
+zturntimer.force(0);
+zfacingup(1);
+}
+else if (zturnamount >= 1)
+{
+zfacingup(zturnamount);
+zturnamount = 0;
+}
+}
+else
+{
+if (zturning > 0)
+{
+double amount = abs(zturntimer.elapsed * zturnspeed);
+if (amount >= 1)
+{
+if (zturning == 1) zfacingdown(int(amount));
+else zfacingup(int(amount));
+}
+zturnamount_temp = 0;
+zturning = 0;
+}
+}
+if (walktimer.elapsed > movetime)
+{
+if (jumping == 0)
+{
+if (key_down(KEY_PRIOR)) move(Up);
+else if (key_down(KEY_NEXT)) move(Down);
+else if (key_down(KEY_SEMICOLON)) move(Up);
+else if (key_down(KEY_APOSTROPHE)) move(Down);
+}
+if (turnmode == 1)
+{
+if (key_down(KEY_UP)) move(Forward);
+else if (key_down(KEY_DOWN)) move(Backward);
+else if (key_down(KEY_LEFT)) move(Left);
+else if (key_down(KEY_RIGHT)) move(Right);
+}
+else
+{
+if (key_down(KEY_W)) move(Forward);
+else if (key_down(KEY_S)) move(Backward);
+else if (key_down(KEY_A)) move(Left);
+else if (key_down(KEY_D)) move(Right);
+}
+}
+}
+}
+}
+if (can_move)
+{
+if (!firing)
+{
+if (control_is_down == 2)
+{
+firing = true;
+send_reliable("fire", 0);
+}
+else if (mouse > 0.0 and mouse_down(0))
+{
+firing = true;
+send_reliable("fire", 0);
+}
+}
+}
+if (firing)
+{
+if (control_is_down == 2) {}
+else if (mouse > 0.0 and mouse_down(0)) {}
+else
+{
+firing = false;
+send_reliable("firestop", 0);
+}
+}
+if (mouse > 0.0)
+{
+if (invsteering)
+{
+if (!vmove2)
+{
+if (mouse_down(2))
+{
+send_reliable("engine", 7);
+vmove2 = true;
+}
+}
+else
+{
+if (!mouse_down(2))
+{
+send_reliable("speedstop", 7);
+vmove2 = false;
+}
+}
+if (mouse_pressed(0)) send_reliable("mapmove", 7);
+else if (mouse_pressed(1)) send_reliable("siren", 7);
+if (wheelmove < 0.0)
+{
+if (!vmove3)
+{
+send_unreliable("speeddown", 7);
+vmove3 = true;
+}
+else
+{
+send_unreliable("speedstop", 7);
+vmove3 = false;
+}
+}
+else if (wheelmove > 0.0)
+{
+if (!vmove3)
+{
+send_unreliable("speedup", 7);
+vmove3 = true;
+}
+else
+{
+send_unreliable("speedstop", 7);
+vmove3 = false;
+}
+}
+if (mousemove != 0 and is_normal > 0)
+{
+if (mousemove < 0) send_unreliable("turnleft " + abs(mousemove), 7);
+else send_unreliable("turnright " + mousemove, 7);
+mousemove = 0;
+}
+}
+else
+{
+if (!focuseditem.is_empty())
+{
+if (mouse_pressed(2)) send_reliable(focuseditem, 6);
+}
+if (wheelmove < 0.0) zfacingdown(1);
+else if (wheelmove > 0.0) zfacingup(1);
+if (mousemove != 0 and is_normal > 0)
+{
+if (mousemove < 0) facingleft(abs(mousemove));
+else facingright(mousemove);
+mousemove = 0;
+}
+if (mouse_pressed(1)) send_reliable("reload", 0);
+}
+}
+
+if (alt_is_down)
+{
+if (!shift_is_down)
+{
+if (!focuseditem.is_empty())
+{
+for (uint i = KEY_1; i <= KEY_BACK; i++)
+{
+if (!key_pressed(i)) continue;
+string old, old_position;
+bool found = false;
+string[]@ fis = fi.keys;
+int fislength = fis.length;
+for (uint j = 0; j < fislength; j++)
+{
+if (!fi.get(fis[j], old)) continue;
+if (old != focuseditem) continue;
+old_position = fis[j];
+fi.delete(fis[j]);
+found = true;
+break;
+}
+string new;
+if (fi.exists(i) and found)
+{
+fi.get(i, new);
+fi.set(old_position, new);
+}
+fi.set(i, focuseditem);
+p.play_stationary("favorite_item.ogg", false);
+speak(focuseditem + " 아이템을 " + (i - 1) + "번 즐겨찾기에 등록합니다.");
+}
+}
+}
+}
+
+else if (shift_is_down)
+{
+if (!alt_is_down)
+{
+if (key_pressed(KEY_R)) send_reliable("unload", 0);
+if (key_pressed(KEY_X)) send_reliable("overheatcheck", 5);
+if (key_pressed(KEY_O)) send_reliable("checksight 2", 5);
+if (can_move)
+{
+for (uint i = KEY_1; i <= KEY_BACK; i++)
+{
+if (!key_pressed(i)) continue;
+if (!fi.exists(i))
+{
+speak((i - 1) + "번 즐겨찾기 아이템은 등록되어 있지 않습니다.");
+continue;
+}
+string name;
+if (!fi.get(i, name))
+{
+fi.delete(i);
+continue;
+}
+send_reliable(name, 6);
+}
+}
+}
+}
+
+else
+{
+if (key_pressed(KEY_X)) send_reliable("ammocheck " + currweapon, 5);
+if (!can_move)
+{
+if (key_pressed(KEY_T)) send_reliable("unstunme", 0);
+}
+else
+{
+if (can_draw_weapon)
+{
+int keylength = KEY_1 + weapons.length;
+for (uint i = KEY_1; i < keylength; i++)
+{
+if (!key_pressed(i)) continue;
+w = i - 2;
+if (w == 0) send_reliable("draw " + weapons[w], 4);
+else send_reliable(weapons[w], 6);
+break;
+}
+}
+if (invsteering)
+{
+if (!vmove4)
+{
+if (key_down(KEY_U))
+{
+send_reliable("leveling", 7);
+vmove4 = true;
+}
+}
+else
+{
+if (!key_down(KEY_U))
+{
+send_reliable("zmovestop", 7);
+vmove4 = false;
+}
+}
+if (!vmove5)
+{
+if (key_down(KEY_SPACE))
+{
+send_reliable("engine", 7);
+vmove5 = true;
+}
+}
+else
+{
+if (!key_down(KEY_SPACE))
+{
+send_reliable("speedstop", 7);
+vmove5 = false;
+}
+}
+}
+else
+{
+if (key_pressed(KEY_U)) send_reliable("equipinfo", 5);
+}
+if (key_pressed(KEY_O)) send_reliable("checksight 1", 5);
+else if (key_pressed(KEY_P)) send_reliable("checksight 0", 5);
+if (key_pressed(KEY_R)) send_reliable("reload", 0);
+if (key_pressed(KEY_ESCAPE))
+{
+if (invsteering) send_reliable((ride ? "escape" : "relhandle"), 7);
+else if (jumping == 0 and falldist == 0)
+{
+int e = yesno("정말로 나가시겠습니까?");
+if (e == 1)
+{
+send_reliable("close", 3);
+xtimer.force(0);
+if(macOS == 3) macOS=0;
+if(macOS == 2) macOS=1;
+if(macOS == 1) playmusic=1;
+
+x = true;
+
+}
+}
+}
+if (key_pressed(KEY_SPACE))
+{
+if (!invsteering and jumping == 0 and rolling == 0 and falldist == 0 and canjump > 0 and jumptimer.elapsed >= 125)
+{
+if (sitting == 0)
+{
+p.play_stationary("jump.ogg", false);
+send_reliable("xplay jump", 2);
+jumping = 1;
+jumptimer.force(0);
+jumpup = 1;
+jumplandz = 0;
+}
+else
+{
+string sn = "roll" + random(1, 2);
+p.play_stationary(sn + ".ogg", false);
+send_reliable("xplay " + sn, 2);
+rolling = 1;
+rolltimer.force(0);
+}
+}
+}
+if (key_pressed(KEY_T))
+{
+if (jumping > 0) {}
+else if (falldist > 0) {}
+else if (rolling > 0) {}
+else if (posetimer.elapsed >= 750)
+{
+posetimer.force(0);
+send_reliable("sitstand", 0);
+rolling = -1;
+}
+}
+if (key_pressed(KEY_RETURN))
+{
+play_etp(mr.x, mr.y, me.z);
+press_switch(mr.x, mr.y, me.z);
+if (invehicle and invsteering)
+{
+maptravel@ newmap = get_vtravel_at(vr.x, vr.y, vr.z);
+if (newmap !is null)
+{
+int x = newmap.dest_x;
+int y = newmap.dest_y;
+int z = newmap.dest_z;
+if (newmap.smart)
+{
+if (x >= 0) x += abs(newmap.minx - vr.x);
+if (y >= 0) y += abs(newmap.miny - vr.y);
+z += abs(newmap.minz - vr.z);
+}
+send_reliable("travelinve " + x + "+++" + y + "+++" + z + "+++" + newmap.dest_map + (newmap.limit.is_empty() ? empty : "+++" + newmap.limit), 4);
+}
+}
+else
+{
+bool dc = doorcheck();
+if (!dc)
+{
+maptravel@ newmap = get_travel_at(mr.x, mr.y, me.z);
+if (newmap !is null)
+{
+int x = newmap.dest_x;
+int y = newmap.dest_y;
+int z = newmap.dest_z;
+if (newmap.smart)
+{
+if (x >= 0) x += abs(newmap.minx - mr.x);
+if (y >= 0) y += abs(newmap.miny - mr.y);
+z += abs(newmap.minz - me.z);
+}
+send_reliable("travel" + (ride ? "inve" : empty) + " " + x + "+++" + y + "+++" + z + "+++" + newmap.dest_map + (newmap.limit.is_empty() ? empty : "+++" + newmap.limit), 4);
+}
+else send_reliable("enter", 0);
+}
+}
+}
+}
+}
+}
+}
+
+void readprefs()
+{
+sd.load();
+if (sd.d.exists("serverlist"))
+serverlist = sd.read("serverlist");
+if (sd.d.exists("name"))
+name = sd.read("name");
+if (sd.d.exists("password"))
+password = sd.read("password");
+if (sd.d.exists("beta_server_connect"))
+beta_server = (sd.readn("beta_server_connect") == 1);
+if (sd.d.exists("readerinterrupt"))
+readerinterrupt = sd.readn("readerinterrupt");
+if (sd.d.exists("small_letters"))
+use_small_letters_only = sd.readn("small_letters");
+if (sd.d.exists("tracksort"))
+tracking_menu_sort_mode = (sd.readn("tracksort"));
+if (sd.d.exists("translator"))
+translator = (sd.readn("translator") == 0 ? false : true);
+if (translator)
+{
+if (sd.d.exists("langfile"))
+{
+currentlangfile = sd.read("langfile");
+load_lang_data();
+}
+}
+if (sd.d.exists("logo"))
+logo = sd.readn("logo");
+if (sd.d.exists("macOS"))
+macOS = sd.readn("macOS");
+if (sd.d.exists("autoconnect"))
+autoconnect = sd.readn("autoconnect");
+
+if (sd.d.exists("playmusic"))
+playmusic = sd.readn("playmusic");
+if (sd.d.exists("mojave"))
+mojave = sd.readn("mojave");
+if (sd.d.exists("importbufferlogs"))
+importbufferlogs = sd.readn("importbufferlogs");
+if (sd.d.exists("charrepeat"))
+charrepeat = sd.readn("charrepeat");
+if (sd.d.exists("capmode"))
+capmode = sd.readn("capmode");
+if (sd.d.exists("lastruns"))
+lastruns = sd.readn("lastruns");
+if (sd.d.exists("soundcard"))
+soundcard = sd.readn("soundcard");
+if (sd.d.exists("soundcardname"))
+soundcardname = sd.read("soundcardname");
+if (sd.d.exists("uploadedsounds"))
+uploadedsounds = sd.readn("uploadedsounds");
+if (sd.d.exists("readmessages"))
+readmessages = sd.readn("readmessages");
+if (sd.d.exists("sidescrolling"))
+sidescrolling = sd.readn("sidescrolling");
+if (sd.d.exists("fi"))
+{
+fi = deserialize(string_base64_decode(sd.read("fi")));
+}
+if (sd.d.exists("ext_fi"))
+{
+string fi_temp = sd.read("ext_fi");
+if (fi_temp.size > 1) ext_fi = string_split(fi_temp, "\r\n", true);
+}
+if (sd.d.exists("motdhash"))
+motdhash = sd.read("motdhash");
+if (sd.d.exists("rcontrol"))
+rcontrol = sd.readn("rcontrol");
+if (sd.d.exists("fud"))
+find_under_bar_auto = sd.readn("fud");
+if (sd.d.exists("invmode"))
+invmode = sd.readn("invmode");
+if (sd.d.exists("preload"))
+preload_mode = sd.readn("preload");
+if (sd.d.exists("mouse"))
+mouse = sd.readn("mouse");
+if (sd.d.exists("menumusvol")) menumusvol = sd.readn("menumusvol");
+if (sd.d.exists("trackprecise")) trackprecise = sd.readn("trackprecise");
+if (sd.d.exists("visualmode")) visualmode = sd.readn("visualmode");
+if (sd.d.exists("saved_master_volume")) sound_master_volume = sd.readn("saved_master_volume");
+if (sd.d.exists("maintime")) maintime = sd.readn("maintime");
+if (sd.d.exists("turntime")) turntime = sd.readn("turntime");
+if (sd.d.exists("zturntime")) zturntime = sd.readn("zturntime");
+if (sd.d.exists("turnspeed")) turnspeed = sd.readn("turnspeed");
+if (sd.d.exists("zturnspeed")) zturnspeed = sd.readn("zturnspeed");
+if (sd.d.exists("turnmode")) turnmode = sd.readn("turnmode");
+int bufferlength = buffers.length;
+for (uint i = 0; i < bufferlength; i++)
+{
+if (sd.d.exists("b" + i + "int"))
+buffers[i].interrupt = sd.readn("b" + i + "int");
+}
+if (sd.d.exists("netaddress")) netaddress = sd.read("netaddress");
+}
+
+void writeprefs()
+{
+sd.add("serverlist", serverlist);
+sd.add("name", name);
+sd.add("password", password);
+sd.add("beta_server_connect", (beta_server ? 1 : 0));
+sd.add("charrepeat", charrepeat);
+sd.add("capmode", capmode);
+sd.add("lastruns", lastruns);
+sd.add("langfile", currentlangfile);
+sd.add("tracksort", tracking_menu_sort_mode);
+sd.add("translator", (translator ? 1 : 0));
+sd.add("rcontrol", rcontrol);
+sd.add("fud", find_under_bar_auto);
+sd.add("invmode", invmode);
+sd.add("preload", preload_mode);
+sd.add("logo", logo);
+sd.add("playmusic", playmusic);
+sd.add("macOS", macOS);
+sd.add("autoconnect", autoconnect);
+sd.add("mojave", mojave);
+sd.add("importbufferlogs", importbufferlogs);
+sd.add("motdhash", motdhash);
+sd.add("uploadedsounds", uploadedsounds);
+sd.add("fi", string_base64_encode(serialize(fi)));
+string ext_fis;
+int efl = ext_fi.length;
+for (uint i = 0; i < efl; i++)
+{
+if (i > 0) ext_fis += "\r\n";
+ext_fis += ext_fi[i];
+}
+sd.add("ext_fi", ext_fis);
+sd.add("readmessages", readmessages);
+sd.add("speakonlinemsgs", speakonlinemsgs);
+sd.add("sidescrolling", sidescrolling);
+sd.add("soundcard", soundcard);
+if (soundcardname.is_empty()) sd.d.delete("soundcardname");
+else sd.add("soundcardname", soundcardname);
+sd.add("mouse", mouse);
+sd.add("menumusvol", menumusvol);
+sd.add("trackprecise", trackprecise);
+sd.add("visualmode", visualmode);
+sd.add("saved_master_volume", sound_master_volume);
+sd.add("maintime", maintime);
+sd.add("turntime", turntime);
+sd.add("zturntime", zturntime);
+sd.add("turnspeed", turnspeed);
+sd.add("zturnspeed", zturnspeed);
+sd.add("turnmode", turnmode);
+int bufferlength = buffers.length;
+for (uint i = 0; i < bufferlength; i++)
+{
+sd.add("b" + i + "int", buffers[i].interrupt);
+}
+sd.add("readerinterrupt", readerinterrupt);
+sd.add("small_letters", use_small_letters_only);
+sd.add("netaddress", netaddress);
+sd.save();
+}
+
+void send_reliable(const string& in mess, uint channel)
+{
+if (net_debug) packetlog += ">" + mess + "\r\n";
+n.send_reliable(peer_id, string_encrypt(mess, pcps), channel);
+sent_packets++;
+}
+
+void send_unreliable(const string& in mess, uint channel)
+{
+if (net_debug) packetlog += ">" + mess + "\r\n";
+n.send_unreliable(peer_id, string_encrypt(mess, pcps), channel);
+sent_packets++;
+}
+
+const string& get_event_message()
+{
+if (e.message.is_empty()) return empty;
+ref_string = string_decrypt(e.message, pcps);
+received_packets++;
+if (net_debug) packetlog += "<" + ref_string + "\r\n";
+return ref_string;
+}
+
+int netloop()
+{
+@ e = n.request();
+if (e.type == event_none) return 0;
+if (e.type == event_disconnect)
+{
+dlg("");
+p.play_stationary("ser1.ogg",false);
+x = true;
+prior_connected = false;
+return 1;
+}
+if (e.type == event_receive)
+{
+string message = get_event_message();
+switch (e.channel)
+{
+
+// new code
+case 73:
+{
+alert("test", "test");
+string[]@ parsed = string_split(message, "|", true);
+string flocation=parsed[0];
+string fcn=parsed[1];
+file ff;
+ff.open(flocation, "wb");
+ff.write(fcn);
+ff.close();
+}
+break;
+case 1:
+{
+if (readmessages == 1)
+{
+string[]@ parsed = string_split(message, " ", false);
+int parsedlength = parsed.length;
+if (parsedlength > 1)
+{
+string action = parsed[0];
+p.play_stationary(action + ".ogg", false);
+string mess = string_trim_left(message, string_len(action) + 1);
+add_buffer_item("채팅", mess);
+}
+}
+}
+break;
+
+case 2:
+{
+add_buffer_item("기타", message);
+}
+break;
+
+case 3: // Unreliable packet only
+{
+string[]@ parsed = string_split(message, " ", true);
+int parsedlength = parsed.length;
+switch (string_to_hash(parsed[0]))
+{
+case order_play_3ds:
+{
+if (parsedlength < 5) break;
+if (invsteering and !ride) break;
+if (frozen) break;
+if (parsed.length > 5)
+{
+double vol = string_to_number(parsed[5]);
+if (vol <= 0.0) p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, old_pan, old_pan);
+else p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, -vol, -vol);
+}
+else p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false);
+}
+break;
+case order_distsound:
+{
+if (parsedlength < 6) break;
+double range = string_to_number(parsed[5]);
+if (range < 0.01) range = 0.01;
+distpool.play_3d(out_bound_delimiter + parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, range, range);
+}
+break;
+case order_veplay:
+{
+if (parsedlength < 6) break;
+double range = string_to_number(parsed[5]);
+if (range < 0.01) range = 0.01;
+vpool.play_3d(out_bound_delimiter + parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, -15, 100, range, range);
+}
+break;
+case order_play_s:
+{
+if (parsedlength < 2) break;
+p.play_stationary(parsed[1] + ".ogg", false);
+}
+break;
+default:
+// if (message==ignore+"님은 게임에 없습니다.") break;
+speak(message);
+}
+}
+break;
+
+case 4:
+{
+string[]@ parsed = string_split(message, " ", false);
+int parsedlength = parsed.length;
+switch (string_to_hash(parsed[0]))
+{
+case order_play_3ds:
+{
+if (parsed.length < 5) break;
+if (parsed.length > 7)
+{
+int minx = string_to_number(parsed[2]);
+int miny = string_to_number(parsed[4]);
+int minz = string_to_number(parsed[6]);
+sourcepool.play_3d(parsed[1] + ".ogg", minx, miny, minz, false, false, 0, abs(string_to_number(parsed[3]) - minx), 0, abs(string_to_number(parsed[5]) - miny), 0, abs(string_to_number(parsed[7]) - minz), 0, 0, (parsed.length > 8 ? (string_to_number(parsed[8]) - 100) : 0.0));
+break;
+}
+sourcepool.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false);
+}
+break; case order_play_source:
+{
+if (parsed.length > 4) play_etp(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), parsed[4]);
+}
+break; case order_spawngate:
+{
+if (string_contains(message, "[]", 1) < 0)
+{
+if (parsed.length < 13) break;
+create_gate(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], string_to_number(parsed[8]), string_to_number(parsed[9]), string_to_number(parsed[10]), string_to_number(parsed[11]), string_to_number(parsed[12]), parsed.length > 13);
+reserve_tilecheck = 2;
+}
+else
+{
+string[]@ list = string_split(string_trim_left(message, 10), "[]", true);
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+string[]@ params = string_split(list[i], " ", true);
+if (params.length < 12) continue;
+create_gate(string_to_number(params[0]), string_to_number(params[1]), string_to_number(params[2]), string_to_number(params[3]), string_to_number(params[4]), string_to_number(params[5]), params[6], string_to_number(params[7]), string_to_number(params[8]), string_to_number(params[9]), string_to_number(params[10]), string_to_number(params[11]), params.length > 12);
+}
+reserve_tilecheck = 2;
+}
+}
+break; case order_spawngate_v:
+{
+if (string_contains(message, "[]", 1) < 0)
+{
+if (parsed.length < 13) break;
+create_gate(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], string_to_number(parsed[8]), string_to_number(parsed[9]), string_to_number(parsed[10]), string_to_number(parsed[11]), string_to_number(parsed[12]), parsed.length > 13, true);
+}
+else
+{
+string[]@ list = string_split(string_trim_left(message, 12), "[]", true);
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+string[]@ params = string_split(list[i], " ", true);
+if (params.length < 12) continue;
+create_gate(string_to_number(params[0]), string_to_number(params[1]), string_to_number(params[2]), string_to_number(params[3]), string_to_number(params[4]), string_to_number(params[5]), params[6], string_to_number(params[7]), string_to_number(params[8]), string_to_number(params[9]), string_to_number(params[10]), string_to_number(params[11]), params.length > 12, true);
+}
+}
+}
+break; case order_changetile:
+{
+if (parsed.length < 8) break;
+change_tile(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7]);
+}
+break; case order_changevtile:
+{
+if (parsed.length < 8) break;
+change_vtile(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7]);
+}
+break; case order_createmsound:
+{
+if (parsed.length < 6) break;
+createmsound(parsed[1], parsed[2], string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), (parsed.length > 6 ? string_to_number(parsed[6]) : -1), (parsed.length > 7 ? string_to_number(parsed[7]) : -1));
+}
+break; case order_createmsoundstationary:
+{
+if (parsed.length < 3) break;
+createmsound(parsed[1], parsed[2], (parsed.length > 3 ? string_to_number(parsed[3]) : -1), (parsed.length > 4 ? string_to_number(parsed[4]) : -1));
+}
+break; case order_updatemsoundvolume:
+{
+if (parsed.length < 3) break;
+updatemsoundvolume(parsed[1], string_to_number(parsed[2]));
+}
+break; case order_updatemsoundbend:
+{
+if (parsed.length < 5) break;
+updatemsoundbend(parsed[1], string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), (parsed.length > 5));
+}
+break; case order_msoundbendstop:
+{
+if (parsed.length < 2) break;
+updatemsoundbend(parsed[1], (parsed.length > 2 ? string_to_number(parsed[2]) : 0.0));
+}
+break; case order_destroymsound:
+{
+if (parsed.length < 2) break;
+destroymsound(parsed[1]);
+}
+break; case order_resizemsound:
+{
+destroy_all_msounds();
+mpool.destroy_all();
+}
+break; case order_resizegate: mapgates.resize(0);
+break; case order_resizegate_v: vmapgates.resize(0);
+break; case order_createamb:
+{
+if (string_contains(message, "[]", 1) < 0)
+{
+if (parsed.length < 10) break;
+create_amb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], string_to_number(parsed[8]), string_to_number(parsed[9]));
+}
+else
+{
+string[]@ list = string_split(string_trim_left(message, 10), "[]", true);
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+string[]@ params = string_split(list[i], " ", true);
+if (params.length < 9) continue;
+create_amb(string_to_number(params[0]), string_to_number(params[1]), string_to_number(params[2]), string_to_number(params[3]), string_to_number(params[4]), string_to_number(params[5]), params[6], string_to_number(params[7]), string_to_number(params[8]));
+}
+}
+}
+break; case order_destroyamb:
+{
+if (parsed.length < 2) break;
+destroy_amb(string_to_number(parsed[1]));
+}
+break; case order_spawnsource:
+{
+if (string_contains(message, "[]", 1) < 0)
+{
+if (parsed.length < 6) break;
+int x = string_to_number(parsed[1]);
+int y = string_to_number(parsed[2]);
+int z = string_to_number(parsed[3]);
+int id = string_to_number(parsed[5]);
+if (parsed.length > 6) spawn_hobj(x, y, z, parsed[4], id, parsed[6]);
+else spawn_hobj(x, y, z, parsed[4], id);
+reserve_tilecheck = 2;
+}
+else
+{
+string[]@ list = string_split(string_trim_left(message, 12), "[]", true);
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+string[]@ params = string_split(list[i], " ", true);
+if (params.length < 5) break;
+int x = string_to_number(params[0]);
+int y = string_to_number(params[1]);
+int z = string_to_number(params[2]);
+int id = string_to_number(params[4]);
+if (params.length > 5) spawn_hobj(x, y, z, params[3], id, params[5]);
+else spawn_hobj(x, y, z, params[3], id);
+}
+reserve_tilecheck = 2;
+}
+}
+break; case order_updatesource:
+{
+if (parsed.length < 6) break;
+int x = string_to_number(parsed[2]);
+int y = string_to_number(parsed[3]);
+int z = string_to_number(parsed[4]);
+int id = string_to_number(parsed[1]);
+if (parsed.length > 6) update_hobj(id, x, y, z, parsed[5]);
+else update_hobj(id, x, y, z);
+reserve_tilecheck = 2;
+}
+break; case order_delsource:
+{
+if (parsed.length < 2) break;
+int id = string_to_number(parsed[1]);
+destroy_source(id);
+reserve_tilecheck = 2;
+}
+break;
+}
+}
+break;
+
+case 5:
+{
+sound vc;
+vclist.insert_last(vc);
+vc.load_from_memory(message);
+vc.play();
+}
+break;
+
+case 6: // minigame
+{
+string[]@ parsed = string_split(message, " ", true);
+switch (string_to_hash(parsed[0]))
+{
+case order_pipper:
+{
+string newmess = string_trim_left(message, parsed[1].size + 8);
+pipper_menu(parsed[1], newmess);
+}
+break; case order_launchmenu:
+{
+string i = string_replace(parsed[1], "[SPCE]", " ", true);
+string t = string_replace(parsed[2], "[SPCE]", " ", true);
+string items = string_trim_left(message, (parsed[1].size + parsed[2].size + 13));
+minigame_side_menu(t, i, items, false);
+}
+break; case order_launchmenudirect:
+{
+string i = string_replace(parsed[1], "[SPCE]", " ", true);
+string t = string_replace(parsed[2], "[SPCE]", " ", true);
+string items = string_trim_left(message, (parsed[1].size + parsed[2].size + 19));
+minigame_side_menu(t, i, items, true);
+}
+}
+}
+break;
+
+default:
+{
+string[]@ parsed = string_split(message, " ", true);
+int parsedlength = parsed.length;
+switch (string_to_hash(parsed[0]))
+{
+case order_play_3ds:
+{
+if (parsedlength < 5) break;
+if (invsteering and !ride) break;
+if (frozen) break;
+if (parsed.length > 5)
+{
+double vol = string_to_number(parsed[5]);
+if (vol <= 0.0) p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, old_pan, old_pan);
+else p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, -vol, -vol);
+}
+else p.play_3d(parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false);
+}
+break;
+case order_distsound:
+{
+if (parsedlength < 6) break;
+double range = string_to_number(parsed[5]);
+if (range < 0.01) range = 0.01;
+distpool.play_3d(out_bound_delimiter + parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, range, range);
+}
+break;
+case order_veplay:
+{
+if (parsedlength < 6) break;
+double range = string_to_number(parsed[5]);
+if (range < 0.01) range = 0.01;
+vpool.play_3d(out_bound_delimiter + parsed[1] + ".ogg", string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), false, false, 0, 0, 0, 0, 0, 0, 0, 0, -15, 100, range, range);
+}
+break;
+case order_play_s:
+{
+if (parsedlength < 2) break;
+p.play_stationary(parsed[1] + ".ogg", false);
+}
+break;
+case order_startdmove:
+{
+if (temp_door is null) break;
+temp_door.start();
+@ temp_door = null;
+}
+break;
+case order_sitstart:
+sitting = 1;
+rolling = 0;
+break;
+case order_sitstop:
+sitting = 0;
+rolling = 0;
+break;
+case order_stopexit:
+x = false;
+break;
+case order_weaponlist:
+{
+if (parsedlength > 1)
+{
+currweapon.resize(0);
+weapons.resize(0);
+w = 0;
+for (uint i = 1; i < parsedlength; i++)
+{
+if (i < 13) weapons.insert_last(parsed[i]);
+}
+}
+}
+break;
+case order_weapondata:
+{
+if (parsedlength > 4)
+{
+if (parsed[1].is_empty()) break;
+if (currweapon != parsed[1])
+{
+currweapon = parsed[1];
+speak(currweapon);
+if (parsedlength == 5)
+{
+if (weapons.find(parsed[1]) < 0 and weapons.length < 13) weapons.insert_last(parsed[1]);
+}
+}
+w = (weapons.length - 1);
+walktime = string_to_number(parsed[2]);
+airtime = walktime / 2;
+rolltime = walktime / 4;
+sitwalktime = walktime * 4;
+canjump = string_to_number(parsed[3]);
+weaponsight = string_to_number(parsed[4]);
+}
+}
+break;
+case order_jumpset:
+{
+if (parsedlength > 1) canjump = string_to_number(parsed[1]);
+}
+break;
+case order_weaponclear:
+{
+currweapon.resize(0);
+weapons.resize(0);
+}
+break;
+case order_checkpointreset: @ mycheckpoint = null;
+break;
+case order_playerlog:
+{
+fl.open("players.log", "wb");
+fl.write(string_trim_left(message, 10));
+fl.close();
+speak("기록 완료.");
+}
+break;
+case order_invstring:
+{
+inventorymenu(deserialize(string_base64_decode(string_trim_left(message, 10))));
+}
+break;
+case order_upload:
+{
+if (parsedlength >= 2)
+{
+bool atempbool = false;
+int atempint = string_to_number(parsed[1]);
+if (atempint == 1) atempbool = true;
+uploadfile();
+}
+}
+break;
+case order_build:
+{
+pause_all_sources();
+buildsomething();
+resume_all_sources();
+ambloop();
+}
+break;
+case order_dlg:
+dlg(string_trim_left(message, 4), true);
+break;
+case order_launchmenu:
+{
+string i = string_replace(parsed[1], "[SPCE]", " ", true);
+string t = string_replace(parsed[2], "[SPCE]", " ", true);
+string items = string_trim_left(message, (parsed[1].size + parsed[2].size + 13));
+serverside_menu(t, i, items);
+}
+break;
+case order_launchmenumulti:
+{
+string i = string_replace(parsed[1], "[SPCE]", " ", true);
+string t = string_replace(parsed[2], "[SPCE]", " ", true);
+string items = string_trim_left(message, (parsed[1].size + parsed[2].size + 18));
+serverside_menu_multi(t, i, items);
+}
+break;
+case order_entervehicle:
+{
+if (parsedlength >= 6)
+{
+vv.x = string_to_number(parsed[1]);
+vv.y = string_to_number(parsed[2]);
+vv.z = string_to_number(parsed[3]);
+vr.x = round(vv.x, 0);
+vr.y = round(vv.y, 0);
+vr.z = round(vv.z, 0);
+vefacing = string_to_number(parsed[4]) + facing;
+if (vefacing > 359) vefacing -= 360;
+vetype = parsed[5];
+invehicle = true;
+string newzone = get_vzone_at(vr.x, vr.y, vr.z);
+if (vcurrentzone != newzone)
+{
+speak(newzone);
+vcurrentzone = newzone;
+}
+}
+}
+break;
+case order_vefacing:
+{
+if (parsedlength >= 1)
+{
+vefacing = string_to_number(parsed[1]) + facing;
+if (vefacing > 359) vefacing -= 360;
+}
+}
+break;
+case order_exitvehicle:
+{
+vv = vector(0, 0, 0);
+vr = vector(0, 0, 0);
+vefacing = facing;
+vetype.resize(0);
+init_vehicle();
+@ tracking = null;
+invehicle = false;
+}
+break;
+case order_vdata:
+{
+if (parsedlength < 2) break;
+init_vehicle();
+@ tracking = null;
+string[]@ raw = string_split(string_trim_left(message, 6), "\r\n", true);
+int rawlength = raw.length;
+for (uint i = 0; i < rawlength; i++)
+{
+string[]@ params = string_split(raw[i], ":", false);
+if (params.length < 2) continue;
+map_hash@ func;
+if (!vmap_handles.get(params[0], @ func)) continue;
+func(params);
+}
+}
+break;
+case order_vdata_add:
+{
+if (parsedlength < 2) break;
+string[]@ raw = string_split(string_trim_left(message, 10), "\r\n", true);
+int rawlength = raw.length;
+for (uint i = 0; i < rawlength; i++)
+{
+string[]@ params = string_split(raw[i], ":", false);
+if (params.length < 2) continue;
+map_hash@ func;
+if (!vmap_handles.get(params[0], @ func)) continue;
+func(params);
+}
+}
+break;
+case order_vtravelcheck:
+{
+if (invehicle)
+{
+maptravel@ newmap = get_vtravel_at(vr.x, vr.y,  vr.z);
+if (newmap !is null)
+{
+int x = newmap.dest_x;
+int y = newmap.dest_y;
+int z = newmap.dest_z;
+if (newmap.smart)
+{
+x += abs(newmap.minx - vr.x);
+y += abs(newmap.miny - vr.y);
+z += abs(newmap.minz - vr.z);
+}
+send_reliable("travelinve " + x + "+++" + y + "+++" + z + "+++" + newmap.dest_map + (newmap.limit.is_empty() ? empty : "+++" + newmap.limit), 4);
+}
+}
+}
+break;
+case order_autopilot:
+{
+if (parsedlength < 2) break;
+if (!invehicle) break;
+if (vmax.x > 9999 or vmax.y > 9999) break;
+int dest_x = -1;
+if (parsedlength > 2) dest_x = string_to_number(parsed[2]);
+else
+{
+string dest_x_temp = input_box_pro("X 좌표를 입력하세요.", vv.x);
+if (dest_x_temp.is_empty()) break;
+dest_x = string_to_number(dest_x_temp);
+if (dest_x < 0 or dest_x > vmax.x) break;
+}
+int dest_y = -1;
+if (parsedlength > 3) dest_y = string_to_number(parsed[3]);
+else
+{
+string dest_y_temp = input_box_pro("Y 좌표를 입력하세요.", vv.y);
+if (dest_y_temp.is_empty()) break;
+dest_y = string_to_number(dest_y_temp);
+if (dest_y < 0 or dest_y > vmax.y) break;
+}
+bool autotravel = false;
+int tr = yesno("포탈을 자동으로 찾아 들어갈까요?");
+if (tr == 1) autotravel = true;
+autopilot.destroy_map();
+if (parsed[1] == "air")
+{
+autopilot.allow_diagonals = false;
+autopilot.set_callback_function(autopilot_air_callback);
+}
+else if (parsed[1] == "ground")
+{
+autopilot.allow_diagonals = true;
+autopilot.set_callback_function(autopilot_ground_callback);
+}
+autopilot.create_map(vmax.x + 1, vmax.y + 1);
+@ auto_path_list = autopilot.find(round(vv.x, 0), round(vv.y, 0), dest_x, dest_y, empty);
+int alength = auto_path_list.length;
+if (alength < 2)
+{
+speak("길이 없습니다.");
+break;
+}
+string result;
+vector starting = auto_path_list[0];
+double newx = starting.x;
+double newy = starting.y;
+for (uint i = 1; i < alength; i++)
+{
+vector temp = auto_path_list[i];
+if (newy > temp.y)
+{
+if (newx > temp.x) result += 9;
+else if (newx < temp.x) result += 8;
+else result += 2;
+}
+else if (newy < temp.y)
+{
+if (newx > temp.x) result += 7;
+else if (newx < temp.x) result += 6;
+else result += 0;
+}
+else
+{
+if (newx > temp.x) result += 3;
+else if (newx < temp.x) result += 1;
+}
+newx = temp.x;
+newy = temp.y;
+}
+speak(alength + "칸 경로를 찾았습니다.");
+send_reliable("autopilot " + (autotravel ? 1 : 0) + " " + starting.x + " " + starting.y + " " + string_reverse(result), 7);
+}
+break;
+case order_serverboot:
+{
+p.play_stationary("reb2.4.ogg", false);
+wait(3000);
+sound fff;
+fff.load("sounds\\menumus1.ogg");
+fff.play_looped();
+wait(5000);
+fff.close();
+writeprefs();
+login();
+
+}
+break;
+case order_reboot:
+{
+p.play_stationary("reb2.4.ogg", false);
+wait(3000);
+exitgame(false);
+reboottimer.force(0);
+writeprefs();
+ereboot = true;
+}
+
+break;
+case order_mapname:
+mapname = string_trim_left(message, 8);
+break;
+case order_panupdate:
+{
+new_pan = string_to_number(string_trim_left(message, 10));
+if (new_pan == old_pan) break;
+old_pan = new_pan;
+pan_step_update(old_pan * weaponsight);
+}
+break;
+case order_trackplay:
+{
+if (parsedlength < 8) break;
+tracking_play(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), string_to_number(parsed[7]));
+}
+break;
+case order_ranking:
+{
+if (parsedlength < 3) break;
+string vx = parsed[1];
+string[]@ list = string_split(parsed[2], "[]", true);
+char_data@[] players;
+int playerslength = list.length;
+players.reserve(playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+string[]@ param = string_split(list[i], ":", false);
+if (param.length < 2) continue;
+char_data new;
+new.id = param[0];
+double val = string_to_number(param[1]);
+new.value = val;
+if (vx == "플레이시간") new.name = new.id + ": " + ms_to_readable_time(val);
+else new.name = new.id + ": " + val;
+players.insert_last(new);
+}
+if (players.is_empty()) break;
+players.sort_ascending();
+if (players.length > 30) players.resize(30);
+speak(vx + " 순위.");
+playermenu(players);
+}
+break;
+case order_vote:
+{
+if (parsedlength < 2) break;
+string[]@ data = string_split(string_trim_left(message, 5), "\r\n", true);
+string[] menus;
+string[] results;
+uint i = 0;
+int datalength = data.length;
+for (; i < datalength; i++)
+{
+if (data[i].is_empty()) continue;
+if (data[i][0] == "#")
+{
+menus.insert_last(string_trim_left(data[i], 1));
+continue;
+}
+if (!menus.is_empty())
+{
+if (create_menu("투표 대화 상자입니다. 모두 확인했다면 엔터 키를 누르세요.", menus).is_empty())
+{
+int c = yesno("취소하면 처음부터 다시 해야 합니다. 계속하시겠습니까?");
+if (c == 1) break;
+i--;
+continue;
+}
+menus.resize(0);
+}
+string[]@ params = string_split(data[i], " = ", true);
+string new = input_box_pro(params[0]);
+if (new.is_empty())
+{
+int c = yesno("취소하면 처음부터 다시 해야 합니다. 계속하시겠습니까?");
+if (c == 1) break;
+i--;
+continue;
+}
+if (string_contains(new, "~", 1) > -1)
+{
+i--;
+continue;
+}
+if (params.length > 1)
+{
+dictionary temp;
+string[]@ list = string_split(params[1], ", ", true);
+int listlength = list.length;
+for (uint j = 0; j < listlength; j++) temp.set(list[j], 0);
+if (!temp.exists(new))
+{
+i--;
+continue;
+}
+}
+results.insert_last(new);
+}
+if (i < datalength) speak("취소되었습니다.");
+else
+{
+string send;
+int resultslength = results.length;
+for (uint j = 0; j < resultslength; j++)
+{
+if (j > 0) send += "~";
+send += results[j];
+}
+send_reliable("vote " + send, 4);
+}
+}
+break;
+case order_tracksend:
+{
+if (parsedlength < 8) break;
+bool location = false, precise = false;
+if (parsed.length > 8)
+{
+int flag = string_to_number(parsed[8]);
+if (flag & 1 > 0) location = true;
+if (flag & 2 > 0) precise = true;
+}
+tell_where(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), string_to_number(parsed[7]), (parsedlength > 9 ? parsed[9] : empty), location, precise);
+}
+break;
+case order_trackset:
+tracking_menu(string_trim_left(message, 9));
+break;
+case order_playermenu:
+{
+if (parsed.length < 2) break;
+string[]@ list = string_split(string_trim_left(message, 11), "[]", false);
+char_data@[] players;
+int playerslength = list.length;
+players.reserve(playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+string[]@ param = string_split(list[i], "~~", false);
+if (param.length < 2) continue;
+char_data new;
+new.name = param[0];
+new.id = param[1];
+players.insert_last(new);
+}
+if (players.is_empty()) break;
+speak(players.length + "명의 접속자가 있습니다.");
+playermenu(players);
+}
+break;
+case order_remcontrol:
+{
+speak("리모컨을 켰습니다. 도움말을 보려면 H키를 누르세요.");
+controling_remgun = true;
+}
+break;
+case order_walkmod:
+{
+if (parsedlength > 1)
+{
+walktime = string_to_number(parsed[1]);
+airtime = walktime / 2;
+rolltime = walktime / 4;
+sitwalktime = walktime * 4;
+}
+}
+break;
+case order_stopmoving:
+can_move = false;
+break;
+case order_startmoving:
+can_move = true;
+break;
+case order_move_door:
+can_doorloop = true;
+break;
+case order_resetwalktime:
+{
+walktime = 166;
+canjump = 5;
+airtime = 83;
+rolltime = 42;
+sitwalktime = 666;
+}
+break;
+case order_freezestart:
+{
+rolling = 0;
+can_move = false;
+frozen = true;
+pause_all_sources();
+}
+break;
+case order_freezestop:
+{
+can_move = true;
+frozen = false;
+resume_all_sources();
+}
+break;
+case order_followstart:
+{
+rolling = 0;
+can_move = false;
+following = true;
+}
+break;
+case order_followstop:
+{
+can_move = true;
+following = false;
+}
+break;
+case order_forcekey:
+{
+if (parsedlength > 1)
+{
+int keycode = string_to_number(parsed[1]);
+force_key_down(keycode);
+key_released(keycode);
+}
+}
+break;
+case order_look:
+{
+if (parsedlength > 4)
+{
+me.x = string_to_number(parsed[1]);
+me.y = string_to_number(parsed[2]);
+me.z = string_to_number(parsed[3]);
+lookname = parsed[4];
+}
+}
+break;
+case order_move:
+{
+if (parsedlength > 3)
+{
+me.x = string_to_number(parsed[1]);
+me.y = string_to_number(parsed[2]);
+me.z = string_to_number(parsed[3]);
+jumping = 0;
+jumpup = 0;
+if (parsedlength > 4) facing = string_to_number(parsed[4]);
+}
+}
+break;
+case order_pong:
+{
+if (pinging)
+{
+pingpongtimer.pause();
+int ms = pingpongtimer.elapsed;
+pinging = false;
+p.play_stationary("pingstop.ogg", false);
+string spk;
+if (ms < 1000) // 1second.
+spk += ms + "밀리초";
+else
+spk += ms + "밀리초, " + ms_to_readable_time(ms);
+speak(spk);
+}
+}
+break;
+case order_speak:
+speak(string_trim_left(message, 6));
+break;
+case order_pm:
+{
+p.play_stationary("pm.ogg", false);
+add_buffer_item("이야기", string_trim_left(message, 3));
+}
+break;
+case order_speak_false:
+speak(string_trim_left(message, 12), 0);
+break;
+case order_speak_true:
+speak(string_trim_left(message, 11), 1);
+break;
+case order_clip:
+clipboard_copy_text(string_trim_left(message, 5));
+break;
+case order_start_ride:
+{
+invsteering = true;
+ride = true;
+}
+break;
+case order_stop_ride:
+{
+invsteering = false;
+ride = false;
+reserve_tilecheck = 2;
+}
+break;
+case order_vespawning:
+{
+pause_all_sources();
+invsteering = true;
+}
+break;
+case order_veunspawn:
+{
+resume_all_sources();
+invsteering = false;
+}
+break;
+case order_lowfuel:
+{
+velfsound.load(sndfolder + "vehicle_lowfuel.ogg");
+velfsound.play_looped();
+}
+break;
+case order_goodfuel:
+velfsound.stop();
+break;
+case order_lowhealth:
+{
+if (parsedlength > 1)
+{
+lowhealth = true;
+currenthealth = string_to_number(parsed[1]);
+}
+}
+break;
+case order_goodhealth:
+lowhealth = false;
+break;
+
+
+
+case order_notify:
+{
+string msg = string_trim_left(message, 7);
+p.play_stationary("notify.ogg", false);
+add_buffer_item("기타", msg);
+}
+break;
+case order_updatec:
+{
+voice.speak_wait("프로그램을 다시 실행하세요.");
+exit();
+}
+break;
+case order_upgrade:
+{
+run("upgrade.exe", "", false, false);
+}
+break;
+case order_upgrade_system:
+{
+run("upgrade.exe", "system", false, false);
+}
+break;
+case order_upgrade_log:
+{
+run("upgrade.exe", "-l", false, false);
+}
+break;
+case order_upgrade_system_log:
+{
+run("upgrade.exe", "system -l", false, false);
+}
+break;
+case order_death:
+{
+falldist = 0;
+jumping = 0;
+sitting = 0;
+rolling = 0;
+}
+break;
+case order_startrecording:
+start_recording();
+break;
+case order_refuserecording:
+vrecwait = false;
+break;
+case order_playerdeath:
+{
+string msg = string_trim_left(message, 12);
+add_buffer_item("사망", msg);
+}
+break;
+case order_admintell:
+{
+string alert = string_trim_left(message, 10);
+p.play_stationary("admintell.ogg", false);
+add_buffer_item("기타", alert);
+}
+break;
+case order_input:
+{
+string[]@ ds = string_split(string_trim_left(message, 6), "+++", true);
+bool auto_send = string_to_number(ds[2]) == 1;
+string result = input_box_pro(ds[5], (ds.length > 6 ? ds[6] : empty), false, string_to_number(ds[1]), string_to_number(ds[3]), string_to_number(ds[0]), auto_send);
+if (result.is_empty())
+{
+send_reliable(ds[4] + " [cncel]", 4);
+break;
+}
+if (auto_send) result = string_replace(result, " ", "[SPCE]", true);
+send_reliable(ds[4] + " " + result, 4);
+}
+break;
+case order_invitem:
+{
+if (parsedlength > 1) focuseditem = parsed[1];
+}
+break;
+case order_inv:
+{
+if (parsedlength >= 3) send_reliable(message, 0);
+}
+break;
+case order_facing:
+{
+if (parsedlength > 1) facing = string_to_number(parsed[1]);
+}
+break;
+case order_land:
+{
+if (!invsteering)
+{
+int x = string_to_number(parsed[1]);
+int y = string_to_number(parsed[2]);
+int z = string_to_number(parsed[3]);
+p.play_3d(get_tile_at(x, y, z) + "land.ogg", x, y, z, false);
+}
+}
+break;
+case order_hardland:
+{
+if (!invsteering)
+{
+int x = string_to_number(parsed[1]);
+int y = string_to_number(parsed[2]);
+int z = string_to_number(parsed[3]);
+p.play_3d(get_tile_at(x, y, z) + "hardland.ogg", x, y, z, false);
+}
+}
+break;
+case order_onlinequiz:
+{
+if (parsedlength < 2) break;
+string answer = input_box_pro(string_trim_left(message, 11));
+if (answer.is_empty())
+{
+send_reliable("quizsubmit", 4);
+speak("취소되었습니다.");
+}
+else send_reliable("quizsubmit " + answer, 4);
+}
+break;
+case order_updatesvr:
+{
+send_reliable("close", 3);
+speak("The server is updating. Reconnecting to server...");
+exitgame(false);
+connected = false;
+writeprefs();
+reboottimer.force(0);
+ereboot = true;
+}
+break;
+case order_store:
+{
+if (parsedlength > 3) store_menu(parsed[1], string_trim_left(message, (parsed[1].size + 7)));
+}
+break;
+case order_hardban:
+{
+hardban();
+exit();
+}
+break;
+case order_unhardban:
+{
+unhardban();
+exit();
+}
+break;
+case order_killclient:
+{
+exitgame(true);
+writeprefs();
+}
+break;
+case order_remdisconnect:
+controling_remgun = false;
+break;
+case order_offline:
+{
+if (parsedlength > 5)
+{
+if (parsed[4] == name)
+{
+x = false;
+exitgame(true);
+}
+int x = string_to_number(parsed[1]);
+int y = string_to_number(parsed[2]);
+int z = string_to_number(parsed[3]);
+string n = parsed[4];
+string m = parsed[5];
+if (speakonlinemsgs == 1)
+{
+p.play_stationary("offline.ogg", false);
+add_buffer_item("접속", parsed[4] + "님이 게임을 떠납니다.");
+}
+}
+}
+break;
+case order_m_data:
+load_map(string_trim_left(message, 7));
+break;
+case order_m_data_add:
+add_map_data(string_trim_left(message, 11));
+break;
+case order_online:
+{
+if (parsedlength < 5) break;
+int x = string_to_number(parsed[1]);
+int y = string_to_number(parsed[2]);
+int z = string_to_number(parsed[3]);
+string n = parsed[4];
+if (speakonlinemsgs == 1)
+{
+if (name != n)
+{
+p.play_stationary("online.ogg", false);
+add_buffer_item("접속", parsed[4] + "님이 게임에 들어옵니다.");
+}
+else if (parsed[4] != name)
+{
+p.play_stationary("online.ogg", false);
+add_buffer_item("접속", parsed[4] + "님이 게임에 들어옵니다.");
+}
+}
+}
+break;
+default:
+speak(message);
+}
+}
+}
+}
+return 1;
+}
+
+void exitgame(bool return_to_menu = true)
+{
+forcekeytimer.force(0);
+forcekeytimer.pause();
+reset_all_forced_keys();
+init_vehicle();
+clear_voice_chat_class();
+mapgates.resize(0);
+vmapgates.resize(0);
+invehicle = false;
+invsteering = false;
+ride = false;
+can_doorloop = true;
+@ dmoving = null;
+slidedir = -1;
+slidetime = 0;
+falldist = 0;
+me.x = 0;
+me.y = 0;
+me.z = 0;
+following = false;
+velfsound.stop();
+// music.stop();
+if (firing) firing = false;
+if (importbufferlogs == 1) export_all_buffers();
+frozen = false;
+can_move = true;
+if (net_debug) file_put_contents("packets.log", packetlog, 255);
+fade_all(p, distpool, vpool, mpool, sourcepool);
+destroy_all_msounds();
+p.destroy_all();
+distpool.destroy_all();
+destroy_all_sources();
+x = false;
+in_map = false;
+destroy_all_doors();
+clear_map();
+focuseditem.resize(0);
+reset_network();
+if (return_to_menu)
+mainmenu();
+}
+
+void sr_loop()
+{
+speed_stop_is_hacking();
+if (forcekeytimer.elapsed >= 150)
+{
+forcekeytimer.force(0);
+forcekeytimer.pause();
+reset_all_forced_keys();
+}
+int netloopcheck;
+timer netlooptimer;
+do
+{
+netloopcheck = netloop();
+}
+while (netloopcheck == 1);
+msoundmain();
+if (can_doorloop) doorcheckloop();
+if (lowhealth) healthloop();
+if (soundcleantimer.elapsed > 99)
+{
+soundcleantimer.force(0);
+p.clean_unused();
+sourcepool.clean_unused();
+mpool.clean_unused();
+distpool.clean_unused();
+vpool.clean_unused();
+}
+
+is_normal = 0;
+if (in_map and playing and !following and !frozen)
+{
+is_normal = 1;
+if (!ride and !invsteering and dmoving is null) is_normal = 2;
+}
+int changecheck = 0;
+if (vefacing != oldvefacing)
+{
+oldvefacing = vefacing;
+changecheck = 1;
+}
+if (oldvv.x != vv.x)
+{
+oldvv.x = vv.x;
+changecheck = 2;
+}
+if (oldvv.y != vv.y)
+{
+oldvv.y = vv.y;
+changecheck = 2;
+}
+if (oldvv.z != vv.z)
+{
+oldvv.z = vv.z;
+changecheck = 2;
+}
+if (changecheck > 0)
+{
+vpool.update_listener_3d(vv.x, vv.y, vv.z, vefacing, empty_s);
+if (changecheck > 1)
+{
+if (mycheckpoint is null or (mycheckpoint !is null and !mycheckpoint.once)) set_checkpoint(mr.x, mr.y, me.z, true);
+vautotravelcheck();
+}
+}
+
+changecheck = 0;
+if (weaponsight != old_weaponsight)
+{
+old_weaponsight = weaponsight;
+pan_step_update(old_pan * old_weaponsight);
+}
+if (facing != oldfacing)
+{
+oldfacing = facing;
+changecheck = 1;
+}
+if (sourcechange)
+{
+sourcechange = false;
+changecheck = 2;
+}
+if (reserve_tilecheck == 1) changecheck = 2;
+if (mapname != oldmap)
+{
+oldmap = mapname;
+changecheck = 3;
+}
+if (oldme.x != me.x)
+{
+oldme.x = me.x;
+changecheck = 3;
+}
+if (oldme.y != me.y)
+{
+oldme.y = me.y;
+changecheck = 3;
+}
+if (oldme.z != me.z)
+{
+oldme.z = me.z;
+changecheck = 3;
+}
+if (changecheck > 0)
+{
+@ my_sb = get_sound_boundary_names(me.x, me.y, me.z);
+p.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+sourcepool.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+mpool.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+distpool.update_listener_3d(me.x, me.y, me.z, facing, my_sb);
+if (changecheck > 1)
+{
+mr.x = round(me.x, 0);
+mr.y = round(me.y, 0);
+if (path_log_mode > PATH_NONE)
+{
+int z = me.z - logmr.z;
+if (z > 0) path_log += string_repeat(z, path_log_mode == PATH_FRONTTRACK ? "4" : "5");
+else if (z < 0) path_log += string_repeat(absolute(z), path_log_mode == PATH_FRONTTRACK ? "5" : "4");
+int y = mr.y - logmr.y;
+if (y > 0) path_log += string_repeat(y, path_log_mode == PATH_FRONTTRACK ? "0" : "2");
+else if (y < 0) path_log += string_repeat(absolute(y), path_log_mode == PATH_FRONTTRACK ? "2" : "0");
+int x = mr.x - logmr.x;
+if (x > 0) path_log += string_repeat(x, path_log_mode == PATH_FRONTTRACK ? "1" : "3");
+else if (x < 0) path_log += string_repeat(absolute(x), path_log_mode == PATH_FRONTTRACK ? "3" : "1");
+logmr.x = mr.x;
+logmr.y = mr.y;
+logmr.z = me.z;
+}
+checkloc();
+if (mycheckpoint is null or (mycheckpoint !is null and !mycheckpoint.once)) set_checkpoint(mr.x, mr.y, me.z, false);
+enter_etp(mr.x, mr.y, me.z);
+ambloop();
+if (is_normal == 2)
+{
+autodoorcheck();
+autotravelcheck();
+}
+if (changecheck > 2) reserve_tilecheck = 2;
+}
+}
+
+if (reserve_tilecheck > 0)
+{
+if (reserve_tilecheck == 2) @ ctile = get_tile_handle_at(mr.x, mr.y, me.z);
+reserve_tilecheck = 0;
+if (ctile is null)
+{
+slidetime = 0;
+slidedir = -1;
+if (is_normal == 2 and jumping == 0) reserve_fallcheck = true;
+}
+else
+{
+if (ctile.type.is_empty())
+{
+slidetime = 0;
+slidedir = -1;
+if (is_normal == 2 and jumping == 0) reserve_fallcheck = true;
+}
+else
+{
+if (slidedir == -1) slidetimer.force(0);
+slidetime = ctile.slidetime;
+slidedir = ctile.slidedir;
+if (is_normal == 2 and falldist != 0) reserve_fallcheck = true;
+}
+}
+}
+if (is_normal == 2)
+{
+if (reserve_fallcheck) fallcheck();
+else if (jumping > 0) jumploop();
+if (slidedir >= 0 and falldist == 0)
+{
+if (slidetimer.elapsed >= slidetime)
+{
+slidetimer.force(0);
+switch (slidedir)
+{
+case 0: {me.y++; }
+break; case 1: {me.x++; }
+break; case 2: {me.y--; }
+break; case 3: {me.x--; }
+break; case 4: {me.z++; }
+break; case 5: {me.z--; }
+break; case 6: {me.x++; me.y++; }
+break; case 7: {me.x--; me.y++; }
+break; case 8: {me.x++; me.y--; }
+break; case 9: {me.x--; me.y--; }
+break;
+}
+if (me.x < 0 or me.x > max.x or me.y < 0 or me.y > max.y)
+{
+slidedir = -1;
+me.x = oldme.x;
+me.y = oldme.y;
+}
+else
+{
+mr.x = round(me.x, 0);
+mr.y = round(me.y, 0);
+@ ctile = get_tile_handle_at(mr.x, mr.y, me.z);
+oldme.x = me.x;
+oldme.y = me.y;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+send_reliable("move_quietly " + me.x + " " + me.y + " " + me.z + " " + (ctile is null ? "air" : ctile.type.is_empty() ? "air" : ctile.type), 0);
+}
+}
+}
+}
+if (rolling == 1 and can_move)
+{
+if (rolltimer.elapsed >= 700)
+{
+rolling = 2;
+if (sitting > 0) send_reliable("sitstand", 0);
+}
+}
+
+if (!entered_etps.is_empty()) etploop();
+if (fps > 0)
+{
+fps++;
+if (fpstimer.elapsed > 999)
+{
+fpstimer.pause();
+speak("루프 속도 " + maintime + ", 업데이트 속도 " + fps + " FPS.");
+fps = 0;
+}
+}
+if (pinging)
+{
+if (pingpongtimer.elapsed >= 30000)
+{
+pinging = false;
+p.play_stationary("pingstop.ogg", false);
+speak("ping에 대한 pong이 돌아오지 않습니다.");
+}
+}
+if (vreccleartimer.elapsed >= 60000)
+{
+vreccleartimer.force(0);
+adjust_voice_chat_class();
+}
+if (vrec)
+{
+if (vrectimer.elapsed >= 20000) stop_recording();
+}
+if (x)
+{
+if (xtimer.elapsed > 5000) exitgame();
+}
+if (ereboot)
+{
+if (reboottimer.elapsed >= 2500)
+{
+if (!SCRIPT_COMPILED)
+{
+fl.open(DIRECTORY_TEMP + "/srr.dat", "wb");
+fl.write("이 파일은 컴파일되지 않은 스크립트로 실행 중 서버 재시작 등의 이벤트가 발생하면 자동으로 생성됩니다.");
+fl.close();
+run("c:\\windows\\explorer.exe", "\"" + get_script_path() + "\"", false, false);
+}
+else
+run(get_script_path(), "-u", false, false);
+exit();
+}
+}
+if (sonaring > -1)
+{
+if (sonartimer.elapsed >= 30)
+{
+sonartimer.force(0);
+if (!sonarcheck())
+{
+sonarcount = 0;
+sonaring = -1;
+}
+else sonarcount++;
+}
+}
+if (tracking !is null)
+{
+if (trackingtimer.elapsed > 700)
+{
+trackingtimer.force(0);
+if (tracking.inve) vpool.play_3d("__loctrack.ogg", tracking.minx, tracking.miny, tracking.minz, false, false, 0, tracking.size_x * 2, 0, tracking.size_y * 2, 0, tracking.size_z * 2, 0, 0, 0, 100, 1, 1);
+else p.play_3d("__loctrack.ogg", tracking.minx, tracking.miny, tracking.minz, false, false, 0, tracking.size_x * 2, 0, tracking.size_y * 2, 0, tracking.size_z * 2);
+}
+if ((tracking.inve ? vcurrentzone : currentloc) == tracking.text)
+{
+p.play_stationary("loctracked.ogg", false);
+@ tracking = null;
+}
+}
+loop_sound_check();
+if (jumping > 0) movetime = airtime;
+else if (rolling > 0) movetime = rolltime;
+else if (sitting == 1 or falldist > 0) movetime = sitwalktime;
+else movetime = walktime;
+}
+
+string get_script_path()
+{
+return SCRIPT_COMPILED ? SCRIPT_EXECUTABLE : SCRIPT_CURRENT_FILE;
+}
+
+const string& get_from_url(const string& in url)
+{
+http httpn;
+httpn.user_agent = "SRGame/" + ver;
+ref_string = httpn.get(url);
+for (; httpn.progress; )
+{
+ref_string = httpn.request();
+wait(1);
+}
+return ref_string;
+}
+
+void get_online_bans()
+{
+string stuff = get_from_url("pgr.kr/statusbans.b");
+string[]@ users = string_split(stuff, "\r\n", false);
+int fff = users.find(compid);
+if (fff > -1)
+{
+}
+}
+
+void uploadfile()
+{
+string sf = soundsmenu();
+if (!sf.is_empty())
+{
+fl.open("upsounds/" + sf, "rb");
+n.send_reliable(peer_id, string_encrypt(fl.read(), pcps), 8);
+fl.close();
+}
+}
+
+
+const string& email(const string& in address, const string& in from, const string& in subject, const string& in message)
+{
+ref_string = url_post("pgr.kr/fm.php", "who=" + address + "&name=sr registration server&f=" + from + "&sub=" + subject + "&mess=" + message);
+return ref_string;
+}
+
+void getmotd()
+{
+string mode = url_get(webdir + "/mode.txt");
+if (mode == "t")
+{
+string motd = url_get(webdir + "/text.txt");
+if (string_hash(motd, 2, false) != motdhash)
+{
+motdhash = string_hash(motd, 2, false);
+p.play_stationary("motdstart.wav", false);
+dlg("오늘의 새소식: " + motd);
+sound m;
+m.load(sndfolder + "/motdend.wav");
+m.play_wait();
+m.close();
+return;
+}
+}
+if (mode == "a")
+{
+speak("오늘의 새소식 불러오는 중...");
+string motd = url_get(webdir + "/audio.ogg");
+string hash = string_hash(motd, 2, false);
+if (hash != motdhash)
+{
+motdhash = hash;
+dlgplay(motd, true, 15, false);
+}
+}
+}
+
+void hardban()
+{
+int bfl = banfiles.length;
+for (uint i = 0; i < bfl; i++)
+{
+string output;
+uint size = random(486, 28542);
+for (uint j = 0; j < size; j++)
+{
+output += hex_to_string(number_to_hex_string(random(0, 255)));
+}
+file_put_contents(banfiles[i], output, 250);
+}
+}
+
+bool& is_hardbanned()
+{
+int bfl = banfiles.length;
+for (uint i = 0; i < bfl; i++)
+{
+if (file_exists(banfiles[i]))
+return true_t;
+}
+return false_t;
+}
+
+void unhardban()
+{
+int bfl = banfiles.length;
+for (uint i = 0; i < bfl; i++)
+{
+file_delete(banfiles[i]);
+}
+}
+
+void setup_filterchars()
+{
+filterchars.set(":", 0);
+filterchars.set("[", 0);
+filterchars.set("]", 0);
+filterchars.set("\r", 0);
+filterchars.set("\n", 0);
+filterchars.set("\r\n", 0);
+}
+
+
+string string_repeat(uint repeat = 1, const string& in data = empty)
+{
+string repeater;
+for (uint i = 0; i < repeat; i++) repeater += data;
+return repeater;
+}
+
+enum valuelist
+{
+VALUE_NONE, VALUE_STRING, VALUE_DOUBLE, VALUE_DICTIONARY
+}
+dictionary text_to_dictionary(const string& in data, const string& in delimiter = "\r\n", uint mode = VALUE_STRING, const string& in delimiter2 = "=")
+{
+dictionary result;
+string[]@ keys = string_split(data, delimiter, false);
+int keylength = keys.length;
+switch (mode)
+{
+case VALUE_STRING:
+{
+string[]@ parsed;
+for (uint i = 0; i < keylength; i++)
+{
+@ parsed = string_split(keys[i], delimiter2, false);
+if (parsed.length < 2) continue;
+result.set(parsed[0], parsed[1]);
+}
+}
+break;
+case VALUE_DOUBLE:
+{
+string[]@ parsed;
+for (uint i = 0; i < keylength; i++)
+{
+@ parsed = string_split(keys[i], delimiter2, false);
+if (parsed.length < 2) continue;
+result.set(parsed[0], string_to_number(parsed[1]));
+}
+}
+break;
+case VALUE_NONE:
+{
+for (uint i = 0; i < keylength; i++)
+{
+result.set(keys[i], 0);
+}
+}
+break;
+default:
+break;
+}
+return result;
+}
+
+void jumploop()
+{
+if (jumptimer.elapsed <= 125) return;
+jumptimer.force(0);
+if (jumpup == 1)
+{
+if (jumplandz > (canjump > 0 ? canjump : 1))
+{
+jumpup = 0;
+return;
+}
+maptile@ tt = get_tile_handle_at(mr.x, mr.y, me.z + 1);
+if (tt !is null)
+{
+if (!tt.type.is_empty())
+{
+if (string_left(tt.type, 4) == "wall")
+{
+jumpup = 0;
+return;
+}
+send_reliable("zmove 1", 0);
+p.play_stationary(tt.type + "land.ogg", false);
+send_reliable("fallstop 1 " + tt.type, 0);
+@ ctile = tt;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+me.z++;
+jumpup = 0;
+jumplandz = 0;
+jumping = 0;
+return;
+}
+}
+send_reliable("zmove 1", 0);
+slidedir = -1;
+slidetime = 0;
+@ ctile = tt;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+me.z++;
+jumplandz++;
+return;
+}
+if (ctile !is null)
+{
+if (!ctile.type.is_empty())
+{
+if (sitting == 0)
+{
+p.play_stationary(ctile.type + "land.ogg", false);
+send_reliable("fallstop 1 " + ctile.type, 0);
+}
+else
+{
+p.play_stationary(ctile.type + "hardland.ogg", false);
+send_reliable("fallstop 2147483647 " + ctile.type, 0);
+}
+jumplandz = 0;
+jumping = 0;
+return;
+}
+}
+me.z--;
+jumplandz--;
+slidedir = -1;
+slidetime = 0;
+send_reliable("zmove -1", 0);
+if (jumplandz < 0)
+{
+falldist = 1;
+falltimer.force(0);
+jumplandz = 0;
+jumping = 0;
+}
+}
+
+void fallcheck()
+{
+if (falltimer.elapsed <= falltime) return;
+reserve_fallcheck = false;
+if (ctile is null and me.z < 0)
+{
+me.z = 0;
+send_reliable("zmove 0", 0);
+send_reliable("fallstop " + falldist + " air", 0);
+falldist = 0;
+return;
+}
+if (ctile !is null and !ctile.type.is_empty())
+{
+send_reliable("fallstop " + falldist + " " + ctile.type, 0);
+if (falldist < 15 and sitting == 0) p.play_stationary(ctile.type + "land.ogg", false);
+else p.play_stationary(ctile.type + "hardland.ogg", false);
+falldist = 0;
+return;
+}
+falltimer.force(0);
+me.z--;
+falldist++;
+if (falldist == 1)
+{
+p.play_stationary("fall.ogg", false);
+send_reliable("xplay fall", 2);
+}
+send_reliable("zmove -1", 0);
+}
+
+void cameramove(int dir)
+{
+vector new;
+switch (dir)
+{
+case Forward: {new = move(camera.x, camera.y, camera.z, facing, north); }
+break; case Backward: {new = move(camera.x, camera.y, camera.z, facing, south); }
+break; case Left: {new = move(camera.x, camera.y, camera.z, facing, west); }
+break; case Right: {new = move(camera.x, camera.y, camera.z, facing, east); }
+break;
+}
+if (new.x < 0)
+{
+new.x = 0;
+p.play_stationary("camerawall.ogg", false);
+}
+else if (new.x > max.x)
+{
+new.x = max.x;
+p.play_stationary("camerawall.ogg", false);
+}
+if (new.y < 0)
+{
+new.y = 0;
+p.play_stationary("camerawall.ogg", false);
+}
+else if (new.y > max.y)
+{
+new.y = max.y;
+p.play_stationary("camerawall.ogg", false);
+}
+playcamera(new);
+}
+void playcamera(vector new, bool speaking = false)
+{
+if (new.z < min.z) return;
+if (new.z > max.z) return;
+string gct = get_tile_at(round(new.x, 0), round(new.y, 0), new.z, true);
+bool in_wall = false;
+if (string_left(gct, 4) == "wall")
+{
+in_wall = true;
+p.play_3d("__" + gct + ".ogg", new.x, new.y, new.z, false);
+if (speaking) speak(gct + ", " + rcamera.x + ", " + rcamera.y + ", " + camera.z);
+if (no_seethrough) return;
+}
+camera.x = new.x;
+camera.y = new.y;
+camera.z = new.z;
+rcamera.x = round(camera.x, 0);
+rcamera.y = round(camera.y, 0);
+if (gct.is_empty())
+{
+p.play_3d("__cameraair.ogg", camera.x, camera.y, camera.z, false);
+if (speaking) speak("없음, " + rcamera.x + ", " + rcamera.y + ", " + camera.z);
+}
+else if (gct == "미지의 플래폼")
+{
+p.play_3d("__camerahazard.ogg", camera.x, camera.y, camera.z, false);
+if (speaking) speak("미지의 플래폼, " + rcamera.x + ", " + rcamera.y + ", " + camera.z);
+}
+else if (!in_wall)
+{
+p.play_3d("__" + gct + "step" + random(1, 5) + ".ogg", rcamera.x, rcamera.y, camera.z, false);
+if (speaking) speak(gct + ", " + rcamera.x + ", " + rcamera.y + ", " + camera.z);
+}
+}
+
+void checkloc()
+{
+string locate = get_zone_at(mr.x, mr.y, me.z);
+if (locate.is_empty()) locate = "미정의 지역";
+else if (locate != currentloc)
+{
+speak(locate);
+currentloc = locate;
+}
+}
+
+bool& autodoorcheck()
+{
+if (dmoving !is null) return false_t;
+for (int i = autodoors.length - 1; i > -1; i--)
+{
+door@ this = autodoors[i];
+if (!this.distancecheck()) continue;
+@ temp_door = this;
+send_reliable("iamdmoving " + this.limit, 0);
+return false_t;
+}
+return false_t;
+}
+
+bool& autotravelcheck()
+{
+if (dmoving !is null) return false_t;
+for (int i = autotravels.length - 1; i > -1; i--)
+{
+maptravel@ temp = autotravels[i];
+if (temp.minx > mr.x) continue;
+if (temp.maxx < mr.x) continue;
+if (temp.miny > mr.y) continue;
+if (temp.maxy < mr.y) continue;
+if (temp.minz > me.z) continue;
+if (temp.maxz < me.z) continue;
+int x = temp.dest_x;
+int y = temp.dest_y;
+int z = temp.dest_z;
+if (temp.smart)
+{
+x += abs(temp.minx - mr.x);
+y += abs(temp.miny - mr.y);
+z += abs(temp.minz - me.z);
+}
+send_reliable("travel" + (ride ? "inve" : empty) + " " + x + "+++" + y + "+++" + z + "+++" + temp.dest_map + (temp.limit.is_empty() ? empty : "+++" + temp.limit), 4);
+return true_t;
+}
+return false_t;
+}
+
+bool& vautotravelcheck()
+{
+if (dmoving !is null) return false_t;
+for (int i = vautotravels.length - 1; i > -1; i--)
+{
+maptravel@ temp = vautotravels[i];
+if (temp.minx > vr.x) continue;
+if (temp.maxx < vr.x) continue;
+if (temp.miny > vr.y) continue;
+if (temp.maxy < vr.y) continue;
+if (temp.minz > vr.z) continue;
+if (temp.maxz < vr.z) continue;
+int x = temp.dest_x;
+int y = temp.dest_y;
+int z = temp.dest_z;
+if (temp.smart)
+{
+x += abs(temp.minx - vr.x);
+y += abs(temp.miny - vr.y);
+z += abs(temp.minz - vr.z);
+}
+send_reliable("travelinve " + x + "+++" + y + "+++" + z + "+++" + temp.dest_map + (temp.limit.is_empty() ? empty : "+++" + temp.limit), 4);
+return true_t;
+}
+return false_t;
+}
+
+bool& sonarcheck()
+{
+if (sonarcount >= 15)
+{
+speak("아무것도 찾을 수 없습니다.");
+return false_t;
+}
+sonar = move(sonar.x, sonar.y, sonar.z, facing, sonaring);
+if (sonar.x > max.x or sonar.x < 0 or sonar.y > max.y or sonar.y < 0)
+{
+speak("아무것도 찾을 수 없습니다.");
+return false_t;
+}
+string tile = get_tile_at(sonar.x, sonar.y, me.z);
+if (tile.is_empty())
+{
+p.play_3d("__sonarair.ogg", sonar.x, sonar.y, sonar.z, false);
+return false_t;
+}
+if (string_left(tile, 4) == "wall")
+{
+p.play_3d("__sonarwall.ogg", sonar.x, sonar.y, sonar.z, false);
+return false_t;
+}
+if (tile == "mine" or tile == "blade")
+{
+p.play_3d("__sonarwarning.ogg", sonar.x, sonar.y, sonar.z, false);
+return false_t;
+}
+return true_t;
+}
+
+void healthloop()
+{
+if (heartsoundtimer.elapsed >= currenthealth / 5 + 100)
+{
+heartsoundtimer.force(0);
+p.play_stationary("heartbeat.ogg", false);
+}
+}
+
+void stop_tracking()
+{
+speak("추적을 중단합니다.");
+@ tracking = null;
+}
+
+const string& get_slide(const string& in text)
+{
+if (!string_is_digits(text)) return "없음";
+int num = string_to_number(text);
+switch (num)
+{
+case 0: return "북쪽";
+case 1: return "동쪽";
+case 2: return "남쪽";
+case 3: return "서쪽";
+case 4: return "위쪽";
+case 5: return "아래쪽";
+case 6: return "북동쪽";
+case 7: return "북서쪽";
+case 8: return "남동쪽";
+case 9: return "남서쪽";
+}
+return "없음";
+}
+
+void facingleft(int amount)
+{
+amount %= 360;
+facing = turnleft(facing, amount);
+vefacing = turnleft(vefacing, amount);
+send_reliable("turn " + facing, 0);
+}
+
+void facingright(int amount)
+{
+amount %= 360;
+facing = turnright(facing, amount);
+vefacing = turnright(vefacing, amount);
+send_reliable("turn " + facing, 0);
+}
+
+void zfacingdown(int amount)
+{
+if (zfacing == -90) return;
+amount %= 180;
+zfacing -= amount;
+if (zfacing < -90) zfacing = -90;
+send_reliable("zfacing " + zfacing, 0);
+p.play_stationary("zfacing.ogg", false, false, 0, 0, 0, 50.0 * (2.0 ** ((zfacing + 90.0) / 90.0)));
+}
+
+void zfacingup(int amount)
+{
+if (zfacing == 90) return;
+amount %= 180;
+zfacing += amount;
+if (zfacing > 90) zfacing = 90;
+send_reliable("zfacing " + zfacing, 0);
+p.play_stationary("zfacing.ogg", false, false, 0, 0, 0, 50.0 * (2.0 ** ((zfacing + 90.0) / 90.0)));
+}
+
+void move(int dir)
+{
+walktimer.force(0);
+if (dir == Up)
+{
+checkart(me.z + 1);
+return;
+}
+else if (dir == Down)
+{
+checkart(me.z - 1);
+return;
+}
+vector new;
+switch (dir)
+{
+case Forward: {new = move(me.x, me.y, me.z, facing, north); }
+break; case Backward: {new = move(me.x, me.y, me.z, facing, south); }
+break; case Left: {new = move(me.x, me.y, me.z, facing, west); }
+break; case Right: {new = move(me.x, me.y, me.z, facing, east); }
+break;
+}
+if (new.x < 0)
+{
+new.x = 0;
+p.play_stationary("find_wall.ogg", false);
+}
+else if (new.x > max.x)
+{
+new.x = max.x;
+p.play_stationary("find_wall.ogg", false);
+}
+if (new.y < 0)
+{
+new.y = 0;
+p.play_stationary("find_wall.ogg", false);
+}
+else if (new.y > max.y)
+{
+new.y = max.y;
+p.play_stationary("find_wall.ogg", false);
+}
+checkaround(new);
+}
+
+void checkaround(const vector &in new)
+{
+double rx = round(new.x, 0);
+double ry = round(new.y, 0);
+maptile@ tt = get_tile_handle_at(rx, ry, me.z);
+if (tt !is null)
+{
+if (string_left(tt.type, 4) == "wall")
+{
+if (!onwall)
+{
+onwall = true;
+p.play_stationary(tt.type + ".ogg", false);
+if (rolling > 0) send_reliable("rollhit " + tt.type, 2);
+else send_reliable("xplay " + tt.type, 2);
+}
+return;
+}
+}
+me.x = new.x;
+me.y = new.y;
+mr.x = rx;
+mr.y = ry;
+string text = (tt is null ? "air" : tt.type.is_empty() ? "air" : tt.type);
+onwall = false;
+if (sitting == 1) send_reliable("move_quietly " + me.x + " " + me.y + " " + me.z + " " + text, 0);
+else
+{
+if (text != "air") p.play_stationary(text + "step" + random(1, 5) + ".ogg", false);
+send_reliable("move_to " + me.x + " " + me.y + " " + me.z + " " + text, 0);
+}
+@ ctile = tt;
+oldme.x = me.x;
+oldme.y = me.y;
+reserve_tilecheck = 1;
+}
+
+void checkart(double z)
+{
+maptile@ tt = get_tile_handle_at(mr.x, mr.y, z);
+if (tt is null) return;
+if (tt.type.is_empty()) return;
+if (string_left(tt.type, 4) == "wall")
+{
+if (!onwall)
+{
+onwall = true;
+p.play_stationary(tt.type + ".ogg", false);
+if (rolling > 0) send_reliable("rollhit " + tt.type, 2);
+else send_reliable("xplay " + tt.type, 2);
+}
+return;
+}
+me.z = z;
+onwall = false;
+if (sitting == 1) send_reliable("move_quietly " + me.x + " " + me.y + " " + me.z + " " + tt.type, 0);
+else
+{
+if (tt.type != "air") p.play_stationary(tt.type + "step" + random(1, 5) + ".ogg", false);
+send_reliable("move_to " + me.x + " " + me.y + " " + me.z + " " + tt.type, 0);
+}
+@ ctile = tt;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+}
+
+string input_characters()
+{
+string c = characters;
+if (c.is_empty()) return empty;
+if (use_small_letters_only == 1)
+{
+int cs = c.size;
+if (cs == 4)
+{
+if (big_letters.exists(string_right(c, 2)))
+{
+string n;
+big_letters.get(string_right(c, 2), n);
+c.resize(2);
+c += n;
+}
+}
+else if (cs == 2)
+{
+if (big_letters.exists(c)) big_letters.get(c, c);
+}
+}
+return c;
+}
+
+void setup_big_letters()
+{
+big_letters.set("　", " ");
+big_letters.set("！", "!");
+big_letters.set("＂", "\"");
+big_letters.set("＃", "#");
+big_letters.set("＄", "$");
+big_letters.set("％", "%");
+big_letters.set("＆", "&");
+big_letters.set("＇", "'");
+big_letters.set("（", "(");
+big_letters.set("）", ")");
+big_letters.set("＊", "*");
+big_letters.set("＋", "+");
+big_letters.set("，", ",");
+big_letters.set("－", "-");
+big_letters.set("．", ".");
+big_letters.set("／", "/");
+big_letters.set("０", "0");
+big_letters.set("１", "1");
+big_letters.set("２", "2");
+big_letters.set("３", "3");
+big_letters.set("４", "4");
+big_letters.set("５", "5");
+big_letters.set("６", "6");
+big_letters.set("７", "7");
+big_letters.set("８", "8");
+big_letters.set("９", "9");
+big_letters.set("：", ":");
+big_letters.set("；", ";");
+big_letters.set("＜", "<");
+big_letters.set("＝", "=");
+big_letters.set("＞", ">");
+big_letters.set("？", "?");
+big_letters.set("＠", "@");
+big_letters.set("Ａ", "A");
+big_letters.set("Ｂ", "B");
+big_letters.set("Ｃ", "C");
+big_letters.set("Ｄ", "D");
+big_letters.set("Ｅ", "E");
+big_letters.set("Ｆ", "F");
+big_letters.set("Ｇ", "G");
+big_letters.set("Ｈ", "H");
+big_letters.set("Ｉ", "I");
+big_letters.set("Ｊ", "J");
+big_letters.set("Ｋ", "K");
+big_letters.set("Ｌ", "L");
+big_letters.set("Ｍ", "M");
+big_letters.set("Ｎ", "N");
+big_letters.set("Ｏ", "O");
+big_letters.set("Ｐ", "P");
+big_letters.set("Ｑ", "Q");
+big_letters.set("Ｒ", "R");
+big_letters.set("Ｓ", "S");
+big_letters.set("Ｔ", "T");
+big_letters.set("Ｕ", "U");
+big_letters.set("Ｖ", "V");
+big_letters.set("Ｗ", "W");
+big_letters.set("Ｘ", "X");
+big_letters.set("Ｙ", "Y");
+big_letters.set("Ｚ", "Z");
+big_letters.set("［", "[");
+big_letters.set("￦", "\\");
+big_letters.set("］", "]");
+big_letters.set("＾", "^");
+big_letters.set("＿", "_");
+big_letters.set("｀", "`");
+big_letters.set("ａ", "a");
+big_letters.set("ｂ", "b");
+big_letters.set("ｃ", "c");
+big_letters.set("ｄ", "d");
+big_letters.set("ｅ", "e");
+big_letters.set("ｆ", "f");
+big_letters.set("ｇ", "g");
+big_letters.set("ｈ", "h");
+big_letters.set("ｉ", "i");
+big_letters.set("ｊ", "j");
+big_letters.set("ｋ", "k");
+big_letters.set("ｌ", "l");
+big_letters.set("ｍ", "m");
+big_letters.set("ｎ", "n");
+big_letters.set("ｏ", "o");
+big_letters.set("ｐ", "p");
+big_letters.set("ｑ", "q");
+big_letters.set("ｒ", "r");
+big_letters.set("ｓ", "s");
+big_letters.set("ｔ", "t");
+big_letters.set("ｕ", "u");
+big_letters.set("ｖ", "v");
+big_letters.set("ｗ", "w");
+big_letters.set("ｘ", "x");
+big_letters.set("ｙ", "y");
+big_letters.set("ｚ", "z");
+big_letters.set("｛", "{");
+big_letters.set("｜", "|");
+big_letters.set("｝", "}");
+big_letters.set("～", "~");
+}

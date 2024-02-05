@@ -1,0 +1,81 @@
+class stun_grenade
+{
+string owner;
+timer explodetimer;
+mapdata@ map;
+int x, y, z;
+string hitn;
+}
+void stun_grenadeloop(mapdata@ map)
+{
+int playerslength = map.players.length;
+int vslength = map.vs.length;
+int robotslength = map.robots.length;
+int remgunslength = map.remguns.length;
+for (int i = map.stun_grenades.length - 1; i > -1; i--)
+{
+stun_grenade@ this = map.stun_grenades[i];
+if (this.explodetimer.elapsed >= 5000)
+{
+play("stungrenade", this.x, this.y, this.z, this.map);
+play_dist("stungrenadedist", this.x, this.y, this.z, this.map);
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.health <= 0) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+double dist = temp.distancecheck(this.x, this.y, this.z);
+if (dist <= 30)
+{
+if (!temp.stunned) temp.stun((15000 * (1 - (dist / 30))), true, true);
+temp.hit(random(500, 1000), this.hitn, false, true);
+temp.playsound("stun_darthit");
+}
+}
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.health <= 0) continue;
+if (!temp.started) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 30)
+{
+temp.sendpacket("stun grenade에 맞아 차량 엔진이 오작동합니다.", 2);
+temp.command("engine", null, true);
+}
+}
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.health <= 0) continue;
+double dist = temp.distancecheck(this.x, this.y, this.z);
+if (dist <= 30)
+{
+temp.stun(15000 * (1 - (dist / 30)));
+temp.playsound("stun_darthit");
+}
+}
+for (uint i2 = 0; i2 < remgunslength; i2++)
+{
+remgun@ temp = map.remguns[i2];
+if (temp.hid.health <= 0) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 30) continue;
+temp.can_fire = false;
+}
+map.stun_grenades.remove_at(i);
+}
+}
+}
+void placestun_grenade(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+stun_grenade bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.hitn = owner + "의 stun grenade";
+play("stungrenadestart", x, y, z, map);
+map.stun_grenades.insert_last(bomb1);
+}

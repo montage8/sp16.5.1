@@ -1,0 +1,105 @@
+class security_bomb
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+int seconds = 1000;
+int beeptime = 500;
+timer beeptimer, bombtimer;
+timer scantimer;
+bool d = false;
+player@ p;
+hittable@ hid;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+bool& securitycheck(int check_range)
+{
+int vslength = map.vs.length;
+for (uint i2 = 0; i2 < vslength; i2++)
+{
+vehicle@ temp = map.vs[i2];
+if (are_teamed(this.owner, temp.owner)) continue;
+if (temp.distancecheck(x, y, z) <= check_range) return true_t;
+}
+int robotslength = map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.owner == owner) continue;
+if (temp.distancecheck(x, y, z) <= check_range) return true_t;
+}
+int playerslength = map.players.length;
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (are_teamed(this.owner, temp.name)) continue;
+if (temp.distancecheck(x, y, z) <= 15) return true_t;
+}
+return false_t;
+}
+}
+void sbombloop(mapdata@ map)
+{
+string name = "security_bomb";
+for (int i = map.security_bombs.length - 1; i > -1; i--)
+{
+security_bomb@ this = map.security_bombs[i];
+if (this.scantimer.elapsed >= 1000)
+{
+this.scantimer.force(0);
+if (this.p is null) @ this.p = get_player_handle(this.owner);
+else
+{
+if (this.p.disconnected) @ this.p = null;
+}
+play("security_bombscan", this.x, this.y, this.z, this.map);
+if (!this.d)
+{
+this.beeptimer.force(0);
+this.bombtimer.force(0);
+}
+this.d = this.securitycheck(15);
+}
+bool dest_now = false;
+if (this.d)
+{
+this.seconds = 3000 - this.bombtimer.elapsed;
+if (this.beeptimer.elapsed >= this.beeptime)
+{
+if (seconds > 300) this.d = this.securitycheck(20);
+this.beeptimer.force(0);
+play("security_bombbeep", this.x, this.y, this.z, this.map);
+}
+if (this.seconds <= 0) dest_now = true;
+}
+if (this.hid.health <= 0) dest_now = true;
+if (dest_now)
+{
+this.hid.health = -1;
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+map.security_bombs.remove_at(i);
+}
+}
+}
+void spawn_security_bomb(int x, int y, int z, mapdata@ map, const string& in owner, player@ p = null)
+{
+security_bomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+if (p !is null) @ bomb1.p = p;
+@ bomb1.hid = spawn_hobj(x, y, z, map, 40000, 86400000, empty, empty, "security_bomb");
+bomb1.hid.defense = 3000;
+map.security_bombs.insert_last(bomb1);
+}
+void load_security_bombs(string[]@ parsed, mapdata@ map)
+{
+if (parsed.length < 6) return;
+spawn_security_bomb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5]);
+}

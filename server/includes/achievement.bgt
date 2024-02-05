@@ -1,0 +1,147 @@
+void achloop(const string& in i, const string& in k)
+{
+player@ winner = get_player_handle(i);
+if (winner is null) return;
+if (i == k)
+{
+if (!winner.no_save)
+{
+string rhb = string_replace(winner.hitby, winner.name + "의 ", empty, true);
+int shop_index = string_contains(rhb, "#", 1);
+if (shop_index > 0) rhb = string_left(rhb, shop_index);
+if (rhb == "grenade" or rhb == "hand_grenade") winner.add_achievement("수류탄에 내 몸 다 바쳐...", "5 hand_grenade", true);
+else if (rhb == "ultrabomb") winner.add_achievement("피할 수 없었다...", "20 warp_box");
+else if (rhb == "impact_bomb") winner.add_achievement("더 터져라, 내 인생아", "4 ultrabomb", true);
+else winner.add_achievement("영원한 안식을 주십시오", "10 health_orb");
+}
+}
+else
+{
+if (!winner.no_save)
+{
+if (winner.kills >= 200) winner.add_achievement("동네 총잡이 중독자", "1 dong_nae_gunner", true);
+else if (winner.kills >= 180) winner.add_achievement("180번째 승리", "1 m134_minigun", true);
+else if (winner.kills >= 150) winner.add_achievement("150번째 승리", "1 street_lionhearted_soldier_pack", true);
+else if (winner.kills >= 120) winner.add_achievement("120번째 승리", "20 street_drug_set", true);
+else if (winner.kills >= 90) winner.add_achievement("90번째 승리", "1 cannon", true);
+else if (winner.kills >= 70) winner.add_achievement("70번째 승리", "50 mass_bomb", true);
+else if (winner.kills >= 50) winner.add_achievement("50번째 승리", "300 remote_timebomb", true);
+else if (winner.kills >= 30) winner.add_achievement("30번째 승리", "150 metal_pack", true);
+else if (winner.kills >= 20) winner.add_achievement("20번째 승리", "1 gauss_gun", true);
+else if (winner.kills >= 10) winner.add_achievement("10번째 승리", "2 street_check", true);
+else if (winner.kills >= 5) winner.add_achievement("5번째 승리", "1 street_check", true);
+}
+else
+{
+if (winner.kills >= 150) winner.add_achievement("서바이벌존 150번째 승리", "1 dong_nae_gunner", true);
+else if (winner.kills >= 120) winner.add_achievement("서바이벌존 120번째 승리", "1 m134_minigun", true);
+else if (winner.kills >= 100) winner.add_achievement("서바이벌존 100번째 승리", "1 bfg9000_argent_plasma_launcher", true);
+else if (winner.kills >= 90) winner.add_achievement("서바이벌존 90번째 승리", "1 street_lionhearted_soldier_pack", true);
+else if (winner.kills >= 80) winner.add_achievement("서바이벌존 80번째 승리", "20 street_drug_set", true);
+else if (winner.kills >= 70) winner.add_achievement("서바이벌존 70번째 승리", "1 cannon", true);
+else if (winner.kills >= 60) winner.add_achievement("서바이벌존 60번째 승리", "50 mass_bomb", true);
+else if (winner.kills >= 50) winner.add_achievement("서바이벌존 50번째 승리", "1 gauss_gun", true);
+else if (winner.kills >= 40) winner.add_achievement("서바이벌존 40번째 승리", "300 remote_timebomb", true);
+else if (winner.kills >= 30) winner.add_achievement("서바이벌존 30번째 승리", "1 sky_286_laser_pistol", true);
+else if (winner.kills >= 20) winner.add_achievement("서바이벌존 20번째 승리", "150 metal_pack", true);
+else if (winner.kills >= 10) winner.add_achievement("서바이벌존 10번째 승리", "3 street_check", true);
+}
+player@ loser = get_player_handle(k);
+if (loser is null) return;
+string rhb = string_replace(loser.hitby, winner.name + "의 ", empty, true);
+int shop_index = string_contains(rhb, "#", 1);
+if (shop_index > 0) rhb = string_left(rhb, shop_index);
+int amount = 0;
+if (winner.weapon_count.exists(rhb)) winner.weapon_count.get(rhb, amount);
+amount++;
+winner.weapon_count.set(rhb, amount);
+if (loser.invisible) winner.add_achievement("귀신 잡는 저격수", "10 invisibility_shield", true);
+if (!loser.stunned)
+{
+if (rhb == "broken_rifle") winner.add_achievement("능욕의 달인", "1 Arctic_Warfare_Suppressed_Sniper_Rifle");
+else if (rhb == "fists")
+{
+winner.add_achievement("법은 멀고, 주먹은 가깝다!", "1 brass_knuckles", true);
+if (amount >= 5) winner.add_achievement("주먹으로 흥한 자!", "1 megaton_puncher", true);
+}
+else if (rhb == "glock_18_machine_pistol")
+{
+if (amount >= 8) winner.add_achievement("탄창이 부족해!", "1 glock_18_extended_magazine", true);
+}
+else if (rhb == "glock_19_pistol")
+{
+if (amount >= 3) winner.add_achievement("나는 총잡이다!", "1 glock_17_pistol", true);
+}
+else if (rhb == "glock_17_pistol")
+{
+if (amount >= 5) winner.add_achievement("권총 만능주의", "1 glock_18_machine_pistol", true);
+}
+else if (rhb == "ak47_assault_rifle")
+{
+if (amount >= 4) winner.add_achievement("AK의 귀환", "1 akm_assault_rifle", true);
+}
+else if (rhb == "knife") winner.add_achievement("검기의 대가", "1 crt17_combat_knife", true);
+else if (rhb == "crt17_combat_knife")
+{
+if (amount >= 2) winner.add_achievement("총잡이의 피는 속일 수 없다!", "1 crt43_automatic_shotgun", true);
+}
+else if (rhb == "dragunov_sniper_rifle")
+{
+if (amount >= 3) winner.add_achievement("가문의 명사수", "1 dragunov_sniper_rifle_gen_2", true);
+}
+else if (rhb == "sky_286_laser_pistol")
+{
+if (amount >= 12) winner.add_achievement("광신", "1 sky_372_laser_machine_gun", true);
+else if (amount >= 6) winner.add_achievement("광왕", "1 sky_429_laser_shotgun", true);
+else if (amount >= 2) winner.add_achievement("광객", "1 sky_386_laser_assault_rifle", true);
+}
+}
+if (rhb == "grenade" or rhb == "hand_grenade") winner.add_achievement("수류탄 맛은 어떠냐?", "20 grenade", true);
+else if (rhb == "stun_grenade") winner.add_achievement("하라는 스턴은 안 하고...", "5 pipe_bomb", true);
+else if (rhb == "guided missile")
+{
+if (loser.workingtype == pc_intercepting) loser.add_achievement("뒷북 치기", "5 stp429_mini-missile");
+else loser.add_achievement("내 영혼도 미사일처럼 날아갔다...", "50 missile_interceptor");
+}
+if (winner.health <= 1000 and winner.health > 0) winner.add_achievement("멋진 신승", "1 ultra_antibiotic_pack", true);
+if (loser.shieldshots > 0 and string_contains(loser.hitby, "bomb", 1) < 0) winner.add_achievement("방패도 소용 없다!", "25 shield");
+if (string_contains(loser.hitby, "dart", 1) > -1 or string_contains(loser.hitby, "bow", 1) > -1) winner.add_achievement("운명의 화살", "50 poison_vial", true);
+}
+}
+
+void achloop(const string& in i, vehicle@ lv)
+{
+player@ winner = get_player_handle(i);
+if (winner is null) return;
+vehicle@ wv = winner.get_vehicle();
+if (wv is null)
+{
+if (lv.type == "police_car" or lv.type == "police_car_super") winner.add_achievement("경찰차 도둑", "1 police_car", true);
+else if (lv.type == "aircraft") winner.add_achievement("비행기 격추", "1 aircraft", true);
+else if (lv.type == "truck") winner.add_achievement("트럭 시위 진압", "1 truck", true);
+string rhb = string_replace(lv.hitby, winner.name + "의 ", empty, true);
+int shop_index = string_contains(rhb, "#", 1);
+if (shop_index > 0) rhb = string_left(rhb, shop_index);
+int amount = 0;
+if (winner.weapon_count.exists(rhb)) winner.weapon_count.get(rhb, amount);
+amount++;
+winner.weapon_count.set(rhb, amount);
+if ((lv.type == "tank" or lv.type == "armored_tank") and string_contains(rhb, "sniper_rifle", 1) > -1) winner.add_achievement("부끄러운 줄 알아라!", "1 gewehr_11_no_bullet_casing_assault_rifle", true);
+else if (string_contains(rhb, "remgun_air", 1) < 0 and string_contains(rhb, "missile", 1) < 0 and lv.type == "aircraft" and lv.speed >= 5 and lv.ctile.is_empty()) winner.add_achievement("이변의 순간", "1 browning_m2_heavy_50_cal_machine_gun", true);
+if (bladeitems.exists(rhb) and (lv.type != "dogan_slx" and lv.type != "motor_cycle")) winner.add_achievement("도검 제일주의", "1 modern_sub_machine_gun_carbine", true);
+}
+else
+{
+if (wv.owner != lv.owner)
+{
+int amount = 0;
+if (winner.weapon_count.exists(wv.type)) winner.weapon_count.get(wv.type, amount);
+amount++;
+winner.weapon_count.set(wv.type, amount);
+if ((wv.type == "tank" or wv.type == "armored_tank") and (lv.type == "tank" or lv.type == "armored_tank")) winner.add_achievement("최고의 수비는 공격이다", "80 metal_pack", true);
+else if (wv.type == "police_car" and (lv.type == "police_car" or lv.type == "police_car_super")) winner.add_achievement("약탈의 꿈", "1 police_car_super", true);
+else if (wv.type == "aircraft" and lv.type == "aircraft") winner.add_achievement("숙련된 도그파이터", "5 fuel_tank", true);
+else if (wv.type != "aircraft" and lv.type == "aircraft" and lv.speed >= 5 and lv.ctile.is_empty()) winner.add_achievement("이변의 순간", "1 browning_m2_heavy_50_cal_machine_gun", true);
+}
+}
+}

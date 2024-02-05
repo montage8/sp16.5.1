@@ -1,0 +1,264 @@
+class splash : splash_data
+{
+double x, y, z;
+mapdata@ map;
+timer splashtimer;
+string owner;
+string hitn;
+}
+
+void splashloop(mapdata@ map)
+{
+int playerslength = map.players.length;
+int robotslength = map.robots.length;
+int objslength = map.objs.length;
+int hobjslength = map.hobjs.length;
+int vslength = map.vs.length;
+for (int j = map.splashs.length - 1; j > -1; j--)
+{
+splash@ this = map.splashs[j];
+if (this.splashtimer.elapsed >= this.splashtime)
+{
+play(this.hitsn, this.x, this.y, this.z, this.map);
+play_dist(this.hitsndist, this.x, this.y, this.z, this.map, this.volume);
+if (this.flags & SPLASH_PLAYER > 0)
+{
+for (uint x = 0; x < playerslength; x++)
+{
+player@ temp = map.players[x];
+if (temp.health <= 0) continue;
+if (temp.newb == 1) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range > abs(this.range)) continue;
+double dam = random(this.mindam, this.maxdam);
+dam *= (this.range >= 0 ? (1 - (range / this.range)) * (temp.sitting > 0 ? (1 - ((range / this.range) * 0.6)) : 1) : (temp.sitting > 0 ? 0.66 : 1));
+if (dam < temp.health and (dam * 2) >= temp.health) temp.playsound("explode_impact");
+temp.hit(dam, this.hitn, true, true);
+if (temp.deathfreecards > 0)
+{
+if (temp.name != this.owner) temp.deathfreetimer.force(0);
+}
+temp.statchangetimer.force(0);
+if (temp.mask == 1 and temp.air > 0)
+{
+temp.air = 0;
+temp.alert("폭발 충격으로 인해 산소통이 고장납니다.");
+}
+}
+}
+if (this.flags & SPLASH_ROBOT > 0)
+{
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range > abs(this.range)) continue;
+temp.hit(random(this.mindam, this.maxdam) * (this.range < 0 ? 1.0 : (1.0 - (range / this.range))), this.type, this.owner);
+}
+}
+if (this.flags & SPLASH_OBJ > 0)
+{
+for (uint i2 = 0; i2 < objslength; i2++)
+{
+obj@ temp = map.objs[i2];
+if (temp.breaking) continue;
+if (temp.protected) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= abs(this.range))
+temp.break_now();
+}
+}
+if (this.flags & SPLASH_HOBJ > 0)
+{
+for (uint i2 = 0; i2 < hobjslength; i2++)
+{
+hittable@ temp = map.hobjs[i2];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range > abs(this.range)) continue;
+temp.hit(random(this.mindam, this.maxdam) * (this.range < 0 ? 1.0 : (1.0 - (range / this.range))), this.hitn, this.type);
+}
+}
+if (this.flags & SPLASH_VEHICLE > 0)
+{
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range > abs(this.range)) continue;
+double dam = random(this.mindam, this.maxdam) * (this.range < 0 ? 1.0 : (1.0 - (range / this.range)));
+bool bigdam = ((dam * 4) >= temp.health and dam < temp.health);
+if (bigdam) temp.playsound("explode_impact_vehicle", true, true);
+temp.hit(dam, this.hitn, bigdam, true);
+}
+}
+map.splashs.remove_at(j);
+}
+}
+}
+
+void spawn_splash(double x, double y, double z, mapdata@ map, const string& in owner, const string& in type, int fixdam = -1, int fixrange = -1)
+{
+splash_data@ temp = get_splash_handle(type);
+if (temp is null) return;
+splash ss;
+ss.x = x;
+ss.y = y;
+ss.z = z;
+@ ss.map = map;
+ss.owner = owner;
+ss.type = temp.type;
+ss.id = temp.id;
+ss.range = (fixrange >= 0 ? fixrange : temp.range);
+ss.splashtime = temp.splashtime;
+ss.volume = temp.volume;
+if (fixdam >= 0)
+{
+ss.mindam = fixdam;
+ss.maxdam = fixdam;
+}
+else
+{
+ss.mindam = temp.mindam;
+ss.maxdam = temp.maxdam;
+}
+ss.hitn = owner + "의 " + string_replace(ss.type, "_", " ", true);
+ss.hitsn = temp.hitsn;
+if (temp.hits > 0) ss.hitsn += random(1, temp.hits);
+ss.hitsndist = temp.hitsndist;
+if (temp.hitdists > 0) ss.hitsndist += random(1, temp.hitdists);
+if (!temp.alert.is_empty()) play(temp.alert, x, y, z, map);
+ss.flags = temp.flags;
+map.splashs.insert_last(ss);
+}
+
+// damage flags
+const int SPLASH_PLAYER = 1;
+const int SPLASH_ROBOT = 2;
+const int SPLASH_OBJ = 4;
+const int SPLASH_HOBJ = 8;
+const int SPLASH_VEHICLE = 16;
+
+dictionary splash_list;
+class splash_data
+{
+string type;
+uint id;
+int range = 10;
+int mindam = 1;
+int maxdam = 1;
+int firetime = 1;
+uint splashtime = 1;
+double volume = 0.05;
+string hitsn;
+string hitsndist;
+string alert;
+int flags = 127;
+int hits = 0, hitdists = 0;
+}
+
+void load_splashs(string rawdata = empty)
+{
+if (rawdata.is_empty())
+{
+if (!fl.open("./prefs/splashs.svr", "rb")) return;
+rawdata = fl.read();
+fl.close();
+}
+else
+{
+if (!fl.open("./prefs/splashs.svr", "wb")) return;
+fl.write(rawdata);
+fl.close();
+}
+string[]@ splashs = string_split(rawdata, "~", false);
+int line, l, f, size = splashs.length;
+for (f = 0; f < size; f++)
+{
+string[]@ lines = string_split(splashs[f], "\r\n", false);
+splash_data ss;
+line = lines.length;
+for (l = 0; l < line; l++)
+{
+string[]@ params = string_split(lines[l], "=", false);
+if (params.length < 2) continue;
+switch (string_to_hash(params[0]))
+{
+case wdata_name:
+{
+ss.type = params[1];
+ss.id = string_to_hash(params[1]);
+}
+break; case wdata_range:
+{
+ss.range = string_to_number(params[1]);
+}
+break; case wdata_damage:
+{
+string[]@ damages = string_split(params[1], ",", true);
+ss.mindam = string_to_number(damages[0]);
+ss.maxdam = (damages.length == 1 ? ss.mindam : string_to_number(damages[1]));
+} // if.damage.
+break; case wdata_firetime:
+{
+ss.firetime = string_to_number(params[1]);
+}
+break; case wdata_splashtime:
+{
+ss.splashtime = string_to_number(params[1]);
+}
+break; case wdata_volume:
+{
+ss.volume = string_to_number(params[1]);
+}
+break; case wdata_flags:
+{
+ss.flags = string_to_number(params[1]);
+}
+break; case wdata_hitsn:
+{
+string[]@ damages = string_split(params[1], ",", true);
+int damlist = damages.length;
+ss.hitsn = damages[0];
+if (damages.length > 1) ss.hits = string_to_number(damages[1]);
+}
+break; case wdata_hitsndist:
+{
+string[]@ damages = string_split(params[1], ",", true);
+int damlist = damages.length;
+ss.hitsndist = damages[0];
+if (damages.length > 1) ss.hitdists = string_to_number(damages[1]);
+}
+break; case wdata_alert:
+{
+ss.alert = params[1];
+}
+}
+} // for.lines.
+if (ss.type.is_empty()) continue;
+if (ss.hitsndist.is_empty()) ss.hitsndist = ss.hitsn + "dist";
+splash_list.set(ss.type, ss);
+}
+}
+
+splash_data@ get_splash_handle(const string& in name)
+{
+if (!splash_list.exists(name)) return null;
+splash_data@ temp;
+splash_list.get(name, @ temp);
+if (temp is null) return null;
+return temp;
+}
+
+int get_splash_firetime(const string& in name)
+{
+if (!splash_list.exists(name)) return 0;
+splash_data@ temp;
+splash_list.get(name, @ temp);
+if (temp is null) return 0;
+return temp.firetime;
+}

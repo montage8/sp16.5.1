@@ -1,0 +1,3536 @@
+﻿// scdflags
+const int pc_registered = 1;
+const int pc_no_save = 2;
+const int pc_is_builder = 4;
+const int pc_newb = 16;
+const int pc_cheater = 32;
+const int pc_beacon = 64;
+const int pc_hidden = 128;
+const int pc_voicechat = 256;
+const int pc_tracksound = 512;
+const int pc_autotrack_smoke = 1024;
+
+// workflags
+const int pc_stop = 0;
+const int pc_sbombplacing = 1;
+const int pc_ultrabombplacing = 2;
+const int pc_lockerplacing = 3;
+const int pc_robot_spawning = 4;
+const int pc_remconnecting = 5;
+const int pc_intercepting = 6;
+const int pc_setting_parachute = 7;
+const int pc_eat = 8;
+const int pc_item_grabbing = 9;
+const int pc_shielding = 10;
+const int pc_shield_repairing = 11;
+const int pc_street_drugging = 12;
+const int pc_frequency_on = 13;
+
+player@[] players(0);
+dictionary player_list, pid_list, compid_list;
+enum sightmodes
+{
+SIGHT_INSPECT, SIGHT_GET, SIGHT_SET
+}
+class player
+{
+timer deadtimer;
+mapdata@ deadmap;
+timer robotspawntimer;
+string robotname;
+string dropitem;
+double exp = 0;
+bool unstunplay = false;
+int rating = 1500;
+int sv_rating = 1500;
+int pipper_rating = 1500;
+double weaponsight = 1;
+double x, y, z;
+double oldx, oldy, oldz;
+int rx, ry;
+string version;
+mapdata@ map, oldmap;
+bool voicechat = false;
+int remgunid = -1, remguncount = 0, remguntype = 0;
+double air = 0;
+string tempitem;
+int tempamount;
+int unstuntrys;
+int stunagaintime = 0;
+timer stunagaintimer;
+timer unstuntrytimer;
+timer spamtimer;
+int spammedmsgs;
+int stuntime;
+int pmreceiving = 1;
+double energy = 25000, oldenergy = 25000, maxenergy = 50000;
+double energy_factor = 1;
+int mask = 0;
+int fps = 0;
+timer fpstimer;
+timer wingtimer;
+bool no_save = false;
+bool disconnected = false;
+int reloading = 0;
+bool underwater = false;
+bool dmoving = false;
+bool lowhealth = false;
+bool antibioticed = false;
+bool power_up = false;
+timer power_up_timer;
+bool active = false;
+bool bleeding = false;
+bool firing = false;
+int sitting = 0;
+int deathfreecards = 0;
+timer deathfreetimer;
+timer reloadtimer;
+snack@ nextsnack;
+timer energytimer;
+timer airwarntimer;
+timer airlifetimer;
+timer airtimer;
+timer firetimer;
+timer cheatertimer;
+timer newbtimer;
+string langchan = "한국어1";
+string shitem;
+int cmmode = 0;
+msound@ bleedsound, parachutesound, weapongatheringsound, grabsound;
+dictionary ds;
+dictionary trust;
+timer invinsibilitytimer;
+timer statchangetimer;
+timer antibiotictimer, awarnouttimer;
+bool hidden = false;
+int cheater = 0;
+int newb = 1;
+int maxshields = 500;
+timer playtimer;
+timer sv_playtimer;
+bool shielded = false;
+int shieldshots = 0, nextshields = 0;
+int invseconds = 6;
+timer stunthrowtimer;
+timer maptraveltimer;
+dictionary muted;
+dictionary a;
+string ip;
+int registered = 0;
+timer mbombtimer;
+string title;
+string  ctext;
+timer hurttimer;
+timer missiletimer;
+team@ gang;
+double hurtlevel = 1;
+string replyname;
+int poisoned = 0;
+timer poisontimer;
+int kills, deaths;
+bool invinsible = false, frequency = false, invinsibility_starting = false, is_builder = false, betatester = false, invisible = false;
+int rank = 0;
+int adminflag = 0;
+int facing = 0, oldfacing = 0;
+int zfacing = 0;
+int health = 25000, oldhealth = 25000;
+int maxhealth = 50000;
+bool death = false;
+double chats;
+int beacon = 1;
+timer beacontimer;
+timer beaconvtimer;
+int beacontime = 600;
+string name;
+uint name_hash = 0;
+int peer_id;
+string compid;
+string hitby = "없음";
+timer invisibilitytimer;
+timer frequencyscramblertimer;
+bool stunned = false;
+timer stuntimer;
+timer invusetimer;
+timer stonetimer;
+timer nucleartimer;
+timer sound_grenadetimer;
+timer stungrenadetimer;
+timer concussivegrenadetimer;
+bool should_subtract = false;
+bool hit_head = false;
+string warning;
+uint8 warnlevel = 0;
+timer warptimer;
+bool warping = false;
+uint warpstage = 0;
+weapon_data@ weapon, main_weapon;
+string last_weapon;
+string weapon_group;
+player@[] follower;
+player@ following;
+int workingtype = pc_stop;
+timer workingtimer;
+bool cremguns = false;
+int accumulated_damage = 0;
+uint tracking_type = 0;
+dictionary tracking_target;
+timer trackingtimer;
+bool tracksound = false;
+int trackx, tracky, trackz;
+bool parachutist = false;
+timer survivaltimer, survivalrewardtimer;
+int survival_warning = 0;
+double survivalreward = 0;
+timer weapongatheringtimer, weaponchecktimer;
+bool weapongathering = false;
+msound@ xmsound, xmsoundplus;
+dictionary wear, wear_text;
+double origin_walktime = 166, bonus_walktime = 1, bonus_walktime_old = 1;
+double origin_jump = 5, bonus_jump = 1, origin_jump_old = 5, bonus_jump_old = 1;
+vehicle@ ride;
+dictionary weapon_count, weapon_modes, weapon_modes_main;
+int shot_count = 0;
+bool in_smoke = false;
+int defense = 0, overheattime = 0;
+double overheat_level = 0.0, firetime_factor = 1;
+timer smoketimer, overheattimer;
+bool temp_invinsible = false;
+timer temp_invinsibletimer;
+player@ sightplayer;
+vehicle@ sightvehicle;
+timer zfacingwarntimer;
+timer dopetimer;
+int dope_withdrawal = 0;
+bool autotrack_smoke = false;
+dictionary checkpoints;
+int voice = 1;
+bool weaponping = false, weaponping_head = false, weaponping_team = false;
+string death_sound;
+
+bool& working()
+{
+if (warping) return true_t;
+if (workingtype != pc_stop) return true_t;
+return false_t;
+}
+
+vehicle@ get_vehicle()
+{
+if (this.map.is_vehicle) return this.map.vhc;
+return this.ride;
+}
+
+bool& get_smoke()
+{
+if (this.in_smoke) return true_t;
+if (!this.map.is_vehicle) return false_t;
+if (this.map.vhc.in_smoke) return true_t;
+return false_t;
+}
+
+weapon_data@ draw_weapon(string type, bool forced = false, bool same_class = false)
+{
+if (this.weapon !is null)
+{
+if (this.weapon.type == type) return null;
+}
+if (same_class)
+{
+if (this.main_weapon !is null)
+{
+if (this.main_weapon.type == type) return null;
+}
+}
+if (!forced)
+{
+if (this.ds.exists("전투")) return null;
+if (this.invinsible) return null;
+if (this.stunned) return null;
+if (this.hidden) return null;
+if (this.warping) return null;
+if (this.workingtype != pc_stop) return null;
+if (this.overheat_level >= 100.0)
+{
+this.alert("기존 무기가 아직 완전히 냉각되지 않았습니다.");
+return null;
+}
+}
+if (type == "knife")
+{
+if (this.x == 150 and this.y == 250 and this.z == 200 and (this.map.name == "메인" or this.map.name == "서바이벌")) this.add_achievement("스카이랜드 정복", "1 ancient_wing", true);
+}
+weapon_data@ temp = get_weapon_handle(type, 1);
+if (temp is null) return null;
+bool mode_change = false;
+if (this.main_weapon !is null)
+{
+if (temp.is_add_on)
+{
+if (!this.main_weapon.add_ons.exists(temp.type)) return null;
+mode_change = true;
+}
+else if (temp is this.main_weapon) mode_change = true;
+}
+else
+{
+if (temp.is_add_on) return null;
+}
+weapon_data@ second_temp = temp;
+if (!mode_change)
+{
+if (this.firetimer.elapsed < firetime_starter)
+{
+this.alert("그럴 겨를이 없습니다.");
+return null;
+}
+if (this.weapon_modes.exists(type))
+{
+string type2;
+this.weapon_modes.get(type, type2);
+weapon_data@ temp2 = get_weapon_handle(type2, 1);
+for (;;)
+{
+if (temp2 is null) break;
+if (temp2.rank > this.rank) break;
+if (!check_draw_req(temp2)) break;
+@ temp = temp2;
+type = type2;
+break;
+}
+}
+}
+if (temp is second_temp)
+{
+if (temp.rank > this.rank) return null;
+if (!check_draw_req(temp)) return null;
+}
+this.gathering_stop();
+this.fire_stop();
+bool contained = (mode_change ? string_left(temp.type, this.main_weapon.type.size) == this.main_weapon.type : string_left(temp.type, second_temp.type.size) == second_temp.type);
+if (!mode_change)
+{
+this.playsound(second_temp is temp or temp.display_draw_sound ? temp.draw_sound : second_temp.draw_sound);
+@ this.main_weapon = second_temp;
+int stunlevel = temp.drawtime;
+if (this.weapon !is null)
+{
+if (overheat_level >= 50.0)
+{
+stunlevel += this.weapon.overheattime;
+if (this.weapon.overheat_type > 0) this.playsound("overheat_cooldown" + this.weapon.overheat_type);
+}
+}
+this.firetimer.force(firetime_starter - stunlevel);
+this.overheat_level = 0;
+}
+else
+{
+this.playsound(temp.display_draw_sound ? temp.draw_sound : "weaponmodechange");
+if (contained)
+{
+if (weapon_modes_main.exists(this.main_weapon.type))
+{
+string old_weapon;
+weapon_modes_main.get(this.main_weapon.type, old_weapon);
+if (old_weapon != temp.type)
+{
+weapon_data@ old = get_weapon_handle(old_weapon);
+if (old !is null)
+{
+if (old.max_ammo > 0 and temp.max_ammo > 0)
+{
+if (old.max_ammo != temp.max_ammo) this.unload(old, this.main_weapon, false);
+}
+if (!old.require_ammo.is_empty() and !temp.require_ammo.is_empty())
+{
+if (old.require_ammo != temp.require_ammo) this.unload(old, this.main_weapon, false);
+}
+}
+}
+}
+}
+}
+this.weaponsight = temp.sight_range;
+@ this.weapon = temp;
+this.origin_walktime = temp.walktime;
+this.origin_jump = temp.canjump;
+this.firetime_factor = 1;
+this.weapon_group = (contained ? this.main_weapon.type : this.weapon.type);
+this.weapon_modes.set(this.main_weapon.type, this.weapon.type);
+if (contained or main_weapon is weapon) this.weapon_modes_main.set(this.main_weapon.type, this.weapon.type);
+this.sendpacket("weapondata " + this.main_weapon.type + " " + round(this.origin_walktime * this.bonus_walktime * ((this.maxenergy * 2) / (this.energy + this.maxenergy)), 0) + " " + round(temp.canjump * this.bonus_jump, 0) + " " + this.weaponsight + (mode_change ? " _" : empty));
+return temp;
+}
+
+void gathering_stop(bool forced_stun = true, bool forced_sound = true)
+{
+if (this.weapongatheringsound is null) return;
+this.weapongathering = false;
+@ this.weapongatheringsound = this.weapongatheringsound.destroy();
+if (this.weapon !is null)
+{
+if (!forced_sound)
+{
+if (this.weapongatheringtimer.elapsed >= this.weapon.gathering_min)
+{
+firing = true;
+return;
+}
+}
+if (this.weapon.stoptime != 0)
+{
+this.playsound(this.weapon.stop_sound);
+if (forced_stun or this.weapon.stoptime > 0)
+{
+this.reloading = 4;
+this.firetimer.force(this.firetimer.elapsed - abs(this.weapon.stoptime));
+}
+}
+}
+}
+
+void fire_stop(bool forced_stun = true)
+{
+if (!this.firing) return;
+this.firing = false;
+if (this.weapon !is null)
+{
+if (this.weapon.stoptime != 0)
+{
+this.playsound(this.weapon.stop_sound);
+if (forced_stun or this.weapon.stoptime > 0)
+{
+this.reloading = 4;
+this.firetimer.force(this.firetimer.elapsed - abs(this.weapon.stoptime));
+}
+}
+}
+}
+
+bool& check_draw_req(weapon_data@ ww)
+{
+if (ww.type == "fists") return true_t;
+if (!ww.is_add_on and !inventory.exists(ww.type)) return false_t;
+if (ww.requirements.is_empty()) return true_t;
+int rlength = ww.requirements.length;
+for (uint i = 0; i < rlength; i++)
+{
+if (!this.inventory.exists(ww.requirements[i])) return false_t;
+}
+return true_t;
+}
+
+bool& is_available(string[]@ parsed, int comment = 1)
+{
+string limit = parsed[0];
+if (string_is_digits(limit))
+{
+if (this.exp >= string_to_number(limit)) return true_t;
+switch(comment)
+{
+case 1: this.alert("그곳으로 가기엔 아직 너무 위험합니다.");
+break; case 2: this.alert("아직 서툴러서 그 아이템을 쓸 수 없습니다.");
+break; case 3: this.alert("그 스위치를 다루기엔 너무 미숙합니다.");
+break; case 4: this.alert("당신에겐 아직 너무 위험한 제품입니다.");
+break;
+}
+return false_t;
+}
+if (this.a.exists(limit)) return true_t;
+int current = this.get_item_count(limit);
+bool equipped = false;
+if (this.wear_text.exists(limit))
+{
+current++;
+equipped = true;
+}
+int amount = 1;
+bool all_consume = false;
+if (parsed.length > 1)
+{
+if (parsed[1] == "a") all_consume = true;
+else amount = string_to_number(parsed[1]);
+}
+if (all_consume)
+{
+if (current > 0)
+{
+if (equipped and current == 1) this.remove_equipments(limit, false);
+this.give(limit, -current);
+return true_t;
+}
+}
+else
+{
+if (amount == 0) amount = 1;
+if (current >= abs(amount))
+{
+if (amount < 0)
+{
+if (current == abs(amount) and equipped) this.remove_equipments(limit, false);
+this.give(limit, amount);
+}
+return true_t;
+}
+}
+switch(comment)
+{
+case 1: this.alert("당신은 그곳에 입장할 자격이 없습니다.");
+break; case 2: this.alert("당신은 그 아이템을 사용할 자질이 부족합니다.");
+break; case 3: this.alert("스위치가 당신을 거부합니다.");
+break; case 4: this.alert("그 제품은 특정 경력이 있어야 살 수 있습니다.");
+break;
+}
+return false_t;
+}
+
+void survival_on(mapdata@ smap)
+{
+this.survivaltimer.force(0);
+this.survival_warning = 0;
+this.survivalreward = 0.0;
+this.remove_equipments(empty, false, false);
+this.delete_all_inv();
+this.weapon_count.delete_all();
+this.weapon_modes.delete_all();
+this.kills = 0;
+this.deaths = 0;
+this.health = 25000;
+this.maxhealth = 50000;
+this.oldhealth = 25000;
+this.shieldshots = 0;
+this.maxshields = 500;
+this.air = 0;
+this.energy = 25000;
+this.antibioticed = false;
+this.shielded = false;
+this.deathfreecards = 0;
+this.a.delete_all();
+this.draw_weapon("fists");
+this.sendpacket("weaponlist " + wnames);
+this.no_save = true;
+if (smap !is null)
+{
+this.inventory = smap.starting_items;
+@ this.itemnames = this.inventory.keys;
+}
+this.save();
+}
+
+bool& add_achievement(const string& in achievement, string reward = empty, bool public = false)
+{
+if (a.exists(achievement)) return false_t;
+a.set(achievement, 0);
+this.sendsound("achievement");
+if (reward.is_empty())
+{
+if (achs.exists(achievement))
+{
+achs.get(achievement, reward);
+}
+if (reward.is_empty()) this.alert(achievement + " 임무를 완수했습니다.", true);
+}
+else this.alert(achievement + " 임무를 완수하여 " + reward + " 보상을 받았습니다.", true);
+if (public)
+{
+send(this.peer_id, "play_s achievement_complete", 0, true);
+send(this.peer_id, this.name + "님이 " + achievement + " 임무를 완수했습니다.", 2, true);
+}
+string[]@ rw = string_split(reward, " ", true);
+if (rw.length > 1) this.give(rw[1], string_to_number(rw[0]));
+return true_t;
+}
+
+void hit(int dam, const string& in hb)
+{
+// overloaded function
+hit(dam, hb, this.should_subtract, false, false);
+}
+void hit(int dam, const string& in hb, bool subtract, bool super_hit = false, bool headshot = false)
+{
+if (!super_hit)
+{
+if (ride !is null)
+{
+if (ride.hit_percent >= random(1, 100)) return;
+ride.rider_hit = true;
+}
+}
+this.hitby = hb;
+this.should_subtract = subtract;
+this.hit_head = headshot;
+if (antibioticed) dam *= 1.5625;
+dam = (dam - defense) * hurtlevel;
+if (this.invisible)
+{
+this.invisible = false;
+this.invisibilitytimer.force(0);
+this.playsound("invisibility_stop");
+}
+if (this.deathfreecards == 0)
+{
+if (this.health >= 12000 and this.health <= dam) 
+{
+string[]@ parsed_data = string_split(hb, "의 ", true);
+player@ temp = get_player_handle(parsed_data[0]);
+if (temp !is null and temp !is this) temp.add_achievement("원 샷 원 킬!", "1 nak_nk1000_decimater", true);
+}
+}
+if (this.warping)
+{
+if (!this.stunned and this.warpstage == 0)
+{
+this.warptimer.force(20000);
+this.sendpacket("startmoving");
+this.playsound("wpfail");
+this.warping = false;
+}
+}
+this.accumulated_damage += dam;
+}
+
+void shieldhit(int dam)
+{
+if (this.temp_invinsible) return;
+this.playsound("shieldhit" + random(1, 10));
+this.shieldshots -= dam;
+this.statchangetimer.force(0);
+}
+
+void unload(weapon_data@ temp = null, weapon_data@ main_temp = null, bool announce = true)
+{
+if (temp is null) @ temp = this.weapon;
+if (temp is null) return;
+if (main_temp is null) @ main_temp = this.main_weapon;
+if (main_temp is null) return;
+if (temp.max_ammo < 1) return;
+string wg = temp.type;
+if (string_left(temp.type, main_temp.type.size) == main_temp.type) wg = main_temp.type;
+int amount = this.get_ammo_count(wg);
+if (amount < 1)
+{
+if (announce) this.alert("이미 비었습니다.");
+return;
+}
+this.ammo_give(wg, -amount);
+if (!temp.require_ammo.is_empty())
+{
+this.ammo_set(temp.require_ammo, -amount);
+this.give(temp.require_ammo, amount);
+}
+this.playsound(temp.unload_sound);
+this.firetimer.force(firetime_starter - temp.unloadtime);
+this.reloading = 3;
+}
+
+bool& move(int facing, int dir = north, int pace = 1, bool sound = true)
+{
+string tilecheck;
+if (dir == Up)
+{
+str_collision@ temp = get_collision_handle_straight(this.x, this.y, this.z, this.map, pace, 0, 90);
+if (temp.time >= 0.0 and temp.time < pace) return false_t;
+string tilecheck = get_tile_at(round(this.x, 0), round(this.y, 0), this.z + pace, this.map);
+if (string_left(tilecheck, 4) == "wall") return false_t;
+this.z += pace;
+}
+else if (dir == Down)
+{
+str_collision@ temp = get_collision_handle_straight(this.x, this.y, this.z, this.map, pace, 0, 270);
+if (temp.time >= 0.0 and temp.time < pace) return false_t;
+string tilecheck = get_tile_at(round(this.x, 0), round(this.y, 0), this.z - pace, this.map);
+if (string_left(tilecheck, 4) == "wall") return false_t;
+this.z -= pace;
+}
+else
+{
+str_collision@ temp = get_collision_handle_straight(this.x, this.y, this.z, this.map, pace, this.facing, 0);
+if (temp.time >= 0.0 and temp.time < pace) return false_t;
+vector me = move_global(x, y, z, facing, (dir == Forward ? north : dir == Backward ? south : dir == Left ? west : dir == Right ? east : 0), 0, 0, pace);
+me.x = (me.x < 0 ? 0 : me.x > max.x ? max.x : me.x);
+me.y = (me.y < 0 ? 0 : me.y > max.y ? max.y : me.y);
+string tilecheck = get_tile_at(round(me.x, 0), round(me.y, 0), this.z, this.map);
+if (string_left(tilecheck, 4) == "wall") return false_t;
+this.x = me.x;
+this.y = me.y;
+}
+this.sendpacket("move " + this.x + " " + this.y + " " + this.z);
+if (sound and !tilecheck.is_empty()) this.sendsound(tilecheck + "step" + random(1, 5));
+this.moveact(sound, (tilecheck.is_empty() ? "air" : tilecheck));
+return true_t;
+}
+
+void objcheck(int range = 4)
+{
+if (this.invinsible) return;
+if (this.hidden) return;
+string mess;
+bool su = false;
+int corpselength = map.corpses.length;
+for (uint x = 0; x < corpselength; x++)
+{
+corpse@ temp = map.corpses[x];
+if (temp.get) continue;
+if (temp.take) continue;
+if (this.distancecheck(temp.x, temp.y, temp.z) <= range)
+{
+play("objget", temp.x, temp.y, temp.z, temp.map);
+objgrabs++;
+temp.get = true;
+temp.beeptimer.pause();
+mess += temp.owner + "의 시체, ";
+this.give("corpse_of_" + temp.owner + "_" + temp.id, 1, false);
+su = true;
+break;
+}
+}
+int objslength = map.objs.length;
+for (uint i = 0; i < objslength; i++)
+{
+obj@ temp = map.objs[i];
+if (temp.distancecheck(this.x, this.y, this.z) <= range)
+{
+int limit_count = -1;
+if (temp.mapi !is null)
+{
+if (temp.mapi.limit > 0)
+{
+limit_count = (temp.mapi.limit_all ? temp.mapi.get_limit_all(temp.name) : temp.mapi.get_limit(this));
+if (limit_count >= temp.mapi.limit) continue;
+}
+}
+if (!item_grab_hash.exists(temp.name))
+{
+mess += string_replace(temp.name, "_", " ", true) + " " + temp.amount + "개, ";
+this.give(temp.name, temp.amount, false);
+su = true;
+}
+else
+{
+item_grab_func@ func;
+if (!item_grab_hash.get(temp.name, @ func)) continue;
+string newmess = func(this, temp);
+if (newmess.is_empty()) continue;
+mess += newmess + ", ";
+su = true;
+}
+if (limit_count >= 0) temp.mapi.limited.set((temp.mapi.limit_all ? temp.name : this.name), limit_count + 1);
+play(temp.get_sound, temp.x, temp.y, temp.z, temp.map);
+objgrabs++;
+temp.breaking = true;
+continue;
+}
+}
+if (!mess.is_empty())
+{
+mess.resize(mess.size - 2);
+this.alert(mess, true);
+}
+if (su) this.update_inv();
+}
+
+void moveact(bool playing = true, string gpt = empty, int falldist = 0)
+{
+if (!this.active) this.active = true;
+if (this.y == 100 and this.z == 100)
+{
+if (this.map.name == "입문") this.add_achievement("입문자의 2번째 도전", "500000 coin", false);
+}
+if (this.invinsible) return;
+if (this.dmoving) return;
+this.objcheck();
+if (gpt.is_empty()) gpt = get_tile_at(this.rx, this.ry, this.z, this.map);
+if (gpt.is_empty()) return;
+if (this.newb != 1) step_mine(this.x, this.y, this.z, this.map, this.name);
+if (this.underwater)
+{
+if (string_contains(gpt, "underwater", 1) < 0)
+{
+this.airwarntimer.force(0);
+this.airlifetimer.force(0);
+this.underwater = false;
+}
+}
+if (this.hidden) return;
+if (falldist >= 15)
+{
+if (playing) this.playsound(gpt + "hardland", false);
+if (falldist == 2147483647)
+{
+this.sitting = 1;
+this.sendpacket("sitstart");
+}
+else
+{
+if (this.parachutist)
+{
+if (gpt != "electricity") this.stun(1000, false, false);
+this.parachutist = false;
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.destroy();
+}
+else
+{
+if (falldist > 120)
+{
+this.death = true;
+this.hitby = "internal:gravity";
+}
+else
+{
+this.sitting = 1;
+this.sendpacket("sitstart");
+this.health -= falldist * 500;
+this.should_subtract = false;
+this.hitby = "internal:gravity";
+if (this.health >= 5000) this.add_achievement("50% 이상 체력 남기고 살아남기", "1 antibiotic_pack");
+}
+}
+}
+}
+else if (falldist > 0)
+{
+if (playing) this.playsound(gpt + "land", false);
+if (this.parachutist)
+{
+this.parachutist = false;
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.destroy();
+}
+}
+else
+{
+if (playing) this.playsound(gpt + "step" + random(1, 5), false);
+}
+if (!this.underwater)
+{
+if (string_contains(gpt, "underwater", 1) > -1)
+{
+this.airwarntimer.force(0);
+this.airlifetimer.force(0);
+this.underwater = true;
+}
+}
+if (gpt == "blade")
+{
+this.health >>= 1;
+this.hitby = "검 함정";
+}
+else if (gpt == "electricity")
+{
+this.stun(30000, true, true, 0, true);
+}
+else if (gpt == "mine")
+{
+if (this.rank != 5)
+{
+this.death = true; 
+        this.hitby = "소거의 지뢰"; 
+    }
+}
+}
+void eat(const string& in fooditem)
+{
+this.work(pc_eat);
+snack@ temp;
+if (!snackitems.get(fooditem, @ temp)) return;
+@ this.nextsnack = temp;
+this.playsound("eat" + fooditem);
+}
+
+dictionary ammo;
+dictionary loaded_ammo;
+
+int get_ammo_count(const string& in w)
+{
+int amount;
+if (!ammo.get(w, amount)) return 0;
+return amount;
+}
+
+int get_loaded_total(const string& in r)
+{
+int amount;
+if (!loaded_ammo.get(r, amount)) return 0;
+return amount;
+}
+
+bool& vehiclecheck()
+{
+int maplength = maps.length;
+for (uint j = 0; j < maplength; j++)
+{
+mapdata@ mapt = maps[j];
+int vslength = mapt.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = mapt.vs[i];
+if (are_teamed(this.name, temp.owner, true)) return true_t;
+}
+}
+return false_t;
+}
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+void respawn()
+{
+if (this.deadmap !is null)
+{
+if (!this.deadmap.lastman_standing.is_empty())
+{
+if (!this.deadmap.lastman_standing.exists(this.name))
+{
+this.go_to("세이프존", random(0, 20), random(0, 20), 0, true, true);
+@ this.deadmap = null;
+return;
+}
+}
+vector t;
+if (this.checkpoints.exists(this.deadmap.name))
+{
+if (this.checkpoints.get(this.deadmap.name, t))
+{
+this.go_to(this.deadmap, t.x, t.y, t.z, true, true);
+@ this.deadmap = null;
+return;
+}
+}
+if (this.deadmap.respawn_mode == 1)
+{
+int tx = (this.deadmap.starting.x == -1 ? random(0, this.deadmap.max.x) : this.deadmap.starting.x);
+int ty = (this.deadmap.starting.y == -1 ? random(0, this.deadmap.max.y) : this.deadmap.starting.y);
+this.go_to(this.deadmap, tx, ty, this.deadmap.starting.z, true, true);
+}
+else this.go_to(this.deadmap, random(0, this.deadmap.max.x), random(0, this.deadmap.max.y), this.deadmap.respawn_z, true, true);
+@ this.deadmap = null;
+return;
+}
+this.go_to("세이프존", random(0, 20), random(0, 20), 0, true, true);
+}
+
+savedata@ sf;
+
+void tempload(bool dc = false)
+{
+if (sf.d.exists("기존차량"))
+{
+string[]@ oldp = string_split(string_base64_decode(sf.read("기존차량")), " ", true);
+if (oldp.length < 5) return;
+this.facing = string_to_number(oldp[3]);
+vehicle@ temp = get_vehicle_handle(oldp[4]);
+if (temp !is null)
+{
+int ind = temp.followed_players.find_by_reference(this);
+if (ind > -1) temp.followed_players.remove_at(ind);
+if (dc)
+{
+@ this.map = temp.inside;
+this.x = string_to_number(oldp[0]);
+this.y = string_to_number(oldp[1]);
+this.z = string_to_number(oldp[2]);
+return;
+}
+this.go_to(temp.inside, string_to_number(oldp[0]), string_to_number(oldp[1]), string_to_number(oldp[2]), false);
+return;
+}
+if (dc)
+{
+@ this.map = get_map_handle("세이프존");
+this.x = 10;
+this.y = 10;
+this.z = 0;
+return;
+}
+this.go_to("세이프존", 10, 10, 0, false);
+this.save();
+}
+if (!sf.d.exists("기존맵")) return;
+string[]@ oldp = string_split(string_base64_decode(sf.read("기존맵")), " ", true);
+if (oldp.length < 5) return;
+this.facing = string_to_number(oldp[3]);
+if (dc)
+{
+@ this.map = get_map_handle(oldp[4]);
+if (this.map is null)
+{
+@ this.map = get_map_handle("세이프존");
+this.x = 10;
+this.y = 10;
+this.z = 0;
+return;
+}
+this.x = string_to_number(oldp[0]);
+this.y = string_to_number(oldp[1]);
+this.z = string_to_number(oldp[2]);
+return;
+}
+this.go_to(oldp[4], string_to_number(oldp[0]), string_to_number(oldp[1]), string_to_number(oldp[2]), false);
+this.save();
+}
+
+void remove(bool got_kicked = false, bool save = true)
+{
+if (this.bleedsound !is null) @ this.bleedsound = this.bleedsound.destroy();
+if (this.grabsound !is null) @ this.grabsound = this.grabsound.destroy();
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.destroy();
+if (this.weapongatheringsound !is null) @ this.weapongatheringsound = this.weapongatheringsound.destroy();
+if (this.xmsound !is null) @ this.xmsound = this.xmsound.destroy();
+if (this.xmsoundplus !is null) @ this.xmsoundplus = this.xmsoundplus.destroy();
+if (this.gang !is null) this.gang.remove_member(name, false, false);
+uint oldid = (this.disconnected ? 4294967294 : this.peer_id);
+if (got_kicked)
+{
+string message = this.name + "님이 서버에서 쫓겨납니다.";
+send(0, message, 2);
+log("adminlog", message);
+}
+else
+{
+if (this.cheatercheck() or get_tile_at(round(this.x, 0), round(this.y, 0), this.z, this.map).is_empty())
+{
+this.cheater = 1;
+log("system_message", this.name + "님이 불법 행위를 합니다.");
+send(0, this.name + "님이 짱구를 굴려보지만, 망신만 당하고 도망칩니다.", 2);
+}
+}
+if (ride !is null) ride.command("escape", this, true);
+for (int fo = this.follower.length - 1; fo > -1; fo--)
+{
+player@ temp = this.follower[fo];
+if (temp is null) continue;
+temp.alert(this.name + "님이 로그아웃하여 관전을 중단합니다.");
+temp.sendpacket("followstop");
+if (temp.invinsible) temp.sendpacket("stopmoving");
+@ temp.following = null;
+temp.tempload();
+}
+if (this.following !is null)
+{
+int findex = this.following.follower.find_by_reference(this);
+if (findex > -1) this.following.follower.remove_at(findex);
+this.tempload(true);
+}
+int index = gnplayers.find_by_reference(this);
+if (index > -1)
+{
+gnplayers.remove_at(index);
+guessthenumber_guesses.remove_at(index);
+}
+if (this.map !is null)
+{
+mapdata@ smap = (this.map.is_vehicle ? this.map.vhc.map : this.map);
+vehicle@ v = (this.map.is_vehicle ? this.map.vhc : null);
+throw_flag(smap, v, this);
+lastmanloop(smap, this, true);
+}
+string[]@ unload = this.loaded_ammo.keys;
+int unloadlength = unload.length;
+for (uint j = 0; j < unloadlength; j++)
+{
+int a = this.get_loaded_total(unload[j]);
+this.give(unload[j], a, false);
+}
+this.update_inv();
+if (save) this.save();
+if (!this.hidden) send(0, "offline " + this.x + " " + this.y + " " + this.z + " " + this.name + " " + this.map.name, 0);
+else
+{
+if (!this.disconnected) this.sendpacket("offline " + this.x + " " + this.y + " " + this.z + " " + this.name + " " + this.map.name);
+}
+if (oldid != 4294967294) send(oldid, "killclient", 0);
+this.disconnected = true;
+disconnections++;
+}
+
+void load(bool forced = false, bool reset_eq = false)
+{
+sf.load();
+if (!forced)
+{
+if (sf.d.exists("손절")) this.muted = sf.readd("손절", true);
+if (sf.d.exists("신뢰")) this.trust = sf.readd("신뢰", true);
+if (sf.d.exists("금지")) this.ds = sf.readd("금지", true);
+if (sf.d.exists("이름")) this.name = sf.read("이름");
+if (sf.d.exists("타이틀")) this.title = sf.read("타이틀");
+if (sf.d.exists("소속")) @ this.gang = get_team_handle(sf.read("소속"));
+if (sf.d.exists("언어")) this.langchan = sf.read("언어");
+if (sf.d.exists("누적채팅")) this.chats = sf.readn("누적채팅");
+if (sf.d.exists("레이팅")) this.rating = sf.readn("레이팅");
+if (sf.d.exists("피퍼레이팅")) this.pipper_rating = sf.readn("피퍼레이팅");
+if (sf.d.exists("서바이벌레이팅")) this.sv_rating = sf.readn("서바이벌레이팅");
+if (sf.d.exists("플레이시간")) this.playtimer.force(sf.readn("플레이시간"));
+if (sf.d.exists("서바이벌시간")) this.survivalreward = sf.readn("서바이벌시간");
+if (sf.d.exists("등급")) this.rank = sf.readn("등급");
+if (sf.d.exists("입문자시간")) this.newbtimer.force(sf.readn("입문자시간"));
+if (sf.d.exists("재행동시간")) this.statchangetimer.force(sf.readn("재행동시간"));
+if (sf.d.exists("경고")) this.warning = sf.read("경고");
+if (sf.d.exists("경고수준")) this.warnlevel = sf.readn("경고수준");
+if (sf.d.exists("경험치")) this.exp = sf.readn("경험치");
+if (sf.d.exists("음성")) this.voice = sf.readn("음성");
+if (sf.d.exists("체크포인트")) this.checkpoints = text_to_dictionary(sf.read("체크포인트"), "\r\n", VALUE_VECTOR);
+if (sf.d.exists("플래그"))
+{
+int tempflag = sf.readn("플래그");
+this.voicechat = (tempflag & pc_voicechat > 0);
+this.registered = (tempflag & pc_registered == 0 ? 0 : 1);
+this.no_save = (tempflag & pc_no_save > 0);
+this.is_builder = (tempflag & pc_is_builder > 0);
+this.newb = (tempflag & pc_newb == 0 ? 0 : 1);
+this.cheater = (tempflag & pc_cheater == 0 ? 0 : 1);
+this.beacon = (tempflag & pc_beacon == 0 ? 0 : 1);
+this.tracksound = (tempflag & pc_tracksound > 0);
+this.hidden = (tempflag & pc_hidden == 1);
+this.autotrack_smoke = (tempflag & pc_autotrack_smoke > 0);
+}
+}
+if (this.no_save)
+{
+string tempmap = default_sv.name;
+if (sf.d.exists("서바이벌맵")) tempmap = sf.read("서바이벌맵");
+mapdata@ mh = get_map_handle(tempmap);
+if (mh is null)
+{
+this.give("street_program_starter_kit", 1);
+this.go_to(default_sv, random(0, 500), random(0, 500), 0, false);
+return;
+}
+this.inventory = mh.starting_items;
+@ this.itemnames = this.inventory.keys;
+if (mh.respawn_mode == 1) this.go_to(mh, mh.starting.x, mh.starting.y, mh.starting.z, false);
+else this.go_to(mh, random(0, mh.max.x), random(0, mh.max.y), 0, false);
+return;
+}
+string tempmap = "메인";
+string vid;
+int tempx = 0;
+int tempy = 0;
+int tempz = 0;
+if (sf.d.exists("맵")) tempmap = sf.read("맵");
+if (sf.d.exists("차량")) vid = sf.read("차량");
+if (sf.d.exists("x")) tempx = round(sf.readn("x"), 0);
+if (sf.d.exists("y")) tempy = round(sf.readn("y"), 0);
+if (sf.d.exists("z")) tempz = sf.readn("z");
+if (sf.d.exists("킬")) this.kills = sf.readn("킬");
+if (sf.d.exists("데스")) this.deaths = sf.readn("데스");
+if (sf.d.exists("방향")) this.facing = sf.readn("방향");
+if (sf.d.exists("체력")) this.health = sf.readn("체력");
+if (sf.d.exists("최대체력")) this.maxhealth = sf.readn("최대체력");
+if (sf.d.exists("실드내구도")) this.shieldshots = sf.readn("실드내구도");
+if (sf.d.exists("최대실드내구도")) this.maxshields = sf.readn("최대실드내구도");
+if (sf.d.exists("공기")) this.air = sf.readn("공기");
+if (sf.d.exists("기력")) this.energy = sf.readn("기력");
+if (sf.d.exists("최대기력")) this.maxenergy = sf.readn("최대기력");
+if (sf.d.exists("공격받음")) this.hitby = sf.read("공격받음");
+if (sf.d.exists("임무")) this.a = sf.readd("임무", true);
+if (sf.d.exists("무기카운트")) this.weapon_count = sf.readd("무기카운트", true);
+if (sf.d.exists("무기모드")) this.weapon_modes = sf.readd("무기모드", true);
+if (!vid.is_empty())
+{
+vehicle@ temp = get_vehicle_handle(vid);
+if (temp is null) this.go_to("세이프존", random(0, 20), random(0, 20), 0, false, true);
+else this.go_to(temp.inside, tempx, tempy, tempz, false, true);
+}
+else
+{
+if (map_list.exists(tempmap)) this.go_to(tempmap, tempx, tempy, tempz, false, true);
+else this.go_to("세이프존", random(0, 20), random(0, 20), 0, false, true);
+}
+if (forced) this.delete_all_inv();
+this.load_inv();
+if (sf.d.exists("장비"))
+{
+if (forced or reset_eq) this.remove_equipments(empty, false, false);
+string[]@ wearlist = sf.readd("장비", true).keys;
+bool fail = false;
+int wearlistlength = wearlist.length;
+for (uint i = 0; i < wearlistlength; i++)
+{
+equipment@ eq = get_equipment_handle(wearlist[i]);
+if (eq is null) continue;
+if (this.wear.exists(eq.region))
+{
+this.give(wearlist[i], 1, false);
+fail = true;
+continue;
+}
+if (!eq.handle(this, EQUIP_WEAR))
+{
+this.give(wearlist[i], 1, false);
+fail = true;
+continue;
+}
+eq.wear(this, false, true, false);
+}
+if (fail) this.update_inv();
+}
+this.sendpacket("walkmod " + round(this.origin_walktime * this.bonus_walktime * ((this.maxenergy * 2) / (this.energy + this.maxenergy)), 0));
+this.sendpacket("jumpset " + round(this.origin_jump * this.bonus_jump, 0));
+}
+
+void load_inv()
+{
+if (!sf.d.exists("소유"))
+{
+if (locker_list.exists(this.name)) return;
+if (this.newb == 0) return;
+this.give("street_program_starter_kit", 1);
+return;
+}
+inventory = sf.readd("소유", true);
+if (inventory.is_empty())
+{
+if (locker_list.exists(this.name)) return;
+if (this.newb == 0) return;
+this.give("street_program_starter_kit", 1);
+return;
+}
+@ itemnames = inventory.keys;
+}
+
+void save()
+{
+sf.add("손절", this.muted, true);
+sf.add("신뢰", this.trust, true);
+sf.add("금지", this.ds, true);
+sf.add("컴퓨터ID", this.compid);
+sf.add("이름", this.name);
+sf.add("타이틀", this.title);
+if (this.gang !is null) sf.add("소속", this.gang.teamname);
+else sf.d.delete("소속");
+sf.add("언어", this.langchan);
+sf.add("누적채팅", this.chats);
+sf.add("등급", this.rank);
+sf.add("레이팅", this.rating);
+sf.add("피퍼레이팅", this.pipper_rating);
+sf.add("서바이벌레이팅", this.sv_rating);
+sf.add("플레이시간", this.playtimer.elapsed);
+sf.add("서바이벌시간", this.survivalreward);
+sf.add("입문자시간", this.newbtimer.elapsed);
+sf.add("재행동시간", this.statchangetimer.elapsed);
+sf.add("경험치", this.exp);
+sf.add("음성", this.voice);
+sf.add("체크포인트", dictionary_to_text(this.checkpoints));
+int tempflag = 0;
+if (this.voicechat) tempflag += pc_voicechat;
+if (this.registered == 1) tempflag += pc_registered;
+if (this.no_save) tempflag += pc_no_save;
+if (this.is_builder) tempflag += pc_is_builder;
+if (this.newb == 1) tempflag += pc_newb;
+if (this.cheater == 1) tempflag += pc_cheater;
+if (this.beacon == 1) tempflag += pc_beacon;
+if (this.tracksound) tempflag += pc_tracksound;
+if (this.hidden) tempflag += pc_hidden;
+if (this.autotrack_smoke) tempflag += pc_autotrack_smoke;
+sf.add("플래그", tempflag);
+sf.add("경고", this.warning);
+sf.add("경고수준", this.warnlevel);
+if (this.no_save)
+{
+sf.add("서바이벌맵", (this.map.is_vehicle ? this.map.vhc.map.name : this.map.name));
+}
+else
+{
+sf.add("소유", this.inventory, true);
+sf.add("무기카운트", this.weapon_count, true);
+sf.add("무기모드", this.weapon_modes, true);
+sf.add("장비", this.wear_text, true);
+sf.add("임무", this.a, true);
+sf.add("킬", this.kills);
+sf.add("데스", this.deaths);
+if (this.map.is_vehicle)
+{
+vehicle@ v = this.map.vhc;
+sf.add("맵", v.map.name);
+sf.add("차량", v.id);
+}
+else
+{
+sf.add("맵", this.map.name);
+sf.d.delete("차량");
+}
+sf.add("x", this.x);
+sf.add("y", this.y);
+sf.add("z", this.z);
+sf.add("방향", this.facing);
+sf.add("체력", this.health);
+sf.add("최대체력", this.maxhealth);
+sf.add("실드내구도", this.shieldshots);
+sf.add("최대실드내구도", this.maxshields);
+sf.add("공격받음", this.hitby);
+sf.add("공기", this.air);
+sf.add("기력", this.energy);
+sf.add("최대기력", this.maxenergy);
+}
+sf.save();
+}
+
+void equip(const string& in message, bool return_item = true, bool announce = true)
+{
+equipment@ eq = get_equipment_handle(message);
+if (eq is null) return;
+if (!this.wear.exists(eq.region))
+{
+if (!eq.handle(this, EQUIP_WEAR)) return;
+eq.wear(this, announce);
+return;
+}
+equipment@ temp;
+this.wear.get(eq.region, @ temp);
+if (temp is eq)
+{
+if (!eq.handle(this, EQUIP_REMOVE)) return;
+eq.remove(this, announce, true, return_item);
+return;
+}
+if (!temp.handle(this, EQUIP_REMOVE)) return;
+temp.remove(this, announce, true, return_item);
+if (!eq.handle(this, EQUIP_WEAR)) return;
+eq.wear(this, announce);
+}
+
+void remove_equipments(const string& in what = empty, bool announce = false, bool return_item = true)
+{
+if (!what.is_empty())
+{
+equipment@ temp;
+if (!this.wear.get(what, @ temp)) return;
+temp.handle(this, EQUIP_REMOVE);
+temp.remove(this, announce, true, return_item);
+return;
+}
+string[]@ wearlist = this.wear.keys;
+int wearlength = this.wear.size;
+for (uint i = 0; i < wearlength; i++)
+{
+equipment@ temp;
+if (!this.wear.get(wearlist[i], @ temp)) continue;
+temp.handle(this, EQUIP_REMOVE);
+temp.remove(this, announce, false, return_item);
+}
+this.wear.delete_all();
+this.wear_text.delete_all();
+}
+
+void give_exp(double new_exp = 0)
+{
+this.exp += new_exp;
+if (this.exp > 4294967295) this.add_achievement("마스터 전직", "1 master_robot_card", true);
+else if (this.exp > 999999999) this.add_achievement("4차 전직", "10000 robot_card", true);
+else if (this.exp > 199999999) this.add_achievement("3차 전직", "2000 robot_card", true);
+else if (this.exp > 39999999) this.add_achievement("2차 전직", "500 robot_card", true);
+else if (this.exp > 7999999) this.add_achievement("1차 전직", "100 robot_card", true);
+}
+
+vector get_travel_data(int x, int y, int z, mapdata@ mid)
+{
+vector t;
+bool su = this.checkpoints.exists(mid.name);
+if (su) this.checkpoints.get(mid.name, t);
+vector ret;
+ret.x = (x == -2 ? (su ? t.x : mid.starting.x) : x < 0 ? random(0, mid.max.x) : x);
+ret.y = (y == -2 ? (su ? t.y : mid.starting.y) : y < 0 ? random(0, mid.max.y) : y);
+ret.z = (x == -2 and y == -2 and su ? t.z : z);
+return ret;
+}
+
+void go_to(const string& in tmap, int x, int y, int z, bool sound = true, bool command = false, bool dead_move = false, bool travel = false)
+{
+// overloaded
+go_to(get_map_handle(tmap), x, y, z, sound, command, dead_move, travel);
+}
+void go_to(mapdata@ tmap, int x, int y, int z, bool sound = true, bool command = false, bool dead_move = false, bool travel = false)
+{
+if (this.dmoving) return;
+if (tmap is null) @ tmap = this.map;
+if (!travel)
+{
+if (ride !is null) ride.command("escape", this, dead_move);
+}
+this.fire_stop();
+if (this.hidden) sound = false;
+if (this.invinsible) sound = false;
+bool mapchanged = false;
+if (!command) mapchanged = true;
+if (tmap !is this.map) mapchanged = true;
+if (!mapchanged)
+{
+if (sound) this.playsound(this.map.move_start_sound);
+this.x = (x > tmap.max.x ? tmap.max.x : x < 0 ? 0 : x);
+this.y = (y > tmap.max.y ? tmap.max.y : y < 0 ? 0 : y);
+this.z = (z > tmap.max.z ? tmap.max.z : z < tmap.min.z ? tmap.min.z : z);
+if (sound) this.playsound(this.map.move_end_sound);
+}
+else
+{
+if (sound) this.playsound(this.map.leave_sound);
+if (this.map !is null)
+{
+bool in_map = (this.map.is_vehicle and this.map.vhc.map is tmap) or (tmap.is_vehicle and tmap.vhc.map is this.map);
+if (!in_map)
+{
+mapdata@ smap = (this.map.is_vehicle ? this.map.vhc.map : this.map);
+vehicle@ v = (this.map.is_vehicle ? this.map.vhc : null);
+throw_flag(smap, v, this);
+lastmanloop(smap, this);
+}
+if (this.map.is_vehicle)
+{
+this.sendpacket("veunspawn");
+this.sendpacket("exitvehicle");
+this.sendpacket("goodfuel");
+this.playsound(this.map.vhc.type + "_unspawn", false);
+}
+if (tmap.is_vehicle) this.playsound(tmap.vhc.type + "_spawn", false);
+}
+if (tmap.is_vehicle)
+{
+vehicle@ tv = tmap.vhc;
+this.sendpacket(tv.entervehicle());
+this.sendpacket("vdata " + tv.map.rawdata);
+}
+@ this.map = tmap;
+this.x = (x > tmap.max.x ? tmap.max.x : x < 0 ? 0 : x);
+this.y = (y > tmap.max.y ? tmap.max.y : y < 0 ? 0 : y);
+this.z = (z > tmap.max.z ? tmap.max.z : z < tmap.min.z ? tmap.min.z : z);
+this.oldx = x;
+this.oldy = y;
+this.oldz = z;
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+if (!tmap.mapnoitems.is_empty())
+{
+string[]@ list = this.wear_text.keys;
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+if (is_no_item(this.rx, this.ry, this.z, tmap, list[i])) this.equip(list[i]);
+}
+if (this.weapon !is null)
+{
+if (is_no_item(this.rx, this.ry, this.z, tmap, this.weapon.type)) this.draw_weapon("fists");
+}
+}
+if (!this.follower.is_empty()) this.drag();
+if (dead_move) return;
+this.sendpacket("resizemsound", 4);
+this.sendpacket("resizegate", 4);
+this.sendpacket("resizegate_v", 4);
+int msoundslength = tmap.msounds.length;
+for (uint i = 0; i < msoundslength; i++)
+{
+msound@ mm = tmap.msounds[i];
+if (this is mm.owner)
+{
+if (mm.stationary_mode == STATIONARY_OWNER) mm.send_stationary(this);
+continue;
+}
+if (mm.stationary_mode == STATIONARY_ALL) mm.send_stationary(this);
+else mm.send(this);
+}
+this.sendpacket("mapname " + tmap.name);
+this.sendpacket("m_data " + tmap.rawdata);
+if (this.bleedsound !is null) @ this.bleedsound = this.bleedsound.change_map(tmap, this.x, this.y, this.z);
+if (this.grabsound !is null) @ this.grabsound = this.grabsound.change_map(tmap, this.x, this.y, this.z);
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.change_map(tmap, this.x, this.y, this.z);
+this.gathering_stop();
+if (this.xmsound !is null) @ this.xmsound = this.xmsound.destroy();
+if (this.xmsoundplus !is null) @ this.xmsoundplus = this.xmsoundplus.destroy();
+string mess;
+int ambslength = tmap.ambs.length;
+for (uint i = 0; i < ambslength; i++)
+{
+amb@ mm = tmap.ambs[i];
+if (name_hash == mm.owner_hash)
+{
+if (this.name == mm.owner) continue;
+}
+mess += mm.minx + " " + mm.maxx + " " + mm.miny + " " + mm.maxy + " " + mm.minz + " " + mm.maxz + " " + mm.soundloop + " " + mm.volume + " " + mm.id + "[]";
+}
+if (!mess.is_empty()) this.sendpacket("createamb " + mess, 4);
+mess.resize(0);
+int hobjslength = tmap.hobjs.length;
+for (uint i = 0; i < hobjslength; i++)
+{
+hittable@ temp = tmap.hobjs[i];
+if (temp.tile.is_empty()) continue;
+mess += temp.x + " " + temp.y + " " + temp.z + " " + temp.sound + " " + temp.id + (temp.tile.is_empty() ? empty : " " + temp.tile) + "[]";
+}
+if (!mess.is_empty()) this.sendpacket("spawnsource " + mess, 4);
+mess.resize(0);
+int gateslength = tmap.mapgates.length;
+for (uint i = 0; i < gateslength; i++)
+{
+maptile@ temp = tmap.mapgates[i];
+mess += temp.gate_rawdata + "[]";
+}
+if (!mess.is_empty()) this.sendpacket("spawngate " + mess, 4);
+if (tmap.is_vehicle)
+{
+mess.resize(0);
+gateslength = tmap.vhc.map.mapgates.length;
+for (uint i = 0; i < gateslength; i++)
+{
+maptile@ temp = tmap.vhc.map.mapgates[i];
+mess += temp.gate_rawdata + "[]";
+}
+if (!mess.is_empty()) this.sendpacket("spawngate_v " + mess, 4);
+}
+max = tmap.max;
+if (sound) this.playsound(this.map.enter_sound);
+}
+if (dead_move) return;
+this.sendpacket("move " + this.x + " " + this.y + " " + this.z + " " + this.facing);
+this.moveact();
+}
+
+
+void drag()
+{
+for (int fo = this.follower.length - 1; fo > -1; fo--)
+{
+player@ temp = this.follower[fo];
+if (temp is null)
+{
+this.follower.remove_at(fo);
+continue;
+}
+if (temp.disconnected)
+{
+this.follower.remove_at(fo);
+continue;
+}
+if (temp.map !is this.map)
+{
+temp.go_to(this.map, this.x, this.y, this.z, false);
+continue;
+}
+temp.x = this.x;
+temp.y = this.y;
+temp.z = this.z;
+temp.facing = this.facing;
+temp.sendpacket("move " + this.x + " " + this.y + " " + this.z + " " + this.facing);
+}
+}
+
+int warpdist = 0;
+int warpmoved = 0;
+vector max, warp;
+
+void warpcheck()
+{
+if (warpstage == 0)
+{
+if (warptimer.elapsed >= 2460)
+{
+this.sendpacket("freezestart");
+this.playsound("wpvanish");
+play_dist("wpvanishdist", x, y, z, map);
+z += 10000000;
+warpstage = 1;
+warpdist = random(100, 150);
+warp.x = x;
+warp.y = y;
+warp.z = z;
+this.sendsound("wpmid");
+warptimer.force(0);
+}
+}
+if (warpstage == 1)
+{
+if (warpmoved < warpdist)
+{
+warp = move_global(warp.x, warp.y, this.z, facing);
+warpmoved++;
+bool failed = false;
+if (warp.x > max.x)
+{
+warp.x = 0;
+failed = true;
+}
+else if (warp.x < 0)
+{
+warp.x = max.x;
+failed = true;
+}
+else if (warp.y > max.y)
+{
+warp.y = 0;
+failed = true;
+}
+else if (warp.y < 0)
+{
+warp.y = max.y;
+failed = true;
+}
+if (failed)
+{
+this.sendsound("wpfail");
+this.health = 1;
+this.shieldshots = 0;
+invisibilitytimer.force(30000);
+awarnouttimer.force(0);
+}
+return;
+}
+if (warptimer.elapsed >= 2000)
+{
+warpstage = 0;
+warpdist = 0;
+warpmoved = 0;
+warping = false;
+warp.x = round(warp.x, 0);
+warp.y = round(warp.y, 0);
+x = warp.x;
+y = warp.y;
+z -= 10000000;
+this.sendpacket("move " + x + " " + y + " " + z);
+this.sendpacket("freezestop");
+this.sendpacket("startmoving");
+this.playsound("wpappear");
+play_dist("wpappeardist", x, y, z, map);
+}
+}
+}
+
+void sendpacket(const string& in packet, int chan = 0)
+{
+n.send_reliable(peer_id, string_encrypt(packet, pcps), chan);
+}
+
+void alert(const string& in packet, bool buffer = false)
+{
+n.send_reliable(peer_id, string_encrypt((buffer ? empty : spp) + packet, pcps), (buffer ? 2 : 0));
+}
+
+void playsound(const string& in sound, bool include_me = true)
+{
+int l = map.players.length;
+int range = 75 / this.map.pan_step;
+if (this.follower.is_empty())
+{
+if (include_me) n.send_reliable(this.peer_id, string_encrypt("play_s " + sound, pcps), 0);
+if (l == 0) return;
+string mess = string_encrypt("play_3ds " + sound + " " + x + " " + y + " " + z, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp is this) continue;
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+else
+{
+string mess2 = string_encrypt("play_s " + sound, pcps);
+if (include_me) n.send_reliable(this.peer_id, mess2, 0);
+if (l == 0) return;
+string mess = string_encrypt("play_3ds " + sound + " " + x + " " + y + " " + z, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp is this) continue;
+if (temp.following is this)
+{
+n.send_reliable(temp.peer_id, mess2, 0);
+continue;
+}
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+}
+
+void sendsound(const string& in sound)
+{
+n.send_reliable(this.peer_id, string_encrypt("play_s " + sound, pcps), 0);
+}
+
+void ammo_give(const string& in we, int amount)
+{
+if (!ammo.exists(we))
+{
+if (amount < 1) return;
+ammo.set(we, amount);
+}
+else
+{
+int a;
+ammo.get(we, a);
+int b = a + amount;
+if (b <= 0) ammo.delete(we);
+else ammo.set(we, b);
+}
+}
+
+void ammo_set(const string& in rq, int amount)
+{
+if (!loaded_ammo.exists(rq))
+{
+if (amount < 1) return;
+loaded_ammo.set(rq, amount);
+}
+else
+{
+int a;
+loaded_ammo.get(rq, a);
+int b = a + amount;
+if (b <= 0) loaded_ammo.delete(rq);
+else loaded_ammo.set(rq, b);
+}
+}
+
+dictionary inventory;
+string[]@ itemnames;
+
+void chat(const string& in message, bool map_only = false)
+{
+if (this.spammedmsgs >= 10)
+{
+this.alert("너무 많은 메시지를 연속해서 보낼 수는 없습니다.");
+return;
+}
+spammedmsgs++;
+string mess = string_encrypt("chat " + message, pcps);
+if (map_only)
+{
+int playerslength = this.map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = this.map.players[i];
+if (temp.muted.exists(name)) continue;
+n.send_reliable(temp.peer_id, mess, 1);
+}
+return;
+}
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+if (temp.langchan != langchan) continue;
+if (temp.muted.exists(name)) continue;
+n.send_reliable(temp.peer_id, mess, 1);
+}
+}
+
+void update_inv()
+{
+@ itemnames = inventory.keys;
+}
+
+void delete_all_inv()
+{
+inventory.delete_all();
+@ itemnames = inventory.keys;
+}
+
+void give(const string& in item, int amount, bool update_now = true)
+{
+if (!inventory.exists(item))
+{
+if (amount < 1) return;
+inventory.set(item, amount);
+}
+else
+{
+int a;
+inventory.get(item, a);
+int b = a + amount;
+if (b < 1) inventory.delete(item);
+else inventory.set(item, b);
+}
+if (update_now) update_inv();
+}
+
+void give_from_string(string data, bool is_filename = false)
+{
+if (data.is_empty()) return;
+if (is_filename)
+{
+if (!fl.open(data, "rb")) return;
+data = fl.read();
+fl.close();
+}
+string[]@ invstuff = string_split(data, "\r\n", false);
+int invstufflength = invstuff.length;
+for (uint i = 0; i < invstufflength; i++)
+{
+string[]@ parsed2 = string_split(invstuff[i], "=", false);
+if (parsed2.length == 2) give(parsed2[0], string_to_number(parsed2[1]), false);
+}
+this.update_inv();
+}
+
+void trackinfo(bool text = false)
+{
+if (this.get_smoke())
+{
+this.alert("자욱한 연기가 당신의 시야를 틀어막습니다.");
+this.tracking_target.delete_all();
+this.tracking_type = 0;
+return;
+}
+bool major = (this.tracking_type != ascii_m);
+int dir = this.facing;
+double x = this.x;
+double y = this.y;
+double z = this.z;
+if (this.map.is_vehicle)
+{
+vehicle@ vh = this.map.vhc;
+dir += vh.facing;
+x = vh.x;
+y = vh.y;
+z = vh.z;
+}
+if (dir > 359) dir -= 360;
+bool success = true;
+if (major) success = trackupdate();
+if (success)
+{
+if (text)
+{
+mapdata@ tmap = this.map;
+if (this.map.is_vehicle) @ tmap = this.map.vhc.map;
+int tempflag = 0;
+if ((tmap.no_coord == 0 and tmap.fighting == 0) or tmap is practice_room) tempflag++;
+if (tmap.fighting == 1) tempflag += 2;
+this.sendpacket("tracksend " + x + " " + y + " " + z + " " + trackx + " " + tracky + " " + trackz + " " + dir + " " + tempflag);
+}
+else this.sendpacket("trackplay " + x + " " + y + " " + z + " " + trackx + " " + tracky + " " + trackz + " " + dir);
+return;
+}
+}
+
+bool& trackupdate()
+{
+bool delete = true;
+if (this.map.no_tracking == 0)
+{
+mapdata@ tmap = this.map;
+if (this.map.is_vehicle) @ tmap = this.map.vhc.map;
+switch (this.tracking_type)
+{
+case ascii_p:
+{
+player@ temp;
+if (!this.tracking_target.get("target", @ temp))
+{
+this.alert("알 수 없는 오류가 발생했습니다.");
+break;
+}
+if (temp.disconnected)
+{
+this.alert("대상이 게임을 나갔습니다.");
+break;
+}
+if (temp.health <= 0)
+{
+this.alert("대상이 죽었습니다.");
+break;
+}
+if (temp.hidden)
+{
+this.alert("대상은 숨겨진 상태입니다.");
+break;
+}
+if (temp.invinsible)
+{
+this.alert("대상은 관전 중입니다.");
+break;
+}
+if (temp.map !is tmap)
+{
+if (temp.map.is_vehicle)
+{
+vehicle@ vt = temp.map.vhc;
+if (vt.map is tmap)
+{
+if (vt.in_smoke)
+{
+this.alert("대상이 있는 곳은 연기가 뿌예 정확한 위치를 볼 수 없습니다.");
+if (autotrack_smoke)
+{
+smoke_grenade@ sg = get_nearest_smoke(vt.x, vt.y, vt.z, vt.map, this.name);
+if (sg !is null)
+{
+delete = false;
+tracking_target.delete_all();
+tracking_type = ascii_m;
+trackx = sg.x;
+tracky = sg.y;
+trackz = sg.z;
+break;
+}
+}
+break;
+}
+delete = false;
+this.trackx = vt.x;
+this.tracky = vt.y;
+this.trackz = vt.z;
+break;
+}
+}
+this.alert("대상은 다른 맵에 있습니다.");
+break;
+}
+if (temp.invisible)
+{
+this.alert("대상이 투명해져 감지되지 않습니다.");
+break;
+}
+if (temp.warping and temp.warpstage == 1)
+{
+this.alert("대상이 갑자기 사라집니다.");
+break;
+}
+if (temp.in_smoke)
+{
+this.alert("대상이 있는 곳은 연기가 뿌예 정확한 위치를 볼 수 없습니다.");
+if (autotrack_smoke)
+{
+smoke_grenade@ sg = get_nearest_smoke(temp.x, temp.y, temp.z, tmap, this.name);
+if (sg !is null)
+{
+delete = false;
+tracking_target.delete_all();
+tracking_type = ascii_m;
+trackx = sg.x;
+tracky = sg.y;
+trackz = sg.z;
+break;
+}
+}
+break;
+}
+trackx = temp.x;
+tracky = temp.y;
+trackz = temp.z;
+delete = false;
+}
+break; case ascii_v:
+{
+vehicle@ temp;
+if (!this.tracking_target.get("target", @ temp))
+{
+this.alert("알 수 없는 오류가 발생했습니다.");
+break;
+}
+if (temp.health <= 0)
+{
+this.alert("대상이 격파되었습니다.");
+break;
+}
+if (temp.map !is tmap)
+{
+this.alert("대상은 다른 맵에 있습니다.");
+break;
+}
+if (temp.in_smoke)
+{
+this.alert("대상이 있는 곳은 연기가 뿌예 정확한 위치를 볼 수 없습니다.");
+if (autotrack_smoke)
+{
+smoke_grenade@ sg = get_nearest_smoke(temp.x, temp.y, temp.z, tmap, this.name);
+if (sg !is null)
+{
+delete = false;
+tracking_target.delete_all();
+tracking_type = ascii_m;
+trackx = sg.x;
+tracky = sg.y;
+trackz = sg.z;
+break;
+}
+}
+break;
+}
+if (temp.inside is this.map) break;
+trackx = temp.x;
+tracky = temp.y;
+trackz = temp.z;
+delete = false;
+}
+break; case ascii_r:
+{
+Robot@ temp;
+if (!this.tracking_target.get("target", @ temp))
+{
+this.alert("알 수 없는 오류가 발생했습니다.");
+break;
+}
+if (temp.health <= 0)
+{
+this.alert("대상이 격파되었습니다.");
+break;
+}
+if (temp.in_smoke)
+{
+this.alert("대상이 있는 곳은 연기가 뿌예 정확한 위치를 볼 수 없습니다.");
+if (autotrack_smoke)
+{
+smoke_grenade@ sg = get_nearest_smoke(temp.x, temp.y, temp.z, tmap, this.name);
+if (sg !is null)
+{
+delete = false;
+tracking_target.delete_all();
+tracking_type = ascii_m;
+trackx = sg.x;
+tracky = sg.y;
+trackz = sg.z;
+break;
+}
+}
+break;
+}
+if (temp.map !is tmap)
+{
+this.alert("대상은 다른 맵에 있습니다.");
+break;
+}
+trackx = temp.x;
+tracky = temp.y;
+trackz = temp.z;
+delete = false;
+}
+break;
+default:
+break;
+}
+}
+if (delete)
+{
+this.tracking_target.delete_all();
+this.tracking_type = 0;
+return false_t;
+}
+return true_t;
+}
+
+void checksight(int order)
+{
+if (this.in_smoke)
+{
+this.alert("자욱한 연기가 당신의 시야를 방해합니다.");
+return;
+}
+double real_range = 75 / weaponsight;
+if (order == 0)
+{
+int totalp = 0, totalv = 0;
+int playerslength = map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = map.players[i];
+if (temp is this) continue;
+if (temp.invisible) continue;
+if (temp.in_smoke) continue;
+if (temp.hidden) continue;
+if (this.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing);
+if (deg > this.map.tunnel_sight and deg < (360 - this.map.tunnel_sight)) continue;
+}
+if (rank == 0)
+{
+if (temp.invinsible) continue;
+}
+if (temp.distancecheck(x, y, z) > real_range) continue;
+sm.add(temp.name, "p." + temp.name);
+totalp++;
+}
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.in_smoke) continue;
+if (this.ride is temp) continue;
+if (this.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing);
+if (deg > this.map.tunnel_sight and deg < (360 - this.map.tunnel_sight)) continue;
+}
+if (temp.distancecheck(x, y, z) > real_range) continue;
+sm.add(temp.owner + "님의 " + temp.type, "v." + temp.id);
+totalv++;
+}
+sm.add("주시 중단", "stop");
+sm.intro = totalp + "명의 사람과 " + totalv + "대의 차량이 눈에 띕니다. 무엇을 주시할까요?";
+sm.initial_packet = "sight";
+sm.send(this.peer_id);
+sm.reset();
+return;
+}
+string l;
+bool can_view = false;
+if (sightplayer !is null)
+{
+player@ temp = sightplayer;
+if (temp.disconnected)
+{
+@ sightplayer = null;
+this.alert("대상은 접속을 끊었습니다.");
+return;
+}
+for (;;)
+{
+if (temp is this) break;
+if (rank == 0)
+{
+if (temp.invinsible) break;
+}
+if (temp.hidden) break;
+if (temp.map.is_vehicle)
+{
+vehicle@ tv = temp.map.vhc;
+if (tv.in_smoke) break;
+if (tv.map !is this.map) break;
+if (tv.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, tv.x, tv.y, this.facing);
+if (deg > tv.map.tunnel_sight and deg < (360 - tv.map.tunnel_sight)) break;
+}
+if (tv.distancecheck(x, y, z) > real_range) break;
+}
+else
+{
+if (temp.in_smoke) break;
+if (temp.invisible) break;
+if (temp.map !is this.map) break;
+if (temp.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing);
+if (deg > temp.map.tunnel_sight and deg < (360 - temp.map.tunnel_sight)) break;
+}
+if (temp.distancecheck(x, y, z) > real_range) break;
+}
+can_view = true;
+break;
+}
+if (!can_view)
+{
+this.alert("지금은 보이지 않습니다.");
+return;
+}
+if (temp.map.is_vehicle)
+{
+vehicle@ tv = temp.map.vhc;
+if (order == 2)
+{
+this.alert(tv.owner + "님의_" + tv.type);
+return;
+}
+l = tv.x + " " + tv.y + " " + tv.z;
+}
+else
+{
+if (order == 2)
+{
+string s = string_replace(calculate_x_y_string(calculate_x_y_angle(temp.x, temp.y, this.x, this.y, temp.facing)), " ", "_", true) + "방향을_바라보는_";
+if (temp.ride !is null) s += temp.ride.type + "를_타고_있는_";
+if (temp.shielded) s += "실드로_보호받는_";
+if (temp.invinsible) s += "초자연의_";
+if (temp.gang !is null) s += temp.gang.teamname + "_";
+s += temp.name;
+this.alert(s);
+return;
+}
+l = temp.x + " " + temp.y + " " + temp.z;
+}
+}
+else if (sightvehicle !is null)
+{
+vehicle@ temp = sightvehicle;
+if (temp.health <= 0)
+{
+@ sightvehicle = null;
+this.alert("그것은 이미 흔적도 없이 완파되었습니다.");
+return;
+}
+for (;;)
+{
+if (temp.map !is this.map) break;
+if (temp.in_smoke) break;
+if (this.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing);
+if (deg > this.map.tunnel_sight and deg < (360 - this.map.tunnel_sight)) break;
+}
+if (temp.distancecheck(x, y, z) > real_range) break;
+can_view = true;
+break;
+}
+if (!can_view)
+{
+this.alert("지금은 보이지 않습니다.");
+return;
+}
+if (order == 2)
+{
+this.alert(temp.owner + "님의_" + temp.type);
+return;
+}
+l = temp.x + " " + temp.y + " " + temp.z;
+}
+if (l.is_empty())
+{
+this.alert("아무것도 주시하고 있지 않습니다.");
+return;
+}
+int tempflag = 0;
+if (this.map.no_coord == 0 and this.map.fighting == 0) tempflag++;
+if (this.map.fighting == 1) tempflag += 2;
+this.sendpacket("tracksend " + this.x + " " + this.y + " " + this.z + " " + l + " " + this.facing + " " + tempflag);
+}
+
+int count_total_items()
+{
+int amount = 0;
+int inventorylength = itemnames.length;
+for (uint i = 0; i < inventorylength; i++)
+{
+int a;
+inventory.get(itemnames[i], a);
+amount += a;
+}
+return amount;
+}
+
+int get_item_count(const string& in item)
+{
+int amount = 0;
+if (!inventory.get(item, amount)) return 0;
+return amount;
+}
+
+void work(int index)
+{
+workingtype = index;
+workingtimer.force(0);
+if (!this.stunned) this.sendpacket("stopmoving");
+}
+
+void stun(int ms, bool playaf = false, bool fall = false, int cooldown = 0, bool add = false)
+{
+if (!add)
+{
+if (this.stunagaintimer.elapsed <= this.stunagaintime) return;
+}
+this.stunagaintime = 0;
+this.stunagaintimer.force(0);
+this.sendpacket("stopmoving");
+stunned = true;
+stuntime = (add ? stuntime + ms : ms);
+stuntimer.force(0);
+this.stunagaintime = stuntime + cooldown;
+unstunplay = playaf;
+if (fall)
+{
+spawn_bodyfall(x, y, z, map, 500, this);
+this.invisible = false;
+this.invisibilitytimer.force(0);
+}
+this.fire_stop(false);
+this.gathering_stop(false);
+}
+
+bool& cheatercheck()
+{
+if (this.cheater == 1) return false_t; // server already caught it in reception of close
+// early play cheater
+if (this.statchangetimer.elapsed < 15000)
+{
+if ((this.map.is_vehicle and this.map.vhc.map.fighting == 1) or this.map.fighting == 1) return true_t;
+}
+// missile cheater
+int missileslength = map.missiles.length;
+for (uint i = 0; i < missileslength; i++)
+{
+missile@ temp = map.missiles[i];
+if (this.name != temp.targetname) continue;
+int missiledist = temp.distancecheck(this.x, this.y, this.z);
+if (missiledist <= 50) return true_t;
+}
+// ultra bomb cheater
+int ultrabombslength = map.ultrabombs.length;
+for (uint i = 0; i < ultrabombslength; i++)
+{
+ultrabomb@ temp = map.ultrabombs[i];
+if (!temp.d) continue;
+int distance = temp.distancecheck(this.x, this.y, this.z);
+if (distance < 80) return true_t;
+}
+return false_t;
+}
+}
+
+void playerloop()
+{
+for (int i = players.length - 1; i > -1; i--)
+{
+player@ this = players[i];
+if  ( this .rank == 5)
+{
+if  ( this .adminflag != 1 ) this.hidden = true ;
+{
+this.hidden = false;
+this.temp_invinsible = true;
+}
+}
+if (this.disconnected)
+{
+players.remove_at(i);
+continue;
+}
+
+int updated = 0;
+if (this.facing != this.oldfacing)
+{
+this.oldfacing = this.facing;
+updated = 1;
+}
+if (this.oldx != this.x)
+{
+this.oldx = this.x;
+this.rx = round(this.x, 0);
+updated = 2;
+}
+if (this.oldy != this.y)
+{
+this.oldy = this.y;
+this.ry = round(this.y, 0);
+updated = 2;
+}
+if (this.oldz != this.z)
+{
+this.oldz = this.z;
+updated = 2;
+}
+if (this.map !is this.oldmap)
+{
+@ this.oldmap = this.map;
+updated = 3;
+}
+if (updated > 0)
+{
+if (updated == 2)
+{
+if (this.bleedsound !is null) this.bleedsound.update(this.x, this.y, this.z);
+if (this.grabsound !is null) this.grabsound.update(this.x, this.y, this.z);
+if (this.parachutesound !is null) this.parachutesound.update(this.x, this.y, this.z);
+if (this.weapongatheringsound !is null) this.weapongatheringsound.update(this.x, this.y, this.z);
+}
+if (!this.follower.is_empty()) this.drag();
+}
+if (this.spammedmsgs > 0)
+{
+if (this.spamtimer.elapsed > 5000)
+{
+this.spamtimer.force(0);
+this.spammedmsgs = 0;
+}
+}
+if (this.cheater == 1)
+{
+if (this.cheatertimer.elapsed >= 30000)
+{
+this.statchangetimer.force(0);
+this.cheater = 0;
+this.cheatertimer.force(0);
+this.alert("이제 플레이 가능합니다.");
+this.playsound("confirmation");
+this.sendpacket("startmoving");
+this.save();
+}
+}
+if (!this.death and !this.invinsible and !this.hidden)
+{
+if (this.map is default_sv and this.map.players.length > 1)
+{
+if (this.survivalrewardtimer.elapsed >= 1000)
+{
+this.survivalrewardtimer.force(0);
+this.survivalreward += ((this.map.players.length - 1) * 500);
+}
+}
+}
+if (this.fps > 0)
+{
+this.fps++;
+if (this.fpstimer.elapsed > 999)
+{
+this.fpstimer.force(0);
+this.alert("루프 속도 " + maintime + ", 업데이트 속도 " + this.fps + " FPS.", true);
+this.fps = 0;
+}
+}
+if (this.accumulated_damage > 0)
+{
+if (!this.temp_invinsible)
+{
+this.health -= this.accumulated_damage;
+if (this.health > 0) this.playsound("hit" + this.voice + random(1, 5));
+}
+this.accumulated_damage = 0;
+}
+if (this.weapon !is null)
+{
+if (this.weaponchecktimer.elapsed >= 500)
+{
+this.weaponchecktimer.force(0);
+if (!this.check_draw_req(this.weapon))
+{
+if (this.draw_weapon(this.main_weapon.type) is null) this.draw_weapon("fists");
+}
+if (is_no_item(this.rx, this.ry, this.z, this.map, this.weapon.type))
+{
+if (this.draw_weapon(this.main_weapon.type) is null) this.draw_weapon("fists");
+}
+}
+}
+
+if (!this.hidden)
+{
+if (this.in_smoke)
+{
+if (this.smoketimer.elapsed >= 510) this.in_smoke = false;
+}
+if (this.tracksound)
+{
+if (this.tracking_type > 0)
+{
+if (this.trackingtimer.elapsed > 300)
+{
+this.trackingtimer.force(0);
+this.trackinfo(false);
+}
+}
+}
+if (this.sightvehicle !is null)
+{
+if (this.beaconvtimer.elapsed >= this.beacontime)
+{
+this.beaconvtimer.force(0);
+vehicle@ temp = this.sightvehicle;
+if (temp.health <= 0)
+{
+@ this.sightvehicle = null;
+this.alert("대상은 완파되었습니다.");
+return;
+}
+for (;;)
+{
+if (this.in_smoke)  break;
+if (temp.in_smoke) break;
+if (temp.map !is this.map) break;
+if (temp.distancecheck(this.x, this.y, this.z) > ((75 / this.map.pan_step) / this.weaponsight)) break;
+if (this.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing);
+if (deg > this.map.tunnel_sight and deg < (360 - this.map.tunnel_sight)) break;
+}
+send(this.peer_id, "play_3ds beacon " + temp.x + " " + temp.y + " " + temp.z, 3);
+break;
+}
+}
+}
+if (this.beacontimer.elapsed >= this.beacontime)
+{
+if (!this.invisible and !this.invinsible and !this.hidden and !this.in_smoke and this.map !is minigame_room)
+{
+this.beacontimer.force(0);
+int range = 75 / this.map.pan_step;
+int plength = this.map.players.length;
+for (uint pl = 0; pl < plength; pl++)
+{
+player@ temp = this.map.players[pl];
+if (temp is this) continue;
+if (temp.following is this) continue;
+if (temp.in_smoke) continue;
+bool is_sighted = (temp.sightplayer is this);
+if (temp.beacon <= 0)
+{
+if (!is_sighted) continue;
+}
+if (this.map.tunnel_sight > 0)
+{
+int deg = calculate_x_y_angle(temp.x, temp.y, this.x, this.y, temp.facing);
+if (deg > this.map.tunnel_sight and deg < (360 - this.map.tunnel_sight)) continue;
+}
+if (temp.distancecheck(this.x, this.y, this.z) > (range / temp.weaponsight)) continue;
+if (is_sighted)
+{
+send(temp.peer_id, "play_3ds beacon " + this.x + " " + this.y + " " + this.z, 3);
+continue;
+}
+if (temp.gang !is null)
+{
+if (temp.gang is this.gang)
+{
+send(temp.peer_id, "play_3ds beaconteam " + this.x + " " + this.y + " " + this.z, 3);
+continue;
+}
+}
+send(temp.peer_id, "play_3ds beaconenemy " + this.x + " " + this.y + " " + this.z, 3);
+}
+}
+}
+if (this.weaponping)
+{
+this.weaponping = false;
+this.sendsound("weaponping");
+}
+if (this.weaponping_head)
+{
+this.weaponping_head = false;
+this.sendsound("weaponheadshot");
+}
+if (this.weaponping_team)
+{
+this.weaponping_team = false;
+this.sendsound("weaponpingteam");
+}
+if (this.stunned)
+{
+if (this.unstuntrys > 0)
+{
+if (this.unstuntrys > (this.stuntime / 200))
+{
+this.unstuntrys = 0;
+this.stuntimer.force(this.stuntime);
+}
+else if (this.unstuntrytimer.elapsed > 700)
+{
+this.unstuntrytimer.force(0);
+this.unstuntrys--;
+}
+}
+if (this.stuntimer.elapsed >= this.stuntime)
+{
+this.stuntimer.force(0);
+this.stunned = false;
+if (!this.invinsible)
+{
+if (!this.dmoving)
+{
+if (!this.working()) this.sendpacket("startmoving");
+}
+}
+if (this.unstunplay) this.playsound("stun_dartstop");
+}
+}
+if (this.poisoned >= 1)
+{
+if (this.poisontimer.elapsed >= 1000)
+{
+this.poisontimer.force(0);
+if (this.temp_invinsible) this.poisoned = 0;
+else
+{
+this.health -= random(this.poisoned * 1, this.poisoned * 150);
+this.hitby = "internal:poison";
+}
+}
+}
+if (this.energy < 0) this.energy = 0;
+else if (this.energy > 0)
+{
+if (this.energy > this.maxenergy) this.energy = this.maxenergy;
+if (this.energytimer.elapsed >= 1000)
+{
+this.energytimer.force(0);
+this.energy--;
+if (this.oldenergy != this.energy)
+{
+this.oldenergy = this.energy;
+this.sendpacket("walkmod " + round(this.origin_walktime * this.bonus_walktime * ((this.maxenergy * 2) / (this.energy + this.maxenergy)), 0));
+}
+}
+}
+if (this.origin_jump != this.origin_jump_old or this.bonus_jump != this.bonus_jump_old)
+{
+this.origin_jump_old = this.origin_jump;
+this.bonus_jump_old = this.bonus_jump;
+this.sendpacket("jumpset " + round(this.origin_jump * this.bonus_jump, 0));
+}
+if (this.air > 250) this.air = 250;
+if (this.mask == 1)
+{
+if (this.airtimer.elapsed >= 3500)
+{
+this.airtimer.force(0);
+if (this.air > 0)
+{
+this.air--;
+this.playsound("gas_mask_breathe");
+}
+else
+{
+this.alert("숨이 턱 막힙니다.");
+this.hitby = "internal:suffocate";
+this.health -= random(8000, 10000);
+}
+}
+}
+if (this.underwater)
+{
+if (this.mask == 0)
+{
+if (this.airwarntimer.elapsed >= 15000)
+{
+this.airwarntimer.force(0);
+this.alert("숨이 턱 막힙니다.");
+}
+if (this.airlifetimer.elapsed >= 60015)
+{
+this.airlifetimer.force(0);
+this.hitby = "internal:drown";
+this.death = true;
+}
+}
+}
+if (this.reloading > 0)
+{
+if (this.firetimer.elapsed >= firetime_starter) this.reloading = 0;
+}
+if (this.weapon !is null)
+{
+if (this.weapongathering)
+{
+if (this.weapongatheringtimer.elapsed >= this.weapon.gathering_max)
+{
+this.gathering_stop(true, false);
+}
+}
+if (this.overheat_level < 100.0)
+{
+if (this.overheattimer.elapsed >= 1000)
+{
+this.overheattimer.force(0);
+this.overheat_level -= this.weapon.overheat_decrease;
+if (this.overheat_level < 0.0) this.overheat_level = 0.0;
+}
+}
+else
+{
+if (this.overheattimer.elapsed >= this.weapon.overheattime)
+{
+this.overheattimer.force(0);
+this.overheat_level -= 100.0;
+}
+}
+if (this.firing)
+{
+int shot_level = 0;
+bool final_shot = false;
+if (this.overheat_level < 100.0 and this.firetimer.elapsed >= firetime_starter)
+{
+shot_level = 1;
+if (!this.weapon.require_ammo.is_empty())
+{
+if (this.weapon.max_ammo == 0)
+{
+int am = this.get_item_count(this.weapon.require_ammo);
+if (am >= 1)
+{
+shot_level = 2;
+if (am == 1) final_shot = true;
+}
+else
+{
+shot_level = 0;
+this.fire_stop();
+}
+}
+else
+{
+int curr = this.get_ammo_count(this.weapon_group);
+if (curr > 0)
+{
+shot_level = 2;
+if (curr == 1) final_shot = true;
+}
+else
+{
+shot_level = 0;
+this.fire_stop();
+}
+}
+}
+}
+if (shot_level > 0)
+{
+this.shot_count++;
+weapon@ temp = spawn_weapon(this.x, this.y, this.z, this.facing, this.weapon.type, this.map, this, empty, 1);
+if (this.weapon.shot_limit > 0)
+{
+if (this.shot_count >= this.weapon.shot_limit)
+{
+this.fire_stop();
+}
+}
+if (temp is null)
+{
+this.firetimer.force(firetime_starter);
+this.fire_stop();
+}
+else
+{
+if (temp.gathering_current > 0) this.weapongatheringtimer.force(0);
+if (shot_level >= 2)
+{
+if (this.weapon.max_ammo == 0) this.give(this.weapon.require_ammo, -1);
+else
+{
+this.ammo_give(this.weapon_group, -1);
+this.ammo_set(this.weapon.require_ammo, -1);
+if (final_shot)
+{
+if (this.weapon.empty_ping > 0) this.playsound(this.weapon.empty_ping_sound + random(1, this.weapon.empty_ping));
+this.fire_stop();
+}
+}
+}
+}
+}
+}
+}
+if (this.warping) this.warpcheck();
+if (this.health < 1500)
+{
+if (!this.lowhealth)
+{
+this.lowhealth = true;
+this.sendpacket("lowhealth " + this.health);
+}
+}
+else
+{
+if (this.lowhealth)
+{
+this.lowhealth = false;
+this.sendpacket("goodhealth");
+}
+}
+if (this.newb == 1)
+{
+if (this.newbtimer.elapsed >= 3600000)
+{
+this.newbtimer.force(0);
+this.alert("시간이 다 되었습니다.");
+this.newb = 2;
+}
+}
+else if (this.newb == 2)
+{
+if (this.newbtimer.elapsed >= 3000)
+{
+this.newb = 0;
+this.newbtimer.force(0);
+if (this.map.name == "입문") this.go_to("세이프존", 10, 10, 0, false);
+this.alert("입문자를 졸업했습니다.");
+string message = this.name + "님이 입문자를 졸업했습니다.";
+send(0, "notify " + message, 0);
+log("system_message", message);
+this.save();
+}
+}
+this.shieldshots = (this.shieldshots < 0 ? 0 : this.shieldshots > this.maxshields ? this.maxshields : this.shieldshots);
+if (!this.shielded)
+{
+if (this.shieldshots > 0) this.shielded = true;
+}
+else
+{
+if (this.shieldshots <= 0)
+{
+this.shielded = false;
+this.playsound("shieldbreak");
+this.hurtlevel *= 1.25;
+this.hurttimer.force(0);
+}
+}
+if (this.hurtlevel > 3)
+{
+if (this.bleedsound is null) @ this.bleedsound = spawn_moving_sound("bleeding", this.x, this.y, this.z, this.map, this, 100.0, true);
+}
+else
+{
+if (this.bleedsound !is null) @ this.bleedsound = this.bleedsound.destroy();
+}
+if (this.hurtlevel > 1)
+{
+if (this.hurttimer.elapsed >= 3000)
+{
+this.hurttimer.force(0);
+this.hurtlevel *= 0.8;
+this.hurtlevel = (this.hurtlevel < 1 ? 1 : this.hurtlevel > 100 ? 100 : this.hurtlevel);
+}
+}
+if (!this.no_save)
+{
+if (this.playtimer.elapsed >= 86400000) this.add_achievement("이런 재미 없는 게임을 24시간이나...", "1 membership_card", true);
+}
+else
+{
+if ((this.map.is_vehicle ? this.map.vhc.map : this.map) is default_sv)
+{
+if (this.survival_warning == 0)
+{
+if (this.survivaltimer.elapsed >= 5400000)
+{
+this.survival_warning = 1;
+this.alert("경고: 눌러 앉기 방지를 위해 10분 후 자동으로 죽습니다.", true);
+this.playsound("motdstart");
+}
+}
+else
+{
+if (this.survivaltimer.elapsed >= 6000000)
+{
+this.hitby = "눌러앉기 금지 조항";
+this.remove_equipments();
+this.delete_all_inv();
+this.death = true;
+}
+}
+}
+}
+if (this.health != this.oldhealth)
+{
+if (this.health < this.oldhealth) this.statchangetimer.force(0);
+this.oldhealth = this.health;
+if (this.lowhealth) this.sendpacket("lowhealth " + this.health);
+}
+if (this.antibioticed)
+{
+if (this.antibiotictimer.elapsed >= 500)
+{
+this.antibiotictimer.force(0);
+this.health += (10.0 - (this.health * 9.0 / this.maxhealth)) * 80.0;
+if (this.poisoned >= 1) this.poisoned -= 3;
+}
+if (this.awarnouttimer.elapsed >= 20000)
+{
+this.awarnouttimer.force(0);
+this.antibioticed = false;
+this.statchangetimer.force(0);
+}
+}
+if (this.power_up)
+{
+if (this.power_up_timer.elapsed >= (70000 - (this.dope_withdrawal * 30)))
+{
+this.power_up = false;
+this.alert("약발이 다하여 금단 증상이 당신을 덮칩니다.");
+}
+}
+else
+{
+if (this.dope_withdrawal > 0)
+{
+if (this.dopetimer.elapsed >= 1000)
+{
+this.dopetimer.force(0);
+this.health -= this.dope_withdrawal;
+this.energy -= (this.dope_withdrawal * 0.1);
+this.hitby = "internal:withdrawal";
+this.dope_withdrawal--;
+}
+}
+}
+if (this.invinsibility_starting)
+{
+if (this.invseconds > 0)
+{
+if (this.invinsibilitytimer.elapsed >= 1000)
+{
+this.invinsibilitytimer.force(0);
+if (this.invseconds != 0) this.playsound("invtimer");
+this.invseconds--;
+}
+}
+else
+{
+this.invinsibility_starting = false;
+this.invseconds = 5;
+this.invinsible = true;
+this.sendpacket("stopmoving");
+if (this.rank < 1) send(0, "notify " + this.name + "님이 관전 모드를 켰습니다.", 0);
+this.playsound("invstart");
+}
+}
+if (this.rank > 4)
+{
+this.health = 2100000000;
+this.oldhealth = 2100000000;
+}
+if (this.health > this.maxhealth)
+{
+this.health = this.maxhealth;
+this.oldhealth = this.maxhealth;
+if (this.rank > 4)
+{
+this.health = 2100000000;
+this.oldhealth = 2100000000;
+}
+if (this.antibioticed)
+{
+this.antibioticed = false;
+this.alert("당신은 이제 최상의 컨디션입니다.");
+}
+}
+if (this.invisible)
+{
+if (this.invisibilitytimer.elapsed >= 20000)
+{
+this.invisible = false;
+this.playsound("invisibility_stop");
+this.invisibilitytimer.force(0);
+this.statchangetimer.force(0);
+}
+}
+if (this.temp_invinsible)
+{
+    if (this.temp_invinsibletimer.elapsed >= 35000)
+{
+if (this.rank != 5)
+{
+this.temp_invinsible = false;
+this.alert("30초 부활 무적이 끝납니다.");
+}
+}
+}
+if (this.deathfreecards > 0)
+{
+if (this.deathfreetimer.elapsed >= 220000)
+{
+this.deathfreecards = 0;
+this.playsound("dfcoff");
+}
+}
+if (this.frequency)
+{
+if (this.frequencyscramblertimer.elapsed >= 30000)
+{
+this.frequency = false;
+this.playsound("frequency_scrambleroff");
+}
+}
+bool completed = false;
+switch (this.workingtype)
+{
+case pc_robot_spawning:
+{
+if (this.workingtimer.elapsed > 4200)
+{
+completed = true;
+if (this.map.fighting == 0) break;
+Robot@ temp = robot_spawn(this.robotname, this.x, this.y, this.z, this.map, 0, empty, null, this.name);
+if (temp !is null) this.robotspawntimer.force(robotspawn_origin - (temp.level * 1500));
+this.temp_invinsible = false;
+}
+}
+break; case pc_lockerplacing:
+{
+if (this.workingtimer.elapsed >= 47000)
+{
+completed = true;
+int newlockcode = random(1000, 9999);
+create_new_locker(this.x, this.y, this.z, this.name, string_to_number("0." + newlockcode));
+this.sendpacket("clip " + newlockcode);
+this.alert("사설 금고의 암호가 클립보드로 복사됩니다.");
+}
+}
+break; case pc_ultrabombplacing:
+{
+if (this.workingtimer.elapsed >= 4900)
+{
+completed = true;
+if (this.map.fighting == 0) break;
+spawn_ultrabomb(this.rx, this.ry, this.z, this.map, this.name);
+this.temp_invinsible = false;
+}
+}
+break; case pc_sbombplacing:
+{
+if (this.workingtimer.elapsed >= 11000)
+{
+completed = true;
+if (this.map.fighting == 0) break;
+spawn_security_bomb(this.x, this.y, this.z, this.map, this.name, this);
+this.alert("설치했습니다.");
+this.temp_invinsible = false;
+}
+}
+break; case pc_remconnecting:
+{
+if (this.workingtimer.elapsed >= (this.remguntype == 1 ? 9000 : 6343))
+{
+completed = true;
+if (this.map.fighting == 0) break;
+placeremgun(this.x, this.y, this.z, this.map, this.name, this.remguncount, this.remguntype == 1);
+this.remguncount = 0;
+this.remguntype = 0;
+this.temp_invinsible = false;
+}
+}
+break; case pc_setting_parachute:
+{
+if (this.workingtimer.elapsed >= 3200)
+{
+completed = true;
+if (!is_fallable(this.x, this.y, this.z, this.map)) break;
+if (this.parachutesound is null) @ this.parachutesound = spawn_moving_sound("parachute_loop", this.x, this.y, this.z, this.map, this, 100.0, true);
+this.parachutist = true;
+}
+}
+break; case pc_intercepting:
+{
+if (this.workingtimer.elapsed >= 775)
+{
+completed = true;
+missile_intercept(this.x, this.y, this.z, this.map, this, 35);
+}
+}
+break; case pc_eat:
+{
+if (this.nextsnack is null)
+{
+completed = true;
+break;
+}
+if (this.workingtimer.elapsed >= this.nextsnack.time)
+{
+completed = true;
+this.energy += random(this.nextsnack.minfood, this.nextsnack.maxfood);
+this.health += random(this.nextsnack.minhealth, this.nextsnack.maxhealth);
+@ this.nextsnack = null;
+}
+}
+break; case pc_street_drugging:
+{
+if (this.workingtimer.elapsed >= 1500)
+{
+completed = true;
+this.hurtlevel *= 0.8;
+if (this.hurtlevel < 1) this.hurtlevel = 1;
+if (!this.power_up and this.dope_withdrawal > 0)
+{
+this.dope_withdrawal -= 20;
+if (this.dope_withdrawal < 0) this.dope_withdrawal = 0;
+}
+}
+}
+break; case pc_item_grabbing:
+{
+if (this.workingtimer.elapsed >= 24900)
+{
+completed = true;
+this.playsound("itemgrabberfire");
+playmap("itemgrabbdist", this.map, this);
+this.objcheck(100);
+if (this.grabsound !is null) @ this.grabsound = this.grabsound.destroy();
+}
+}
+break; case pc_shielding:
+{
+if (this.workingtimer.elapsed >= 1500)
+{
+completed = true;
+this.shieldshots = 300;
+if (!this.no_save) this.add_achievement("첫번째 실드", "500000 coin", false);
+}
+}
+break; case pc_shield_repairing:
+{
+if (this.workingtimer.elapsed >= 350)
+{
+completed = true;
+this.shieldshots = this.nextshields;
+this.nextshields = 0;
+}
+}
+break; case pc_frequency_on:
+{
+if (this.workingtimer.elapsed >= 2000)
+{
+completed = true;
+this.frequency = true;
+}
+}
+break;
+}
+if (completed)
+{
+this.workingtype = pc_stop;
+if (!this.stunned) this.sendpacket("startmoving");
+}
+}
+
+if (this.health <= 0)
+{
+if (this.map is practice_room) this.health = this.maxhealth;
+else if (this.deathfreecards > 0)
+{
+this.playsound("dfc");
+this.health = 1;
+if (this.health != this.oldhealth)
+{
+this.oldhealth = 1;
+this.lowhealth = true;
+this.sendpacket("lowhealth 1");
+}
+}
+else this.death = true;
+}
+if (this.death)
+{
+this.death = false;
+if (this.deadtimer.elapsed < 5000) continue;
+this.deadtimer.force(0);
+this.temp_invinsible = true;
+this.temp_invinsibletimer.force(0);
+if (this.death_sound.is_empty())
+{
+this.playsound("death" + this.voice + random(1, 5));
+this.playsound("kill" + random(1, 4));
+sendmap("hardland " + this.x + " " + this.y + " " + this.z, this.map, 0);
+}
+else
+{
+this.playsound(this.death_sound);
+this.death_sound.resize(0);
+}
+playmap("kill", this.map, this);
+if (this.bleedsound !is null) @ this.bleedsound = this.bleedsound.destroy();
+if (this.grabsound !is null) @ this.grabsound = this.grabsound.destroy();
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.destroy();
+if (this.xmsound !is null) @ this.xmsound = this.xmsound.destroy();
+if (this.xmsoundplus !is null) @ this.xmsoundplus = this.xmsoundplus.destroy();
+this.gathering_stop(false);
+this.lowhealth = false;
+this.robotname.resize(0);
+this.sendpacket("goodhealth");
+if (this.cremguns)
+{
+this.cremguns = false;
+this.sendpacket("remcontrolstop");
+}
+this.underwater = false;
+this.dmoving = false;
+this.frequency = false;
+this.invinsibility_starting = false;
+this.invisible = false;
+this.hurtlevel = 1;
+this.poisoned = 0;
+this.power_up = false;
+this.dope_withdrawal = 0;
+this.health = 25000;
+this.oldhealth = 25000;
+this.fire_stop(false);
+this.reloading = 0;
+send(0, "playerdeath " + killmsg(this.name, this.hitby, get_zone_at(this.x, this.y, this.z, this.map), this.hit_head), 0);
+if (!this.no_save)
+{
+this.deaths++;
+if (this.should_subtract)
+{
+if (!this.itemnames.is_empty())
+{
+string choice;
+int count = 0;
+do
+{
+count++;
+choice = this.itemnames[random(0, (this.itemnames.length - 1))];
+}
+while (count < 11 and dontlosedict.exists(choice));
+if (count < 11)
+{
+int lost = round((this.get_item_count(choice) * random(1, 5) / 100), 0);
+if (lost > 0)
+{
+this.give(choice, -lost);
+this.alert(choice + " " + lost + "개를 벌칙으로 잃었습니다.", true);
+}
+}
+}
+}
+}
+else
+{
+this.survivaltimer.force(0);
+this.survival_warning = 0;
+this.remove_equipments();
+this.draw_weapon("fists");
+this.sendpacket("weaponlist " + wnames);
+if (this.map.is_vehicle)
+{
+vehicle@ vv = this.map.vhc;
+if (this.hitby != "눌러앉기 금지 조항" and vv.map.no_corpse == 0) new_corpse(vv.x, vv.y, vv.z, vv.map, this.name, dictionary_to_text(this.inventory));
+}
+else if (this.hitby != "눌러앉기 금지 조항" and this.map.no_corpse == 0) new_corpse(this.x, this.y, this.z, this.map, this.name, dictionary_to_text(this.inventory));
+this.delete_all_inv();
+this.shieldshots = 0;
+this.air = 0;
+this.energy = 25000;
+this.antibioticed = false;
+this.shielded = false;
+this.deathfreecards = 0;
+this.a.delete_all();
+this.inventory = this.map.starting_items;
+@ this.itemnames = this.inventory.keys;
+}
+@ this.deadmap = (this.map.is_vehicle ? this.map.vhc.map : this.map);
+this.go_to("대기실", random(2, 32765), random(2, 32765), random(-16381, 16381), false, true);
+this.sendpacket("resizemsound", 4);
+if (this.hitby == "화마") this.add_achievement("불타오르네", "20 fire_extinguisher", true);
+string hb;
+string[]@ parsed_data = string_split(this.hitby, "의 ", true);
+hb = parsed_data[0];
+player@ temp = get_player_handle(hb);
+if (temp !is null)
+{
+if (temp.name != this.name)
+{
+bool demerit_mark = false;
+if (parsed_data.length > 1) demerit_mark = trapitems.exists(string_replace(parsed_data[1], " ", "_", true));
+if (!demerit_mark)
+{
+int extracoins;
+if (temp.no_save)
+{
+int killdiff = this.kills - temp.kills;
+if (killdiff < 0) killdiff = 0;
+extracoins = (killdiff + 2) * random(5000, 10000) + this.kills * random(2000, 3000);
+}
+else extracoins = 20000 + (random(225000, 250000) / (power(10, (this.rating - temp.rating) * 0.0025) + 1)) + this.kills * random(400, 600);
+if (this.hit_head) extracoins *= 2;
+temp.give("coin", extracoins);
+temp.alert("보상으로 " + extracoins + " coin을 받습니다.", true);
+}
+temp.kills++;
+int kk = 40;
+if (demerit_mark) kk = 20;
+if (temp.rank < 1)
+{
+if (this.rank < 1)
+{
+int rv = kk * (1 - 1 / (power(10, (this.rating - temp.rating) * 0.0025) + 1));
+temp.rating += rv;
+this.rating -= rv;
+if (temp.no_save)
+{
+if (this.no_save)
+{
+double current = this.survivalreward / 10;
+temp.survivalreward += current;
+this.survivalreward -= current;
+rv = kk * (1 - 1 / (power(10, (this.sv_rating - temp.sv_rating) * 0.0025) + 1));
+temp.sv_rating += rv;
+this.sv_rating -= rv;
+}
+}
+}
+}
+if (temp.gang !is null and this.gang !is null)
+{
+if (temp.gang !is this.gang)
+{
+int l = random(250, 500);
+this.gang.points -= l;
+this.gang.transmit("소속 조직이 포인트 " + l + "점을 잃었습니다.");
+l = random(500, 1000);
+temp.gang.points += l;
+temp.gang.transmit("소속 조직에게 " + l + "점의 보너스가 주어집니다.");
+temp.gang.teamkills++;
+}
+}
+}
+}
+achloop(hb, this.name);
+this.hit_head = false;
+this.should_subtract = false;
+this.workingtype = pc_stop;
+this.sitting = 0;
+this.statchangetimer.force(60000);
+this.sendpacket("death");
+this.save();
+this.sendpacket("stopmoving");
+this.stunagaintimer.force(0);
+this.stuntimer.force(0);
+this.stuntime = 5000;
+this.stunagaintime = 0;
+this.stunned = true;
+this.unstunplay = false;
+}
+}
+}
+
+void playerloop(mapdata@ map)
+{
+for (int i = map.players.length - 1; i > -1; i--)
+{
+player@ temp = map.players[i];
+if (temp.disconnected)
+{
+map.players.remove_at(i);
+continue;
+}
+if (temp.map !is map)
+{
+temp.map.players.insert_last(temp);
+map.players.remove_at(i);
+continue;
+}
+}
+}
+
+void spawn_player(const string& in name, int pi, const string& in cid, const string& in ver, const string& in ip, const string& in ctext)
+{
+player pt;
+savedata ns;
+ns.fn = "./chars/" + name + ".usr";
+@ pt.sf = ns;
+pt.name = name;
+pt.name_hash = string_to_hash(name);
+pt.peer_id = pi;
+pt.compid = cid;
+pt.version = ver;
+pt.ip = ip;
+pt.ctext = ctext;
+pt.load(false);
+if (pt.cheater == 1)
+{
+pt.sendsound("warn5");
+pt.sendpacket("stopmoving");
+pt.cheatertimer.force(0);
+}
+if (pt.warnlevel > 0)
+{
+pt.sendsound("warn" + pt.warnlevel);
+pt.sendpacket("dlg 당신은 경고를 받았습니다: " + pt.warning + ". /경고확인 명령어를 사용하여 내용을 확인하세요.");
+}
+pt.sendpacket("weaponlist " + wnames);
+pt.oldhealth = pt.health;
+pt.invusetimer.force(60000);
+pt.frequencyscramblertimer.force(60000);
+pt.statchangetimer.force(60000);
+pt.deadtimer.force(5000);
+pt.robotspawntimer.force(robotspawn_origin);
+pt.firetimer.force(firetime_starter);
+pt.alert("Street Program " + (beta ? "베타 " : empty) + "서버에 오신 것을 환영합니다. 현재 버전은 " + version + "입니다. 새소식: " + oldmotd, true);
+pt.sendsound("welcome");
+if (pt.hidden)
+{
+pt.sendsound("pm");
+pt.alert("당신은 현재 숨겨져 있습니다.", true);
+}
+else send(0, "online " + pt.x + " " + pt.y + " " + pt.z + " " + pt.name + " " + pt.map.name, 0);
+if (pt.gang !is null)
+{
+if (pt.gang.members.exists(pt.name))
+{
+pt.gang.online.insert_last(pt);
+pt.alert(pt.gang.teamname + " 조직에 복귀했습니다.", true);
+if (!pt.hidden) send(pt.peer_id, pt.name + "님은 " + pt.gang.teamname + " 조직 소속입니다.", 2, true);
+}
+else
+{
+pt.alert("애석하게도 " + pt.gang.teamname + " 조직은 해산되었습니다.", true);
+@ pt.gang = null;
+}
+}
+if (pt.rank > 0 and !pt.hidden)
+{
+if (pt.rank < 3) send(pt.peer_id, pt.name + "님은 운영자입니다.", 2, true);
+else
+{
+pt.sendsound("isdev");
+send(pt.peer_id, pt.name + "님은 개발자입니다.", 2, true);
+}
+}
+players.insert_last(pt);
+pt.map.players.insert_last(pt);
+player_list.set(pt.name, @ pt);
+pid_list.set(pt.peer_id, @ pt);
+compid_list.set(pt.compid, @ pt);
+connections++;
+}
+
+player@ get_player_handle(const string& in name)
+{
+if (!player_list.exists(name)) return null;
+player@ temp;
+player_list.get(name, @ temp);
+return temp;
+}
+
+player@ get_pid_handle(const string& in name)
+{
+if (!pid_list.exists(name)) return null;
+player@ temp;
+pid_list.get(name, @ temp);
+return temp;
+}
+
+player@ get_cid_handle(const string& in name)
+{
+if (!compid_list.exists(name)) return null;
+player@ temp;
+compid_list.get(name, @ temp);
+return temp;
+}
+
+player@ get_nearest_player(int px, int py, int pz, mapdata@ pmap, player@ ph)
+{
+int current_distance = -1;
+int final_index = -1;
+int playerslength = pmap.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = pmap.players[i];
+if (ph !is null)
+{
+if (ph is temp) continue;
+}
+if (temp.invisible) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+int dist = temp.distancecheck(px, py, pz);
+if (current_distance != -1)
+{
+if (dist >= current_distance) continue;
+}
+current_distance = dist;
+final_index = i;
+}
+if (final_index < 0) return null;
+return pmap.players[final_index];
+}
+
+int remove_player(const string& in name = empty, bool got_kicked = false, bool save = true)
+{
+if (!name.is_empty())
+{
+player@ temp = get_player_handle(name);
+if (temp is null) return 0;
+temp.remove(got_kicked, save);
+player_list.delete(name);
+pid_list.delete(temp.peer_id);
+compid_list.delete(temp.compid);
+return 1;
+}
+int result = players.length;
+for (uint i = 0; i < result; i++)
+{
+players[i].remove(got_kicked, save);
+}
+player_list.delete_all();
+pid_list.delete_all();
+compid_list.delete_all();
+players.resize(0);
+return result;
+}
+
+class pld
+{
+double value;
+player@ handle;
+int opCmp(pld@ o)
+{
+return (o.value < value ? -1 : o.value > value ? 1 : 0);
+}
+}
+
+string[]& nearest_player_sorted_array(player@ p)
+{
+pld@[] t;
+int playerslength = p.map.players.length;
+t.reserve(playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+player@ tp = p.map.players[i];
+if (tp.health <= 0) continue;
+if (tp.hidden) continue;
+if (tp.invinsible) continue;
+if (tp.newb == 1) continue;
+if (tp is p) continue;
+pld temp;
+@ temp.handle = tp;
+temp.value = tp.distancecheck(p.x, p.y, p.z);
+t.insert_last(temp);
+}
+if (t.is_empty()) return empty_s;
+t.sort_descending();
+ref_string_array.resize(0);
+int tlength = t.length;
+ref_string_array.reserve(tlength);
+for (uint i = 0; i < tlength; i++)
+{
+ref_string_array.insert_last(t[i].handle.name);
+}
+return ref_string_array;
+}
+
+bool are_teamed(const string& in pn1, const string& in pn2, bool prevent_overlap = false)
+{
+if (pn1 == pn2) return !prevent_overlap;
+if (player_list.exists(pn1) and player_list.exists(pn2))
+{
+player@ p1;
+player_list.get(pn1, @ p1);
+player@ p2;
+player_list.get(pn2, @ p2);
+if (p1.gang is null) return false_t;
+if (p2.gang is null) return false_t;
+if (p1.gang is p2.gang) return true_t;
+return false_t;
+}
+int tx1 = is_in_team(pn1);
+if (tx1 == -1) return false_t;
+int tx2 = is_in_team(pn2);
+if (tx2 == -1) return false_t;
+if (tx1 == tx2) return true_t;
+return false_t;
+}
+
+bool are_teamed(player@ pn1, player@ pn2, bool prevent_overlap = false)
+{
+if (pn1 is pn2) return !prevent_overlap;
+if (pn1.gang is null) return false_t;
+if (pn2.gang is null) return false_t;
+if (pn1.gang is pn2.gang) return true_t;
+return false_t;
+}
+
+int select_random_player(dictionary noname = empty_d)
+{
+int[] indexs;
+int playerslength = players.length;
+indexs.reserve(playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (temp.invisible) continue;
+if (noname.exists(temp.name)) continue;
+indexs.insert_last(i);
+}
+if (indexs.is_empty()) return -1;
+return indexs[random(0, indexs.length - 1)];
+}
+
+class chartime
+{
+string name, extrainfo;
+float lastlog;
+int opCmp(chartime@ otherlog)
+{
+return (this.lastlog > otherlog.lastlog ? 1 : this.lastlog < otherlog.lastlog ? -1 : 0);
+}
+}

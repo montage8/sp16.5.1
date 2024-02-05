@@ -1,0 +1,327 @@
+dictionary stores;
+
+class store_coordinate
+{
+store@ link;
+int x, y, z;
+}
+
+class store_item
+{
+string name;
+uint price = 1;
+string limit;
+}
+
+class store
+{
+store_item@[] store_items;
+dictionary store_item_list;
+string name;
+int mode = 0;
+bool no_delivery = false;
+
+void send(player@ pl)
+{
+if (pl is null) return;
+if (store_items.is_empty())
+{
+pl.alert("아무것도 팔고 있지 않습니다.");
+return;
+}
+string items;
+int p, canbuy;
+int itemlength = store_items.length;
+int playercoins = pl.get_item_count("coin");
+for (uint i = 0; i < itemlength; i++)
+{
+store_item@ temp = store_items[i];
+canbuy = playercoins / temp.price;
+items += temp.name + ", 가격 " + temp.price + " coin, 최대 " + canbuy + "개 구입 가능합니다.:" + temp.name + "[]";
+}
+pl.sendpacket("store " + name + " " + items);
+}
+
+store_item@ get_item_handle(const string& in name)
+{
+if (!store_item_list.exists(name)) return null;
+store_item@ temp;
+store_item_list.get(name, @ temp);
+return temp;
+}
+}
+
+void create_store(int x, int y, int z, mapdata@ map, const string& in intro, bool no_delivery = false)
+{
+if (find_store(x, y, z, map) !is null) return;
+store@ temp = get_store_handle(intro);
+if (temp is null)
+{
+store s;
+s.store_items.reserve(200);
+s.name = intro;
+s.no_delivery = no_delivery;
+stores.set(intro, @ s);
+@ temp = s;
+}
+store_coordinate coor;
+coor.x = x;
+coor.y = y;
+coor.z = z;
+@ coor.link = temp;
+map.store_coordinates.insert_last(coor);
+}
+
+store@ find_store(int x, int y, int z, mapdata@ map)
+{
+int storeslength = map.store_coordinates.length;
+for (uint i = 0; i < storeslength; i++)
+{
+store_coordinate@ temp = map.store_coordinates[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return temp.link;
+}
+return null;
+}
+
+store@ get_store_handle(const string& in name)
+{
+if (!stores.exists(name)) return null;
+store@ temp;
+stores.get(name, @ temp);
+return temp;
+}
+
+void add_to_store(const string& in item, int price, const string& in storename = "잡화점", const string& in limit = empty)
+{
+store@ temp = get_store_handle(storename);
+if (temp is null) return;
+store_item new;
+new.name = item;
+new.price = price;
+new.limit = limit;
+temp.store_items.insert_last(new);
+temp.store_item_list.set(item, @ new);
+}
+
+void purchase(const string& in name, const string& in amount_text, player@ this)
+{
+if (name.is_empty()) return;
+if (amount_text.is_empty()) return;
+int amount = string_to_number(amount_text);
+if (amount_text <= 0)
+{
+sell(name, amount_text, this);
+return;
+}
+store_item@ item;
+string[]@ storelist = stores.keys;
+int storeslength = stores.size;
+for (uint i = 0; i < storeslength; i++)
+{
+store@ temp;
+stores.get(storelist[i], @ temp);
+@ item = temp.get_item_handle(name);
+if (item !is null) break;
+}
+if (item is null)
+{
+this.alert("당신은 공기를 삽니다.");
+this.playsound("store_error");
+return;
+}
+if (!item.limit.is_empty())
+{
+if (!this.is_available(string_split(item.limit, "*", true), 4))
+{
+this.playsound("store_error");
+return;
+}
+}
+int totalamount = amount * item.price;
+if (totalamount <= 0)
+{
+this.alert("지불하는 돈은 음수가 될 수 없습니다.");
+this.playsound("store_error");
+return;
+}
+if (this.inventory.exists("membership_card")) totalamount *= 0.75;
+int coin = this.get_item_count("coin");
+if (coin < totalamount)
+{
+this.alert(totalamount + " coin이 필요합니다. 당순에겐 " + coin + " coin밖에 없습니다.", true);
+this.playsound("store_error");
+return;
+}
+// drone
+if (this.map.name == "세이프존" or (this.map.name == "서바이벌" and this.distancecheck(250, 250, 0) <= 20))
+{
+this.give("coin", -(totalamount * 0.95));
+this.give(name, amount);
+this.alert(name + " " + amount + "개를 샀습니다.", true);
+log("action", this.name + "님이 " + name + " " + amount + "개를 삽니다.");
+this.playsound("store_purchase_success");
+return;
+}
+if (!this.inventory.exists("mobile_shopping_device"))
+{
+this.alert("결제할 수단이 없습니다.");
+return;
+}
+mapdata@ tmap = this.map;
+if (tmap.is_vehicle) @ tmap = this.map.vhc.map;
+if (tmap.no_recall == 1)
+{
+if (tmap.name != "메인" and tmap.name != "서바이벌")
+{
+this.alert("죄송합니다. 배달이 되지 않는 지역입니다.");
+return;
+}
+}
+this.give("coin", -totalamount);
+this.alert(name + " " + amount + "개를 주문했습니다.", true);
+log("action", this.name + "님이 " + name + " " + amount + "개를 주문합니다.");
+this.playsound("store_purchase_success");
+int targetx = this.rx;
+int targety = this.ry;
+int targetz = this.z;
+if (this.map.is_vehicle)
+{
+targetx = this.map.vhc.rx;
+targety = this.map.vhc.ry;
+targetz = this.map.vhc.rz;
+}
+if (tmap.name == "서바이벌") spawn_shipment(targetx, targety, targetz, 250, 250, 0, tmap, this, name + "=" + amount + "\r\nshopping_drone=1");
+else spawn_shipment(targetx, targety, targetz, tmap, this, name + "=" + amount + "\r\nshopping_drone=1");
+}
+
+void sell(const string& in name, const string& in amount_text, player@ this)
+{
+if (name.is_empty()) return;
+if (amount_text.is_empty()) return;
+int amount = string_to_number(amount_text);
+if (amount == 0)
+{
+if (amount_text != "a")
+{
+this.alert("좋은 생각이 아닌 것 같습니다.");
+this.playsound("store_error");
+return;
+}
+amount = this.get_item_count(name);
+}
+if (amount < 0) amount = abs(amount);
+int having = this.get_item_count(name);
+if (having < amount)
+{
+this.alert(name + " " + amount + "개는 당신에게 없습니다. 당신은 " + having + "개를 가지고 있습니다.", true);
+this.playsound("store_error");
+return;
+}
+int itemprice = 0;
+sellitems.get(name, itemprice);
+int totalprice = itemprice * amount;
+// drone
+if (this.map.name == "세이프존" or (this.map.name == "서바이벌" and this.distancecheck(250, 250, 0) <= 20))
+{
+this.give(name, -amount);
+this.give("coin", totalprice);
+this.playsound("store_purchase_success");
+this.alert(totalprice + " coin을 보상으로 받습니다.", true);
+return;
+}
+if (!this.inventory.exists("mobile_shopping_device"))
+{
+this.alert("결제할 수단이 없습니다.");
+return;
+}
+if (!this.inventory.exists("shopping_drone"))
+{
+this.alert("shopping drone이 없어 작업을 시작할 수 없습니다.");
+return;
+}
+mapdata@ tmap = this.map;
+if (tmap.is_vehicle) @ tmap = this.map.vhc.map;
+if (tmap.no_teleport == 1)
+{
+if (tmap.name != "메인" and tmap.name != "서바이벌")
+{
+this.alert("죄송합니다. 배달이 되지 않는 지역입니다.");
+return;
+}
+}
+this.give(name, -amount);
+this.give("shopping_drone", -1);
+this.playsound("store_purchase_success");
+this.alert(totalprice + " coin을 보상으로 받을 준비가 되었습니다.", true);
+int targetx = this.rx;
+int targety = this.ry;
+int targetz = this.z;
+if (this.map.is_vehicle)
+{
+targetx = this.map.vhc.rx;
+targety = this.map.vhc.ry;
+targetz = this.map.vhc.rz;
+}
+if (tmap.name == "서바이벌") spawn_shipment(250, 250, 0, targetx, targety, targetz, tmap, this, empty, totalprice);
+else spawn_shipment(targetx, targety, targetz, tmap, this, empty, totalprice, false);
+}
+
+bool& load_market_system()
+{
+if (!fl.open("./prefs/store_registers.svr", "rb")) return false_t;
+string[]@ store_registers = string_split(fl.read(), "\r\n", false);
+fl.close();
+int srl = store_registers.length;
+for (uint i = 0; i < srl; i++)
+{
+string[]@ parsed = string_split(store_registers[i], "=", false);
+if (parsed.length < 5) continue;
+mapdata@ map = get_map_handle(parsed[4]);
+if (map is null) continue;
+create_store(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[0], parsed.length > 5);
+}
+if (!fl.open("./prefs/store.svr", "rb")) return false_t;
+string[]@ items = string_split(fl.read(), "\r\n", false);
+fl.close();
+int itemslength = items.length;
+selllist.reserve(itemslength);
+for (uint i = 0; i < itemslength; i++)
+{
+string[]@ parsed = string_split(items[i], "=", true);
+if (parsed.length < 3) continue;
+int val = string_to_number(parsed[1]);
+sellitems.set(parsed[0], val);
+selllist.insert_last(parsed[0]);
+add_to_store(parsed[0], (val * 2), parsed[2], (parsed.length > 3 ? parsed[3] : empty));
+}
+if (!fl.open("./prefs/sell.svr", "rb")) return false_t;
+string[]@ data = string_split(fl.read(), "\r\n", false);
+fl.close();
+int datalength = data.length;
+selllist.reserve(selllist.length + datalength);
+for (uint i = 0; i < datalength; i++)
+{
+string[]@ parsed = string_split(data[i], "=", false);
+if (parsed.length < 2) continue;
+int val = string_to_number(parsed[1]);
+sellitems.set(parsed[0], val);
+selllist.insert_last(parsed[0]);
+}
+selllist.sort_ascending();
+return true_t;
+}
+
+void reset_market_system()
+{
+sellitems.delete_all();
+selllist.resize(0);
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+maps[j].store_coordinates.resize(0);
+}
+stores.delete_all();
+}

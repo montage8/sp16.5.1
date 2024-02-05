@@ -1,0 +1,1605 @@
+enum weapondrawmodes
+{
+WEAPON_DRAW_NORMAL, WEAPON_CHANGE_MODE, WEAPON_DRAW_ADD_ON, WEAPON_CHANGE_EQUIPMENT
+}
+const double deg_revision_value = 0.000061038881767;
+const double electron_bat_value = 1.071773462536293;
+
+string wnames = "fists";
+
+class weapon : weapon_data
+{
+double dir = 0, zfacing = 0;
+string hitn;
+timer speedtimer;
+int distance = 0;
+mapdata@ map;
+player@ p;
+string real_owner;
+string hitsound;
+vector maxcoords;
+msound@ loopid;
+player@ tp;
+double damage_bonus = 1;
+str_collision@ col;
+double old_range = 0;
+int sound_level = 0;
+int gathering_current = 0;
+string dropsound, wallsound;
+double track_range = -1;
+string track_message;
+bool reversed =  false;
+
+// geometrical stats
+// Length use cylinder, cone, parabola only
+// Endspread use parallel circle(cone)
+double minx, maxx, miny, maxy, minz, maxz; // cone(max only), parabola(max only)
+double halfx, halfy, halfz; // parabola only
+double xlength, ylength, zlength;
+double x, y, z; // central(sphere, box, cylinder), min(cone, parabola)
+int rx, ry, rz;
+uint axis = random(0, 2); 
+double cone_x, cone_y, cone_z; // cone only
+double old_z;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+bool hitbox(double tx, double ty, double tz)
+{
+switch (this.figure)
+{
+case PROJ_SPHERE:
+{
+return ((((tx - this.x) * (tx - this.x) + (ty - this.y) * (ty - this.y) + (tz - this.z) * (tz - this.z)) ** 0.5) < this.spread);
+}
+case PROJ_BOX:
+{
+if (abs(tx - this.x) > this.spread) return false_t;
+if (abs(ty - this.y) > this.spread) return false_t;
+if (abs(tz - this.z) > this.spread) return false_t;
+return true;
+}
+case PROJ_CYLINDER:
+{
+switch (this.axis)
+{
+case 0:
+{
+if (abs(tx - x) > this.length) return false_t;
+return ((((ty - this.y) * (ty - this.y) + (tz - this.z) * (tz - this.z)) ** 0.5) < this.spread);
+}
+case 1:
+{
+if (abs(ty - y) > this.length) return false_t;
+return ((((tx - this.x) * (tx - this.x) + (tz - this.z) * (tz - this.z)) ** 0.5) < this.spread);
+}
+case 2:
+{
+if (abs(tz - z) > this.length) return false_t;
+return ((((tx - this.x) * (tx - this.x) + (ty - this.y) * (ty - this.y)) ** 0.5) < this.spread);
+}
+default:
+break;
+}
+}
+break;
+case PROJ_PARABOLA:
+{
+if (abs(maxz - tz) > (halfz + this.spread)) return false_t;
+if (abs(maxx - tx) > (halfx + this.spread)) return false_t;
+if (abs(maxy - ty) > (halfy + this.spread)) return false_t;
+// Application of get_closest_distance, line3D distance is not work... Damn it...
+tx -= this.x;
+ty -= this.y;
+tz -= this.z;
+double dot_product = tx * this.xlength + ty * this.ylength + tz * this.zlength;
+double project_length = 0.0;
+if (dot_product > 0)
+{
+tx = this.xlength - tx;
+ty = this.ylength - ty;
+tz = this.zlength - tz;
+dot_product = tx * this.xlength + ty * this.ylength + tz * this.zlength;
+if (dot_product > 0) project_length = dot_product * dot_product / this.length;
+}
+double final_length = tx * tx + ty * ty + tz * tz - project_length;
+if (final_length < 0) final_length = 0;
+return (final_length ** 0.5) < this.spread;
+}
+case PROJ_CONE:
+{
+// Application of get_closest_distance, line3D distance is not work... Damn it...
+double dx = tx - this.x;
+double dy = ty - this.y;
+double dz = tz - this.z;
+double dot_product = dx * this.cone_x + dy * this.cone_y + dz * this.cone_z;
+double project_length = 0.0;
+if (dot_product > 0)
+{
+dx = this.cone_x - dx;
+dy = this.cone_y - dy;
+dz = this.cone_z - dz;
+dot_product = dx * this.cone_x + dy * this.cone_y + dz * this.cone_z;
+if (dot_product > 0) project_length = dot_product * dot_product / (this.length * this.length);
+}
+double final_length = dx * dx + dy * dy + dz * dz - project_length;
+if (final_length < 0) final_length = 0;
+final_length **= 0.5;
+if (final_length > this.spread and final_length > this.endspread) return false_t;
+// Next...
+bool ret_temp = true;
+double qx = (tx - this.x) / ((this.cone_x == 0) ? 0.001 : this.cone_x);
+qx = round(qx, 3);
+double qy = (ty - this.y) / ((this.cone_y == 0) ? 0.001 : this.cone_y);
+if (qx != round(qy, 3)) ret_temp = false;
+double qz = (tz - this.z) / ((this.cone_z == 0) ? 0.001 : this.cone_z);
+if (qx != round(qz, 3)) ret_temp = false;
+vector v(tx, ty, tz);
+if (ret_temp) v = get_intersection_vector(this.x, this.y, this.z, this.maxx, this.maxy, this.maxz, tx, ty, tz);
+vector dd(v.x - this.x, v.y - this.y, v.z - this.z);
+double dl = dd.length();
+double pr = (dl == 0 ? this.spread : round(dl, 0) == this.length ? this.endspread : this.spread + ((dl / this.length) * (this.endspread - this.spread)));
+return (abs(final_length) < abs(pr));
+}
+}
+return false_t;
+}
+
+int attack()
+{
+double rmindam = mindam * damage_bonus;
+double rmaxdam = maxdam * damage_bonus;
+int hit = 0;
+int playerslength = map.players.length;
+for (uint x = 0; x < playerslength; x++)
+{
+player@ temp = map.players[x];
+if (temp.health <= 0) continue;
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (!this.hitbox(temp.x, temp.y, temp.z)) continue;
+if ((this.teamhittable ? real_owner == temp.name : are_teamed(real_owner, temp.name))) continue;
+if (!this.super_hit)
+{
+if (temp.ride !is null)
+{
+if (temp.ride.hit_percent >= random(1, 100)) continue;
+temp.ride.rider_hit = true;
+}
+}
+bool hit_head = false;
+if (this.headshot > 0.0)
+{
+if ((this.z - temp.z) >= this.headshot) hit_head = true;
+}
+if (are_teamed(this.p, temp)) this.p.weaponping_team = true;
+else if (hit_head) this.p.weaponping_head = true;
+else this.p.weaponping = true;
+@ tp = temp;
+if (wfp !is null) wfp(this, temp);
+if (this.splash) return 2;
+hit = 1;
+double bonus = 1;
+if (this.backstab)
+{
+int realdeg = calculate_x_y_angle(temp.x, temp.y, this.x, this.y, temp.facing);
+if (realdeg > 180) realdeg = abs(realdeg - 360);
+bonus *= (1 + (realdeg / 180));
+}
+if (hit_head) bonus *= (temp.wear_text.exists("safety_helmet") and !this.ignore_helmet ? 2 : 3);
+if (this.blow > 0) temp.move(this.dir, north, this.blow * bonus, false);
+if (this.stuntime > 0) temp.stun(this.stuntime * bonus, false, true);
+if (temp.deathfreecards > 0) temp.deathfreetimer.force(0);
+double dam = random(rmindam, rmaxdam) * bonus;
+if (temp.shielded and !hit_head)
+{
+int shr = random(0, 100);
+if (shr > this.shieldchance)
+{
+double shieldamount = round((dam ** 0.5) * this.shieldlevel, 0);
+double current = temp.shieldshots;
+temp.shieldhit(shieldamount);
+if (shieldamount < current) continue;
+dam -= round((abs(shieldamount - current) / this.shieldlevel) ** 2, 0);
+}
+}
+if (this.hurt > 1) temp.hurtlevel *= (this.hurt * bonus);
+if (this.poison > 0) temp.poisoned += (this.poison * bonus);
+play(this.hitsound, temp.x, temp.y, temp.z, temp.map);
+temp.hit(dam, this.hitn, this.should_subtract, this.super_hit, hit_head);
+if (this.drain) this.p.health += dam;
+temp.statchangetimer.force(0);
+}
+int vslength = map.vs.length;
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.health <= 0) continue;
+if (!this.hitbox(temp.x, temp.y, temp.z)) continue;
+if ((this.teamhittable ? real_owner == temp.owner : are_teamed(real_owner, temp.owner))) continue;
+if (!this.super_hit)
+{
+if (temp.p !is null)
+{
+if (temp.rider_hit)
+{
+temp.rider_hit = false;
+continue;
+}
+}
+}
+if (are_teamed(real_owner, temp.owner)) this.p.weaponping_team = true;
+else this.p.weaponping = true;
+if (this.splash) return 2;
+hit = 1;
+if (wfv !is null) wfv(this, temp);
+temp.hit(random(rmindam, rmaxdam), this.hitn, false, true);
+}
+int robotslength = map.robots.length;
+for (uint x = 0; x < robotslength; x++)
+{
+Robot@ temp = map.robots[x];
+if (temp.health <= 0) continue;
+if (this.hitbox(temp.x, temp.y, temp.z))
+{
+if (are_teamed(real_owner, temp.owner)) this.p.weaponping_team = true;
+else this.p.weaponping = true;
+if (this.splash) return 2;
+hit = 1;
+if (wfr !is null) wfr(this, temp);
+if (temp.protein) play(this.hitsound, temp.x, temp.y, temp.z, temp.map);
+int rdam = random(rmindam, rmaxdam);
+if (this.sacred)
+{
+if (temp.undead) rdam *= 2.5;
+}
+temp.hit(rdam, this.type, this.p.name);
+if (this.blow > 0) temp.move(this.dir, this.blow, false);
+}
+}
+int hobjslength = map.hobjs.length;
+for (uint x = 0; x < hobjslength; x++)
+{
+hittable@ temp = map.hobjs[x];
+if (temp.health <= 0) continue;
+if (this.hitbox(temp.x, temp.y, temp.z))
+{
+this.p.weaponping = true;
+if (this.splash) return 2;
+hit = 1;
+if (wfh !is null) wfh(this, temp);
+temp.hit(random(rmindam, rmaxdam), this.hitn, this.type);
+break;
+}
+}
+return hit;
+}
+
+void create_notify()
+{
+if (this.p.tracking_type > 0)
+{
+double ra = this.distancecheck(this.p.trackx, this.p.tracky, this.p.trackz);
+if (this.track_range != -1 and this.track_range <= ra) return;
+this.track_range = ra;
+this.track_message = round(this.x - this.p.trackx, 0) + ", " + round(this.y - this.p.tracky, 0) + ", " + round(this.z - this.p.trackz, 0);
+}
+else if (this.p.sightplayer !is null)
+{
+player@ temp = this.p.sightplayer;
+double ra = this.distancecheck(temp.x, temp.y, temp.z);
+if (this.track_range != -1 and this.track_range <= ra) return;
+this.track_range = ra;
+this.track_message = round(this.x - temp.x, 0) + ", " + round(this.y - temp.y, 0) + ", " + round(this.z - temp.z, 0);
+}
+else if (this.p.sightvehicle !is null)
+{
+vehicle@ temp = this.p.sightvehicle;
+double ra = this.distancecheck(temp.x, temp.y, temp.z);
+if (this.track_range != -1 and this.track_range <= ra) return;
+this.track_range = ra;
+this.track_message = round(this.x - temp.x, 0) + ", " + round(this.y - temp.y, 0) + ", " + round(this.z - temp.z, 0);
+}
+}
+
+void block_remove(bool wall = false, bool batting = false)
+{
+if (this.loopid !is null) this.loopid.destroy();
+if (batting)
+{
+if (this.notify) this.p.sendsound("missilewarn");
+return;
+}
+if (wall)
+{
+if (!this.wallsound.is_empty()) play(this.wallsound, this.x, this.y, this.z, this.map);
+}
+else
+{
+if (!this.dropsound.is_empty()) play(this.dropsound, this.x, this.y, this.z, this.map);
+}
+if (this.splash)
+{
+if (wfs !is null) wfs(this, null);
+else spawn_splash(this.rx, this.ry, this.rz, this.map, this.p.name, this.splash_name);
+}
+if (this.notify)
+{
+create_notify();
+this.p.alert((track_message.is_empty() ? round(this.x, 0) + ", " + round(this.y, 0) + ", " + round(this.z, 0) + "에 떨어집니다: " : track_message + "칸 옆을 스쳐 지나갔습니다: ") + this.type + "에서 보낸 알림", true);
+}
+if (block_recall > random(1, 100)) spawn_obj(this.x, this.y, this.z, this.map, (this.require_ammo.is_empty() ? this.type : this.require_ammo));
+}
+
+void hit_remove()
+{
+if (this.splash)
+{
+if (wfs !is null) wfs(this, tp);
+else spawn_splash(this.rx, this.ry, this.rz, this.map, this.p.name, this.splash_name);
+}
+if (this.loopid !is null) this.loopid.destroy();
+if (this.notify) this.p.alert("명중했습니다, " + round(this.x, 0) + ", " + round(this.y, 0) + ", " + round(this.z, 0) + ": " + this.type + "에서 보낸 알림", true);
+if (hit_recall > random(1, 100)) spawn_obj(this.x, this.y, this.z, this.map, (this.require_ammo.is_empty() ? this.type : this.require_ammo));
+}
+}
+
+void weaponloop(mapdata@ map)
+{
+for (int j = map.weapons.length - 1; j > -1; j--)
+{
+weapon@ this = map.weapons[j];
+if (this.p.disconnected)
+{
+if (this.loopid !is null) this.loopid.destroy();
+map.weapons.remove_at(j);
+continue;
+}
+
+if (this.figure == PROJ_PARABOLA)
+{
+if (this.speedtimer.elapsed < 10) continue;
+this.speedtimer.force(0);
+this.zlength -= this.zspeed;
+this.halfz = abs(this.zlength * 0.5);
+this.maxx = this.x + (this.xlength * 0.5);
+this.maxy = this.y + (this.ylength * 0.5);
+this.maxz = this.z + (this.zlength * 0.5);
+if (this.shotgun) this.damage_bonus = (1 - (this.distance / (this.old_range)));
+this.distance++;
+if (this.distance >= this.range)
+{
+this.block_remove(this.range < this.old_range);
+map.weapons.remove_at(j);
+continue;
+}
+this.length = (this.xlength * this.xlength) + (this.ylength * this.ylength) + (this.zlength * this.zlength);
+int level = this.attack();
+if (level > 0)
+{
+this.hit_remove();
+map.weapons.remove_at(j);
+continue;
+}
+this.x += this.xlength;
+this.y += this.ylength;
+this.z += this.zlength;
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+this.rz = round(this.z, 0);
+if (this.loopid !is null) this.loopid.update(this.x, this.y, this.z);
+}
+
+else
+{
+if (this.speedtimer.elapsed < this.speedtime) continue;
+this.speedtimer.force(0);
+this.x += this.xlength;
+this.y += this.ylength;
+this.z += this.zlength;
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+this.rz = round(this.z, 0);
+if (this.shotgun) this.damage_bonus = (1 - (this.distance / (this.old_range)));
+this.distance++;
+if (this.distance >= this.range)
+{
+this.block_remove(this.range < this.old_range);
+map.weapons.remove_at(j);
+continue;
+}
+if (this.figure == PROJ_CONE)
+{
+this.maxx = this.x + this.cone_x;
+this.maxy = this.y + this.cone_y;
+this.maxz = this.z + this.cone_z;
+}
+if (this.loopid !is null) this.loopid.update(this.x, this.y, this.z);
+int level = this.attack();
+if (level > 0)
+{
+this.hit_remove();
+map.weapons.remove_at(j);
+continue;
+}
+}
+if (this.notify) this.create_notify();
+}
+}
+
+weapon@ spawn_weapon(double x, double y, double z, double dir, const string& in type, mapdata@ map, player@ pl, string sound = empty, int sound_mode = 0,  double reverse_speed = 0.0, double reverse_zspeed = 0.0, int old_gathering = 0)
+{
+if (pl is null) return null;
+weapon_data@ temp = get_weapon_handle(type);
+if (temp is null) return null;
+bool reversed = (reverse_speed != 0.0 or reverse_zspeed != 0.0 or old_gathering != 0);
+if (!reversed)
+{
+if (pl.energy < temp.energy) return null;
+pl.energy -= temp.energy;
+}
+weapon ww;
+ww.reversed = reversed;
+ww.sound_level = sound_mode;
+dir += (dir < 0 ? 360 : dir >= 360 ? -360 : 0);
+ww.dir = dir + (random(-16383, 16383) * temp.shotdeg * deg_revision_value);
+ww.dir += (ww.dir < 0 ? 360 : ww.dir >= 360 ? -360 : 0);
+double zfacing = pl.zfacing;
+if (pl.ride !is null)
+{
+if (pl.zfacing < -45)
+{
+zfacing = 45;
+if (pl.zfacingwarntimer.elapsed >= 300)
+{
+pl.zfacingwarntimer.force(0);
+pl.sendsound("weaponzhigh");
+}
+}
+}
+if (!reversed)
+{
+if (pl.zfacing < temp.minzfacing)
+{
+zfacing = temp.minzfacing;
+if (pl.zfacingwarntimer.elapsed >= 300)
+{
+pl.zfacingwarntimer.force(0);
+pl.sendsound("weaponzhigh");
+}
+}
+else if (pl.zfacing > temp.maxzfacing)
+{
+zfacing = temp.maxzfacing;
+if (pl.zfacingwarntimer.elapsed >= 300)
+{
+pl.zfacingwarntimer.force(0);
+pl.sendsound("weaponzlow");
+}
+}
+}
+if (temp.vehicle_zfacing)
+{
+vehicle@ vv = pl.get_vehicle();
+if (vv !is null) zfacing += vv.nose;
+}
+zfacing += (zfacing < 0 ? 360 : zfacing >= 360 ? -360 : 0);
+ww.zfacing = zfacing + (random(-16383, 16383) * temp.shotzdeg * deg_revision_value);
+ww.zfacing += (ww.zfacing < 0 ? 360 : ww.zfacing >= 360 ? -360 : 0);
+@ ww.map = map;
+ww.type = temp.type;
+ww.splash_name = temp.splash_name;
+ww.require_ammo = temp.require_ammo;
+ww.speedtime = (reversed and temp.figure == PROJ_PARABOLA ? ww.speedtime = reverse_speed : temp.speedtime);
+ww.blow = temp.blow;
+ww.hurt = temp.hurt;
+ww.poison = temp.poison;
+ww.stuntime = temp.stuntime;
+ww.block_recall = temp.block_recall;
+ww.hit_recall = temp.hit_recall;
+ww.mindam = temp.mindam;
+ww.maxdam = temp.maxdam;
+if (pl.power_up)
+{
+ww.can_power_up = temp.can_power_up;
+if (ww.can_power_up)
+{
+ww.mindam *= 2;
+ww.maxdam *= 2;
+}
+}
+@ ww.p = pl;
+ww.real_owner = (ww.p.map.is_vehicle ? ww.p.map.vhc.owner : ww.p.name);
+ww.hitn = ww.p.name + "의 " + (ww.type == "artillery" ? "tank" : ww.type);
+ww.notify = (ww.map is practice_room and temp.range >= 3 ? true : temp.notify);
+ww.headshot = temp.headshot;
+ww.splash = temp.splash;
+ww.spread = temp.spread;
+ww.endspread = temp.endspread;
+ww.figure = temp.figure;
+if (ww.figure == PROJ_CYLINDER or ww.figure == PROJ_CONE)
+{
+ww.x = x;
+ww.y = y;
+ww.z = z;
+}
+else
+{
+int temp_sp = ww.spread + 1;
+str_collision@ temp2 = get_collision_handle_straight(x, y, z, map, temp_sp + 1, dir, zfacing, map.min.z - ww.spread);
+if (temp2.time >= 0.0 and temp2.time <= temp_sp)
+{
+ww.range = -1;
+ww.x = (sine_theta[dir] * cosine_theta[zfacing] * temp2.time) + x;
+ww.y = (cosine_theta[dir] * cosine_theta[zfacing] * temp2.time) + y;
+ww.z = (sine_theta[zfacing] * temp2.time) + z;
+}
+else
+{
+ww.x = (sine_theta[dir] * cosine_theta[zfacing] * temp_sp) + x;
+ww.y = (cosine_theta[dir] * cosine_theta[zfacing] * temp_sp) + y;
+ww.z = (sine_theta[zfacing] * temp_sp) + z;
+}
+}
+ww.rx = round(x, 0);
+ww.ry = round(y, 0);
+ww.rz = round(z, 0);
+ww.shieldlevel = temp.shieldlevel;
+ww.shieldchance = temp.shieldchance;
+ww.bullet = temp.bullet;
+ww.super_hit = temp.super_hit;
+ww.should_subtract = temp.should_subtract;
+ww.teamhittable = (map.no_teamhit == 1 ? false : temp.teamhittable);
+ww.drain = temp.drain;
+ww.shotgun = temp.shotgun;
+ww.no_reflect = temp.no_reflect;
+ww.ignore_helmet = temp.ignore_helmet;
+ww.backstab = temp.backstab;
+ww.sacred = temp.sacred;
+ww.gathering_max = temp.gathering_max;
+if (ww.gathering_max != 0) ww.gathering_current = (old_gathering == 0 ? pl.weapongatheringtimer.elapsed : old_gathering);
+ww.maxcoords = map.max;
+if (temp.loop_size > 0)
+{
+@ ww.loopid = spawn_moving_sound("__" + temp.loop_sound, x, y, z, map);
+ww.loopid.set_volume(temp.loop_size);
+}
+ww.hitsound = temp.hit_sound + (temp.hits == 0 ? empty : random(1, temp.hits));
+ww.dropsound = temp.drop_sound + (temp.drops == 0 ? empty : random(1, temp.drops));
+ww.wallsound = temp.wall_sound + (temp.walls == 0 ? empty : random(1, temp.walls));
+ww.shots = temp.shots;
+bool multi_shot = (ww.shots > 1 and !reversed);
+if (temp.wfw !is null)
+{
+if (!temp.wfw(ww)) return null;
+}
+@ ww.wfp = temp.wfp;
+@ ww.wfv = temp.wfv;
+@ ww.wfr = temp.wfr;
+@ ww.wfh = temp.wfh;
+@ ww.wfs = temp.wfs;
+if (ww.figure == PROJ_PARABOLA) 
+{
+ww.zspeed = (reversed ? reverse_zspeed : temp.zspeed);
+@ ww.col = get_collision_handle_parabola(ww.x, ww.y, ww.z, ww.map, ww.speedtime, ww.zspeed, (multi_shot ? dir : ww.dir), (multi_shot ? zfacing : ww.zfacing), temp.range, map.min.z - ww.spread);
+ww.old_range = temp.range;
+if (ww.range >= 0) ww.range = ceiling(ww.col.time);
+ww.xlength = ww.col.x_length;
+ww.ylength = ww.col.y_length;
+ww.zlength = ww.col.z_length + ww.zspeed * 0.5;
+ww.halfx = abs(ww.xlength * 0.5);
+ww.halfy = abs(ww.ylength * 0.5);
+ww.halfz = abs(ww.zlength * 0.5);
+}
+else
+{
+@ ww.col = get_collision_handle_straight(ww.x, ww.y, ww.z, ww.map, temp.range, (multi_shot ? dir : ww.dir), (multi_shot ? zfacing : ww.zfacing), map.min.z - ww.spread, false);
+ww.xlength = ww.col.x_length;
+ww.ylength = ww.col.y_length;
+ww.zlength = ww.col.z_length;
+ww.length = temp.length;
+if (ww.figure == PROJ_CONE)
+{
+ww.cone_x = ww.xlength * ww.length;
+ww.cone_y = ww.ylength * ww.length;
+ww.cone_z = ww.zlength * ww.length;
+}
+ww.old_range = temp.range;
+if (ww.range >= 0) ww.range = ceiling(ww.col.time);
+}
+if (ww.range > ww.old_range) ww.range = ww.old_range;
+if (ww.range < 1) ww.range = 1;
+if (multi_shot)
+{
+int shotlength = ww.shots - 1;
+map.weapons.reserve(map.weapons.length + ww.shots);
+for (uint i = 0; i < shotlength; i++)
+{
+weapon tw = ww;
+tw.dir = dir + (random(-16383, 16383) * temp.shotdeg * deg_revision_value);
+tw.dir += (tw.dir < 0 ? 360 : tw.dir >= 360 ? -360 : 0);
+tw.zfacing = zfacing + random(-16383, 16383) * temp.shotzdeg * deg_revision_value;
+tw.zfacing += (tw.zfacing < 0 ? 360 : tw.zfacing >= 360 ? -360 : 0);
+if (ww.figure == PROJ_PARABOLA) 
+{
+tw.xlength = sine(tw.dir * pi180) * ww.speedtime * cosine(tw.zfacing * pi180);
+tw.ylength = cosine(tw.dir * pi180) * ww.speedtime * cosine(tw.zfacing * pi180);
+tw.zlength = (sine(tw.zfacing * pi180) * ww.speedtime) + (ww.zspeed * 0.5);
+tw.halfx = abs(tw.xlength * 0.5);
+tw.halfy = abs(tw.ylength * 0.5);
+tw.halfz = abs(tw.zlength * 0.5);
+}
+else
+{
+tw.xlength = sine(tw.dir * pi180) * cosine(tw.zfacing * pi180);
+tw.ylength = cosine(tw.dir * pi180) * cosine(tw.zfacing * pi180);
+tw.zlength = sine(tw.zfacing * pi180);
+if (ww.figure == PROJ_CONE)
+{
+tw.cone_x = tw.xlength * ww.length;
+tw.cone_y = tw.ylength * ww.length;
+tw.cone_z = tw.zlength * ww.length;
+}
+}
+if (temp.loop_size > 0)
+{
+@ tw.loopid = spawn_moving_sound("__" + temp.loop_sound, x, y, z, map);
+tw.loopid.set_volume(temp.loop_size);
+}
+map.weapons.insert_last(tw);
+}
+}
+if (ww.sound_level >= 0)
+{
+if (ww.sound_level >= 1 and temp.volume > 0.0) play_dist(temp.dist_sound, x, y, z, map, temp.volume, (pl.map.is_vehicle ? null : ww.sound_level == 2 ? null : pl));
+sound = (!sound.is_empty() ? sound : temp.fires > 0 ? temp.fire_sound + random(1, temp.fires) : temp.fire_sound);
+play(sound, x, y, z, map);
+}
+if (!reversed)
+{
+if (!pl.map.is_vehicle) pl.overheat_level += temp.overheat_increase;
+if (pl.overheat_level >= 150)
+{
+pl.overheattimer.force(0);
+pl.overheat_level = 0.0;
+pl.death = true;
+pl.hitby = "무기 과열로 인한 3도 화상";
+}
+else if (pl.overheat_level >= 100)
+{
+pl.overheattimer.force(0);
+pl.overheattime = temp.overheattime;
+pl.playsound("overheat_cooldown" + temp.overheat_type);
+}
+else if (pl.overheat_level >= 80)
+{
+pl.playsound("overheat_warning" + temp.overheat_type);
+}
+if (temp.firetime > 0)
+{
+pl.firetimer.force(firetime_starter - (temp.firetime * pl.firetime_factor));
+if (ww.map is practice_room)
+{
+if (pl.firetimer.elapsed >= (firetime_starter - 200)) pl.firetimer.force(firetime_starter - 200);
+}
+}
+}
+pl.temp_invinsible = false;
+map.weapons.insert_last(ww);
+pl.last_weapon = ww.type;
+return ww;
+}
+
+funcdef void weapon_func_player(weapon &inout this, player &inout temp);
+funcdef void weapon_func_vehicle(weapon &inout this, vehicle &inout temp);
+funcdef void weapon_func_robot(weapon &inout this, Robot &inout temp);
+funcdef void weapon_func_hobj(weapon &inout this, hittable &inout temp);
+funcdef bool weapon_func_prework(weapon &inout this);
+funcdef bool weapon_func_reload(player &inout this, int current, int amount);
+funcdef void weapon_func_splash(weapon &inout this, player@ target = null);
+dictionary weapon_hash_player;
+dictionary weapon_hash_vehicle;
+dictionary weapon_hash_robot;
+dictionary weapon_hash_hobj;
+dictionary weapon_hash_prework;
+dictionary weapon_hash_reload;
+dictionary weapon_hash_splash;
+
+// player special
+void weapon_hash_player_artillery(weapon &inout this, player &inout temp)
+{
+this.p.alert("명중함: " + temp.name, true);
+}
+void weapon_hash_player_spw_version_2_phantasm_blade(weapon &inout this, player &inout temp)
+{
+if (temp.invisible)
+{
+this.mindam *= 2;
+this.maxdam *= 2;
+}
+if (!this.p.invisible)
+{
+this.p.invisible = true;
+this.p.invisibilitytimer.force(0);
+}
+}
+void weapon_hash_player_spw_version_2_hellfire_blade(weapon &inout this, player &inout temp)
+{
+spawn_fire(temp.x, temp.y, temp.z, this.map, 5000);
+}
+void weapon_hash_player_spw_version_2_absolute_zero_blade(weapon &inout this, player &inout temp)
+{
+temp.firetimer.force(firetime_starter - 10000);
+}
+void weapon_hash_player_stun_dart(weapon &inout this, player &inout temp)
+{
+temp.stun(5000, true, true, 5000);
+}
+void weapon_hash_player_health_dart(weapon &inout this, player &inout temp)
+{
+temp.playsound("stun_darthit");
+}
+void weapon_hash_player_throwaway_spray(weapon &inout this, player &inout temp)
+{
+if (temp.mask == 1) return;
+double power = (temp.distancecheck(this.x, this.y, this.z) - 20) * -1;
+if (power <= 0) return;
+int realdeg = abs(calculate_x_y_angle(temp.x, temp.y, this.x, this.y, temp.facing) - 180);
+int dam = (power * realdeg) - random(0, 500);
+if (temp.antibioticed) dam >>= 1;
+if (dam < 0) return;
+if (dam < temp.health) temp.playsound(this.hitsound);
+temp.health -= dam;
+}
+
+// vehicle special
+void weapon_hash_vehicle_artillery(weapon &inout this, vehicle &inout temp)
+{
+this.p.alert("명중함: " + temp.owner, true);
+if (temp.health > this.mindam) temp.playsound("explode_impact_vehicle", true, true);
+}
+void weapon_hash_vehicle_spw_version_2_phantasm_blade(weapon &inout this, vehicle &inout temp)
+{
+if (temp.speed > 0.0)
+{
+this.mindam *= 2;
+this.maxdam *= 2;
+}
+if (!this.p.invisible)
+{
+this.p.invisible = true;
+this.p.invisibilitytimer.force(0);
+}
+}
+void weapon_hash_vehicle_spw_version_2_hellfire_blade(weapon &inout this, vehicle &inout temp)
+{
+spawn_fire(temp.x, temp.y, temp.z, this.map, 5000);
+}
+void weapon_hash_vehicle_spw_version_2_absolute_zero_blade(weapon &inout this, vehicle &inout temp)
+{
+temp.command("engine", this.p, true);
+}
+
+// robot special
+void weapon_hash_robot_artillery(weapon &inout this, Robot &inout temp)
+{
+this.p.alert("명중함: " + temp.name, true);
+}
+void weapon_hash_robot_spw_version_2_hellfire_blade(weapon &inout this, Robot &inout temp)
+{
+spawn_fire(temp.x, temp.y, temp.z, this.map, 5000);
+}
+void weapon_hash_robot_spw_version_2_phantasm_blade(weapon &inout this, Robot &inout temp)
+{
+if (!this.p.frequency)
+{
+this.p.frequency = true;
+this.p.frequencyscramblertimer.force(20000);
+}
+}
+void weapon_hash_robot_ball(weapon &inout this, Robot &inout temp)
+{
+temp.stun(5000);
+temp.playsound("wirebombhit");
+}
+
+// hobj special
+void weapon_hash_hobj_artillery(weapon &inout this, hittable &inout temp)
+{
+this.p.alert("명중함: " + temp.name, true);
+}
+void weapon_hash_hobj_spw_version_2_hellfire_blade(weapon &inout this, hittable &inout temp)
+{
+spawn_fire(temp.x, temp.y, temp.z, this.map, 5000);
+}
+
+// prework special
+bool weapon_hash_prework_gauss_gun(weapon &inout this)
+{
+if (!this.reversed) this.p.overheat_level += (1 + this.gathering_current / 100);
+this.mindam += this.gathering_current * 6;
+this.maxdam += this.gathering_current * 6;
+this.shieldlevel *= 1 + (this.gathering_current / abs(this.gathering_max));
+this.speedtime += this.gathering_current / 625;
+return true_t;
+}
+bool weapon_hash_prework_megaton_puncher(weapon &inout this)
+{
+if (this.gathering_current < 1200) return true_t;
+this.p.playsound("megaton_puncherpowerup");
+if (this.gathering_current < 2000)
+{
+this.p.energy -= 50;
+this.mindam = 16000;
+this.maxdam = 19000;
+}
+else if (this.gathering_current < 2600)
+{
+this.p.energy -= 150;
+this.mindam = 23000;
+this.maxdam = 27000;
+}
+else
+{
+this.p.energy -= 300;
+this.mindam = 23000;
+this.maxdam = 27000;
+this.stuntime = 5000;
+}
+if (this.p.power_up)
+{
+this.mindam *= 2;
+this.maxdam *= 2;
+}
+return true_t;
+}
+bool weapon_hash_prework_bow(weapon &inout this)
+{
+if (this.gathering_current < 1750)
+{
+int level = this.gathering_current - 500;
+this.poison = (random(1, 1250) < level ? 2 : 1);
+this.mindam += level * 4;
+this.maxdam += level * 5.6;
+this.speedtime += level * 0.0006;
+if (!this.reversed) this.p.energy -= level * 0.02;
+this.hit_recall = 75 - (level * 0.04);
+this.block_recall = 75 - (level * 0.04);
+}
+else
+{
+this.poison = 2;
+this.mindam = 7000;
+this.maxdam = 10000;
+this.speedtime = 1.25;
+if (!this.reversed) this.p.energy -= this.gathering_current / 200;
+this.hit_recall = 25;
+this.block_recall = 25;
+}
+if (this.p.power_up)
+{
+this.mindam *= 1.5;
+this.maxdam *= 1.5;
+}
+return true_t;
+}
+bool weapon_hash_prework_spw_version_2_raged_soul_blade(weapon &inout this)
+{
+int temphp = this.p.health;
+int tempdam = (5500 - this.p.health) * 10;
+if (tempdam < 5000) tempdam = 5000;
+if (this.p.power_up) tempdam *= 2;
+this.mindam = tempdam;
+this.maxdam = tempdam + 5000;
+return true_t;
+}
+
+// reload special
+bool weapon_hash_reload_remington_m870_shotgun(player &inout this, int current, int amount)
+{
+if (current == 0) return false_t;
+this.reloading = 2;
+int real_amount = this.weapon.max_ammo - current;
+if (real_amount > amount) real_amount = amount;
+string res = "remington_m870_shotgunpush|";
+real_amount--;
+int loop = real_amount + 2;
+this.firetimer.force(firetime_starter - (loop * 500));
+for (uint i = 0; i < real_amount; i++) res += "remington_m870_shotguninsert" + random(1, 3) + "|";
+res += "remington_m870_shotgunpull";
+this.playsound(res + "*0*" + loop + "*2");
+return true_t;
+}
+bool weapon_hash_reload_m1208_shotgun(player &inout this, int current, int amount)
+{
+if (current == 0) return false_t;
+this.reloading = 2;
+int real_amount = this.weapon.max_ammo - current;
+if (real_amount > amount) real_amount = amount;
+string res = "m1208_shotgunpush|";
+real_amount--;
+int loop = real_amount + 2;
+this.firetimer.force(firetime_starter - (loop * 400));
+for (uint i = 0; i < real_amount; i++) res += "m1208_shotguninsert" + random(1, 5) + "|";
+res += "m1208_shotgunpull";
+this.playsound(res + "*0*" + loop + "*2");
+return true_t;
+}
+bool weapon_hash_reload_mosin_nagant_bolt_action_rifle(player &inout this, int current, int amount)
+{
+if (current == 0) return false_t;
+this.reloading = 2;
+int real_amount = this.weapon.max_ammo - current;
+if (real_amount > amount) real_amount = amount;
+string res = "mosin-nagant_bolt_action_riflepush|";
+real_amount--;
+int loop = real_amount + 2;
+this.firetimer.force(firetime_starter - (loop * 650));
+for (uint i = 0; i < real_amount; i++) res += "mosin-nagant_bolt_action_rifleinsert" + random(1, 3) + "|";
+res += "mosin-nagant_bolt_action_riflepull";
+this.playsound(res + "*0*" + loop + "*2");
+return true_t;
+}
+
+// splash special
+void weapon_splash_stickybomb(weapon &inout this, player@ target = null)
+{
+spawn_stickybomb(this.x, this.y, this.z, this.map, this.p.name);
+}
+void weapon_splash_smoke_grenade(weapon &inout this, player@ target = null)
+{
+placesmoke_grenade(this.x, this.y, this.z, this.map, this.p.name);
+}
+void weapon_splash_molotov_cocktail(weapon &inout this, player@ target = null)
+{
+play("molotov_cocktailactive", this.x, this.y, this.z, this.map);
+play_dist("molotov_cocktailactivedist", this.x, this.y, this.z, this.map);
+spawn_fire(this.x, this.y, this.z, this.map, 5000);
+}
+void weapon_splash_beer_bottle(weapon &inout this, player@ target = null)
+{
+if (target !is null)
+{
+target.stun(1500, false, false);
+play(this.hitsound, target.x, target.y, target.z, target.map);
+}
+play("beer_bottleimpact", this.x, this.y, this.z, this.map);
+}
+void weapon_splash_throwaway_spray(weapon &inout this, player@ target = null)
+{
+}
+
+void install_weapon_hash()
+{
+weapon_hash_player.set("throwaway_spray", @ weapon_hash_player_throwaway_spray);
+weapon_hash_player.set("stun_dart", @ weapon_hash_player_stun_dart);
+weapon_hash_player.set("health_dart", @ weapon_hash_player_health_dart);
+weapon_hash_player.set("artillery", @ weapon_hash_player_artillery);
+weapon_hash_player.set(spw[0], @ weapon_hash_player_spw_version_2_hellfire_blade);
+weapon_hash_player.set(spw[2], @ weapon_hash_player_spw_version_2_phantasm_blade);
+weapon_hash_player.set(spw[4], @ weapon_hash_player_spw_version_2_absolute_zero_blade);
+weapon_hash_vehicle.set("artillery", @ weapon_hash_vehicle_artillery);
+weapon_hash_vehicle.set(spw[0], @ weapon_hash_vehicle_spw_version_2_hellfire_blade);
+weapon_hash_vehicle.set(spw[2], @ weapon_hash_vehicle_spw_version_2_phantasm_blade);
+weapon_hash_vehicle.set(spw[4], @ weapon_hash_vehicle_spw_version_2_absolute_zero_blade);
+weapon_hash_robot.set("artillery", @ weapon_hash_robot_artillery);
+weapon_hash_robot.set(spw[0], @ weapon_hash_robot_spw_version_2_hellfire_blade);
+weapon_hash_robot.set(spw[2], @ weapon_hash_robot_spw_version_2_phantasm_blade);
+weapon_hash_robot.set("ball", @ weapon_hash_robot_ball);
+weapon_hash_hobj.set("artillery", @ weapon_hash_hobj_artillery);
+weapon_hash_hobj.set(spw[0], @ weapon_hash_hobj_spw_version_2_hellfire_blade);
+weapon_hash_prework.set("bow", @ weapon_hash_prework_bow);
+weapon_hash_prework.set("gauss_gun", @ weapon_hash_prework_gauss_gun);
+weapon_hash_prework.set("megaton_puncher", @ weapon_hash_prework_megaton_puncher);
+weapon_hash_prework.set(spw[1], @ weapon_hash_prework_spw_version_2_raged_soul_blade);
+weapon_hash_reload.set("m1208_shotgun", @ weapon_hash_reload_m1208_shotgun);
+weapon_hash_reload.set("remington_m870_shotgun", @ weapon_hash_reload_remington_m870_shotgun);
+weapon_hash_reload.set("mosin-nagant_bolt_action_rifle", @ weapon_hash_reload_mosin_nagant_bolt_action_rifle);
+weapon_hash_splash.set("stickybomb", @ weapon_splash_stickybomb);
+weapon_hash_splash.set("smoke_grenade", @ weapon_splash_smoke_grenade);
+weapon_hash_splash.set("molotov_cocktail", @ weapon_splash_molotov_cocktail);
+weapon_hash_splash.set("beer_bottle", @ weapon_splash_beer_bottle);
+weapon_hash_splash.set("throwaway_spray", @ weapon_splash_throwaway_spray);
+}
+
+// weapon load flags
+const int wflag_special = 1;
+const int wflag_bullet = 2;
+const int wflag_display_draw_sound = 4;
+const int wflag_shotgun = 8;
+const int wflag_no_teamhit = 16;
+const int wflag_should_subtract = 32;
+const int wflag_drain = 64;
+const int wflag_cannot_draw = 128;
+const int wflag_can_power_up = 256;
+const int wflag_notify = 512;
+const int wflag_backstab = 1024;
+const int wflag_super_hit = 2048;
+const int wflag_vehicle_zfacing = 4096;
+const int wflag_ignore_helmet = 8192;
+const int wflag_no_reflect = 16384;
+const int wflag_sacred = 32768;
+
+// weapon proj figures
+const int PROJ_SPHERE = 0;
+const int PROJ_BOX = 1;
+const int PROJ_CYLINDER = 2;
+const int PROJ_CONE = 3;
+const int PROJ_PARABOLA = 4;
+
+// weapon sounds
+const int WEAPON_SOUND_DRAW = 1;
+const int WEAPON_SOUND_FIRE = 2;
+const int WEAPON_SOUND_DIST = 4;
+const int WEAPON_SOUND_RELOAD = 8;
+const int WEAPON_SOUND_TACTICAL_RELOAD = 16;
+const int WEAPON_SOUND_UNLOAD = 32;
+const int WEAPON_SOUND_HIT = 64;
+const int WEAPON_SOUND_EMPTY = 128;
+const int WEAPON_SOUND_EMPTY_PING = 256;
+const int WEAPON_SOUND_LOOP = 512;
+const int WEAPON_SOUND_GATHERING = 1024;
+const int WEAPON_SOUND_DROP = 2048;
+const int WEAPON_SOUND_STOP = 4096;
+const int WEAPON_SOUND_WALL = 8192;
+
+dictionary weapon_list;
+class weapon_data
+{
+string type;
+string splash_name;
+string description = "기본";
+string draw_sound, empty_sound, gathering_sound, reload_sound, tactical_reload_sound, fire_sound, dist_sound, hit_sound, loop_sound, drop_sound, wall_sound, empty_ping_sound, unload_sound, stop_sound;
+int rank = 0;
+double speedtime = 1;
+double zspeed = 0.1;
+double range = 0;
+uint blow = 0;
+double hurt = 1;
+int poison = 0;
+uint stuntime = 0;
+int mindam = 0;
+int maxdam = 0;
+double spread = 1, length = 0, endspread = 0;
+uint shots = 1;
+double shotdeg = 0.5, shotzdeg = 0.5;
+int figure = PROJ_SPHERE;
+double shieldlevel = 1;
+uint shieldchance = 0;
+uint hits = 0, drops = 0, walls = 0;
+uint drawtime = 500;
+uint firetime = 1;
+double sight_range = 1;
+string require_ammo;
+uint reloadtime = 0, tactical_reloadtime = 0, unloadtime = 0;
+int stoptime = 0;
+uint max_ammo = 0;
+uint walktime = 200;
+int minzfacing = -90;
+int maxzfacing = 90;
+bool bullet = true;
+bool teamhittable = true;
+bool shotgun = false;
+bool cannot_draw = false, is_add_on = false;
+bool normal_weapon = true;
+int canjump = 5;
+bool drain = false;
+bool notify = false;
+bool splash = false;
+bool backstab = false;
+bool sacred = false;
+int gathering_min = 0, gathering_max = 0;
+bool gathering_sound_stop = false;
+double volume = 0.1;
+bool should_subtract = true;
+bool super_hit = false;
+bool vehicle_zfacing = false;
+double headshot = 0.0;
+double loop_size = 0;
+int hit_recall = 0;
+int block_recall = 0;
+int shot_limit = 1;
+int fires = 0;
+bool can_supress = false;
+int empty_ping = 0;
+dictionary add_ons;
+int energy = 5, rotate_energy = 1;
+int overheat_type = 0, overheattime = 0;
+double overheat_increase = 0.0, overheat_decrease = 0.0;
+string[] requirements;
+int flags = 0, sound_flags = 0;
+bool display_draw_sound = false;
+bool can_power_up = false;
+bool ignore_helmet = false;
+bool no_reflect = false;
+weapon_func_player@ wfp;
+weapon_func_vehicle@ wfv;
+weapon_func_robot@ wfr;
+weapon_func_hobj@ wfh;
+weapon_func_prework@ wfw;
+weapon_func_splash@ wfs;
+weapon_func_reload@ wfl;
+}
+
+void load_weapons(string rawdata = empty)
+{
+if (rawdata.is_empty())
+{
+if (!fl.open("./prefs/weapons.svr", "rb")) return;
+rawdata = fl.read();
+fl.close();
+}
+else
+{
+if (!fl.open("./prefs/weapons.svr", "wb")) return;
+fl.write(rawdata);
+fl.close();
+}
+string[]@ weapons = string_split(rawdata, "~", false);
+dictionary template;
+string tempstring, tempname, newname;
+for (int f = weapons.length - 1; f > -1; f--)
+{
+tempstring = weapons[f];
+if (string_contains(tempstring, "is_a=template", 1) < 0) continue;
+int where1 = string_contains(tempstring, "name=", 1);
+if (where1 < 0) continue;
+int where2 = string_contains(string_trim_left(tempstring, where1 + 5), "\r\n", 1);
+if (where2 <= 0) continue;
+template.set(string_mid(tempstring, where1 + 6, where2), tempstring);
+weapons.remove_at(f);
+}
+int[] indexs;
+int size = weapons.length;
+indexs.reserve(10000);
+for (uint f = 0; f < size; f++)
+{
+if (string_contains(weapons[f], "\r\nno_weapon\r\n", 1) > -1) continue;
+indexs.resize(0);
+weapon_data ww;
+int current_index = f;
+for (;;)
+{
+int where1 = string_contains(weapons[current_index], "is_a=", 1);
+if (where1 < 0) break;
+int where2 = string_contains(string_trim_left(weapons[current_index], where1 + 5), "\r\n", 1);
+if (where2 < 0) break;
+bool found = false;
+for (int g = size - 1; g > -1; g--)
+{
+if (string_contains(weapons[g], "name=" + string_mid(weapons[current_index], where1 + 6, where2) + "\r\n", 1) < 0) continue;
+current_index = g;
+indexs.insert_last(g);
+found = true;
+break;
+}
+if (!found) break;
+}
+int clength = indexs.length;
+for (int h = indexs.length - 1; h > -1; h--) set_weapon_data(ww, weapons[indexs[h]]);
+set_weapon_data(ww, weapons[f]);
+if (ww.type.is_empty()) continue;
+if (ww.range < 2) ww.range = (ww.figure == PROJ_PARABOLA ? 10000 : 2);
+if (ww.shieldlevel <= 0) ww.shieldlevel = 1;
+if (ww.sight_range <= 0) ww.sight_range = 1;
+if (ww.gathering_max < 0)
+{
+ww.gathering_max = abs(ww.gathering_max);
+ww.gathering_sound_stop = true;
+}
+if (ww.gathering_min < 0)
+{
+ww.gathering_min = abs(ww.gathering_min);
+ww.gathering_sound_stop = true;
+}
+if (ww.gathering_max < ww.gathering_min and ww.gathering_min > 0) ww.gathering_max = ww.gathering_min;
+if (weapon_hash_player.exists(ww.type)) weapon_hash_player.get(ww.type, @ ww.wfp);
+if (weapon_hash_vehicle.exists(ww.type)) weapon_hash_vehicle.get(ww.type, @ ww.wfv);
+if (weapon_hash_robot.exists(ww.type)) weapon_hash_robot.get(ww.type, @ ww.wfr);
+if (weapon_hash_hobj.exists(ww.type)) weapon_hash_hobj.get(ww.type, @ ww.wfh);
+if (weapon_hash_prework.exists(ww.type)) weapon_hash_prework.get(ww.type, @ ww.wfw);
+if (weapon_hash_splash.exists(ww.type)) weapon_hash_splash.get(ww.type, @ ww.wfs);
+if (weapon_hash_reload.exists(ww.type)) weapon_hash_reload.get(ww.type, @ ww.wfl);
+ww.splash = (splash_list.exists(ww.type) or ww.wfs !is null);
+if (ww.splash) ww.splash_name = ww.type;
+if (!ww.require_ammo.is_empty()) ammolist.set(ww.require_ammo, 0);
+if (!ww.add_ons.is_empty())
+{
+if (ww.add_ons.exists(ww.type)) ww.add_ons.delete(ww.type);
+string[]@ add_on_temp = ww.add_ons.keys;
+int add_on_length = add_on_temp.length;
+for (uint a = 0; a < add_on_length; a++)
+{
+tempname = add_on_temp[a];
+if (template.exists(tempname))
+{
+tempstring.resize(0);
+template.get(tempname, tempstring);
+if (tempstring.is_empty())
+{
+ww.add_ons.delete(tempname);
+continue;
+}
+weapon_data wwn = ww;
+set_weapon_data(wwn, tempstring);
+newname = ww.type + "#" + tempname;
+int name_size = ww.type.size;
+if (wwn.draw_sound == wwn.type + "draw") wwn.draw_sound = newname + "draw";
+if (wwn.fire_sound == wwn.type) wwn.fire_sound = newname;
+if (wwn.hit_sound == wwn.type + "hit") wwn.hit_sound = newname + "hit";
+if (wwn.reload_sound == wwn.type + "reload") wwn.reload_sound = newname + "reload";
+if (wwn.tactical_reload_sound == wwn.type + "reload_t") wwn.tactical_reload_sound = newname + "reload_t";
+if (wwn.empty_sound == wwn.type + "empty") wwn.empty_sound = newname + "empty";
+if (wwn.gathering_sound == wwn.type + "gathering") wwn.gathering_sound = newname + "gathering";
+if (wwn.empty_ping_sound == wwn.type + "ping") wwn.empty_ping_sound = newname + "ping";
+if (wwn.dist_sound == wwn.type + "dist") wwn.dist_sound = newname + "dist";
+if (wwn.loop_sound == wwn.type + "loop") wwn.loop_sound = newname + "loop";
+if (wwn.drop_sound == wwn.type + "drop") wwn.drop_sound = newname + "drop";
+if (wwn.wall_sound == wwn.type + "wall") wwn.wall_sound = newname + "wall";
+if (wwn.unload_sound == wwn.type + "unload") wwn.unload_sound = newname + "unload";
+if (wwn.stop_sound == wwn.type + "stop") wwn.stop_sound = newname + "stop";
+wwn.type = newname;
+if (weapon_hash_player.exists(wwn.type)) weapon_hash_player.get(wwn.type, @ wwn.wfp);
+if (weapon_hash_vehicle.exists(wwn.type)) weapon_hash_vehicle.get(wwn.type, @ wwn.wfv);
+if (weapon_hash_robot.exists(wwn.type)) weapon_hash_robot.get(wwn.type, @ wwn.wfr);
+if (weapon_hash_hobj.exists(wwn.type)) weapon_hash_hobj.get(wwn.type, @ wwn.wfh);
+if (weapon_hash_prework.exists(wwn.type)) weapon_hash_prework.get(wwn.type, @ wwn.wfw);
+if (weapon_hash_splash.exists(wwn.type)) weapon_hash_splash.get(wwn.type, @ wwn.wfs);
+if (weapon_hash_reload.exists(wwn.type)) weapon_hash_reload.get(wwn.type, @ wwn.wfl);
+wwn.splash = (splash_list.exists(tempname) or wwn.wfs !is null);
+if (wwn.splash) wwn.splash_name = tempname;
+if (wwn.normal_weapon and !wwn.require_ammo.is_empty()) ammolist.set(wwn.require_ammo, 0);
+ww.add_ons.set(newname, 0);
+weapon_list.set(newname, wwn);
+}
+}
+}
+weapon_list.set(ww.type, ww);
+}
+string[]@ wl = weapon_list.keys;
+int wllength = wl.length;
+for (uint i = 0; i < wllength; i++)
+{
+weapon_data@ ww = get_weapon_handle(wl[i]);
+if (ww is null) continue;
+if (ww.add_ons.is_empty()) continue;
+if (ww.add_ons.exists(ww.type)) ww.add_ons.delete(ww.type);
+string[]@ add_on_temp = ww.add_ons.keys;
+int add_on_length = add_on_temp.length;
+for (uint a = 0; a < add_on_length; a++)
+{
+tempname = add_on_temp[a];
+weapon_data@ wt = get_weapon_handle(tempname);
+if (wt is null)
+{
+ww.add_ons.delete(tempname);
+continue;
+}
+wt.is_add_on = true;
+}
+}
+}
+
+void set_weapon_data(weapon_data@ ww, const string& in data)
+{
+string origin_type = ww.type;
+string[]@ lines = string_split(data, "\r\n", false);
+if (lines.length < 2) return;
+int line = lines.length;
+for (uint l = 0; l < line; l++)
+{
+string[]@ params = string_split(lines[l], "=", false);
+if (params.length < 2) continue;
+switch (string_to_hash(params[0]))
+{
+case wdata_name:
+{
+ww.type = params[1];
+if (origin_type.is_empty())
+{
+ww.draw_sound = ww.type + "draw";
+ww.fire_sound = ww.type;
+ww.dist_sound = ww.type + "dist";
+ww.reload_sound = ww.type + "reload";
+ww.drop_sound = ww.type + "drop";
+ww.wall_sound = ww.type + "wall";
+ww.hit_sound = ww.type + "hit";
+ww.empty_sound = ww.type + "empty";
+ww.loop_sound = ww.type + "loop";
+ww.empty_ping_sound = ww.type + "ping";
+ww.gathering_sound = ww.type + "gathering";
+ww.unload_sound = ww.type + "unload";
+ww.stop_sound = ww.type + "stop";
+}
+}
+break; case wdata_description:
+{
+ww.description = params[1];
+}
+break; case wdata_speedtime:
+{
+ww.speedtime = string_math(params[1], ww.speedtime);
+}
+break; case wdata_speed:
+{
+ww.speedtime = string_math(params[1], ww.speedtime);
+}
+break; case wdata_zspeed:
+{
+ww.zspeed = string_math(params[1], ww.zspeed);
+}
+break; case wdata_range:
+{
+ww.range = string_math(params[1], ww.range);
+}
+break; case wdata_rank:
+{
+ww.rank = string_math(params[1], ww.rank);
+}
+break; case wdata_blow:
+{
+ww.blow = string_math(params[1], ww.blow);
+}
+break; case wdata_hurt:
+{
+ww.hurt = string_math(params[1], ww.hurt);
+}
+break; case wdata_poison:
+{
+ww.poison = string_math(params[1], ww.poison);
+}
+break; case wdata_damage:
+{
+string[]@ damages = string_split(params[1], ",", true);
+ww.mindam = string_math(damages[0], ww.mindam);
+ww.maxdam = (damages.length == 1 ? ww.mindam : string_math(damages[1], ww.maxdam));
+} // if.damage.
+break; case wdata_shieldlevel:
+{
+ww.shieldlevel = string_math(params[1], ww.shieldlevel);
+}
+break; case wdata_shieldchance:
+{
+ww.shieldchance = string_math(params[1], ww.shieldchance);
+}
+break; case wdata_stuntime:
+{
+ww.stuntime = string_math(params[1], ww.stuntime);
+}
+break; case wdata_hits:
+{
+ww.hits = string_math(params[1], ww.hits);
+}
+break; case wdata_drops:
+{
+ww.drops = string_math(params[1], ww.drops);
+}
+break; case wdata_walls:
+{
+ww.walls = string_math(params[1], ww.walls);
+}
+break; case wdata_spread:
+{
+string[]@ damages = string_split(params[1], ",", true);
+ww.spread = string_math(damages[0], ww.spread);
+ww.endspread = (damages.length == 1 ? ww.spread : string_math(damages[1], ww.endspread));
+if (ww.length == 0) ww.length = ww.spread;
+}
+break; case wdata_length:
+{
+ww.length = string_math(params[1], ww.length);
+}
+break; case wdata_bfg:
+{
+ww.figure = string_math(params[1], ww.figure);
+}
+break; case wdata_shots:
+{
+ww.shots = string_math(params[1], ww.shots);
+}
+break; case wdata_shotdeg:
+{
+ww.shotdeg = string_math(params[1], ww.shotdeg);
+}
+break; case wdata_shotzdeg:
+{
+ww.shotzdeg = string_math(params[1], ww.shotzdeg);
+}
+break; case wdata_firetime:
+{
+ww.firetime = string_math(params[1], ww.firetime);
+}
+break; case wdata_drawtime:
+{
+ww.drawtime = string_math(params[1], ww.drawtime);
+}
+break; case wdata_fires:
+{
+ww.fires = string_math(params[1], ww.fires);
+}
+break; case wdata_gathering:
+{
+ww.gathering_max = string_math(params[1], ww.gathering_max);
+}
+break; case wdata_gathering_at_least:
+{
+ww.gathering_min = string_math(params[1], ww.gathering_min);
+}
+break; case wdata_sight_range:
+{
+ww.sight_range = string_math(params[1], ww.sight_range);
+}
+break; case wdata_require_ammo:
+{
+ww.require_ammo = params[1];
+}
+break; case wdata_reloadtime:
+{
+ww.reloadtime = string_math(params[1], ww.reloadtime);
+}
+break; case wdata_tactical_reloadtime:
+{
+ww.tactical_reloadtime = string_math(params[1], ww.tactical_reloadtime);
+}
+break; case wdata_unloadtime:
+{
+ww.unloadtime = string_math(params[1], ww.unloadtime);
+}
+break; case wdata_stoptime:
+{
+ww.stoptime = string_math(params[1], ww.stoptime);
+}
+break; case wdata_max_ammo:
+{
+ww.max_ammo = string_math(params[1], ww.max_ammo);
+}
+break; case wdata_walktime:
+{
+ww.walktime = string_math(params[1], ww.walktime);
+}
+break; case wdata_volume:
+{
+ww.volume = string_math(params[1], ww.volume);
+}
+break; case wdata_loop_size:
+{
+ww.loop_size = string_math(params[1], ww.loop_size);
+}
+break; case wdata_canjump:
+{
+ww.canjump = string_math(params[1], ww.canjump);
+}
+break; case wdata_headshot:
+{
+ww.headshot = string_math(params[1], ww.headshot);
+}
+break; case order_zfacing:
+{
+string[]@ damages = string_split(params[1], ",", true);
+ww.minzfacing = string_math(damages[0], ww.minzfacing);
+ww.maxzfacing = (damages.length == 1 ? ww.minzfacing : string_math(damages[1], ww.maxzfacing));
+} // if.damage.
+break; case wdata_block_recall:
+{
+ww.block_recall = string_math(params[1], ww.block_recall);
+}
+break; case wdata_hit_recall:
+{
+ww.hit_recall = string_math(params[1], ww.hit_recall);
+}
+break; case wdata_energy:
+{
+ww.energy = string_math(params[1], ww.energy);
+}
+break; case wdata_rotate_energy:
+{
+ww.rotate_energy = string_math(params[1], ww.energy);
+}
+break; case wdata_shot_limit:
+{
+ww.shot_limit = string_math(params[1], ww.shot_limit);
+}
+break; case wdata_empty_ping:
+{
+ww.empty_ping = string_math(params[1], ww.empty_ping);
+}
+break; case wdata_overheat_increase:
+{
+ww.overheat_increase = string_math(params[1], ww.overheat_increase);
+}
+break; case wdata_overheat_decrease:
+{
+ww.overheat_decrease = string_math(params[1], ww.overheat_decrease);
+}
+break; case wdata_overheat_type:
+{
+ww.overheat_type = string_math(params[1], ww.overheat_type);
+switch (ww.overheat_type)
+{
+case 1:
+ww.overheattime = 5400;
+break;
+case 2:
+ww.overheattime = 5200;
+break;
+default:
+break;
+}
+}
+break; case wdata_add_on:
+{
+if (params[1] == ".") ww.add_ons.delete_all();
+else ww.add_ons.set(params[1], 0);
+}
+break; case wdata_requirement:
+{
+if (params[1] == ".") ww.requirements.resize(0);
+else ww.requirements.insert_last(params[1]);
+}
+break; case wdata_sound_flags:
+{
+if (origin_type.is_empty()) continue;
+ww.sound_flags = string_math(params[1], ww.sound_flags);
+if (ww.sound_flags & WEAPON_SOUND_DRAW > 0) ww.draw_sound = ww.type + "draw";
+if (ww.sound_flags & WEAPON_SOUND_FIRE > 0) ww.fire_sound = ww.type;
+if (ww.sound_flags & WEAPON_SOUND_DIST > 0) ww.dist_sound = ww.type + "dist";
+if (ww.sound_flags & WEAPON_SOUND_RELOAD > 0) ww.reload_sound = ww.type + "reload";
+if (ww.sound_flags & WEAPON_SOUND_TACTICAL_RELOAD > 0) ww.tactical_reload_sound = ww.type + "reload_t";
+if (ww.sound_flags & WEAPON_SOUND_HIT > 0) ww.hit_sound = ww.type + "hit";
+if (ww.sound_flags & WEAPON_SOUND_EMPTY > 0) ww.empty_sound = ww.type + "empty";
+if (ww.sound_flags & WEAPON_SOUND_LOOP > 0) ww.loop_sound = ww.type + "loop";
+if (ww.sound_flags & WEAPON_SOUND_EMPTY_PING > 0) ww.empty_ping_sound = ww.type + "ping";
+if (ww.sound_flags & WEAPON_SOUND_GATHERING > 0) ww.gathering_sound = ww.type + "gathering";
+if (ww.sound_flags & WEAPON_SOUND_DROP > 0) ww.drop_sound = ww.type + "drop";
+if (ww.sound_flags & WEAPON_SOUND_WALL > 0) ww.wall_sound = ww.type + "wall";
+if (ww.sound_flags & WEAPON_SOUND_UNLOAD > 0) ww.unload_sound = ww.type + "unload";
+if (ww.sound_flags & WEAPON_SOUND_STOP > 0) ww.stop_sound = ww.type + "stop";
+}
+break; case wdata_flags:
+{
+ww.flags = string_math(params[1], ww.flags);
+ww.bullet = (ww.flags & wflag_bullet > 0);
+ww.display_draw_sound = (ww.flags & wflag_display_draw_sound > 0);
+ww.cannot_draw = (ww.flags & wflag_cannot_draw > 0);
+ww.can_power_up = (ww.flags & wflag_can_power_up > 0);
+ww.drain = (ww.flags & wflag_drain > 0);
+ww.shotgun = (ww.flags & wflag_shotgun > 0);
+ww.teamhittable = (ww.flags & wflag_no_teamhit == 0);
+ww.should_subtract = (ww.flags & wflag_should_subtract > 0);
+ww.normal_weapon = (ww.flags & wflag_special == 0);
+ww.notify = (ww.flags & wflag_notify > 0);
+ww.backstab = (ww.flags & wflag_backstab > 0);
+ww.super_hit = (ww.flags & wflag_super_hit > 0);
+ww.vehicle_zfacing = (ww.flags & wflag_vehicle_zfacing > 0);
+ww.ignore_helmet = (ww.flags & wflag_ignore_helmet > 0);
+ww.no_reflect = (ww.flags & wflag_no_reflect > 0);
+ww.sacred = (ww.flags & wflag_sacred > 0);
+}
+}
+}
+}
+
+weapon_data@ get_weapon_handle(const string& in name, int check_mode = 0)
+{
+if (!weapon_list.exists(name)) return null;
+weapon_data@ temp;
+weapon_list.get(name, @ temp);
+if (temp is null) return null;
+if (check_mode == 1)
+{
+if (temp.cannot_draw) return null;
+}
+else if (check_mode == 2)
+{
+if (!temp.normal_weapon) return null;
+}
+else if (check_mode == 3)
+{
+if (temp.is_add_on) return null;
+}
+return temp;
+}

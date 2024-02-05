@@ -1,0 +1,10 @@
+
+mapname:kt2000
+owner:kt9020
+maxx:100
+maxy:100
+survival:0
+tile:0:100:0:100:0:0:carpet
+fightingstate:1
+respawn:0
+no_teleport:1

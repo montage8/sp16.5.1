@@ -1,0 +1,122 @@
+dictionary corpses;
+class corpse
+{
+int x;
+int y;
+int z;
+mapdata@ map;
+string owner;
+uint id;
+string oldinv;
+timer beeptimer;
+timer timeouttimer;
+bool get = false;
+bool take = false;
+timer corpsetimer;
+const string& get_rawdata()
+{
+if (this.get) return empty;
+ref_string = this.x + "[]" + this.y + "[]" + this.z + "[]" + this.map.name + "[]" + this.owner + "[]" + this.id + "[]" + this.oldinv + "+++";
+return ref_string;
+}
+void give_to(player@ who)
+{
+string list;
+string[]@ invvalues = string_split(oldinv, "\r\n", true);
+int a;
+bool su = false;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ inv2 = string_split(invvalues[i], "=", true);
+if (inv2.length < 2) continue;
+a = string_to_number(inv2[1]);
+su = true;
+who.give(inv2[0], a, false);
+list += a + " " + inv2[0] + ", ";
+}
+if (su) who.update_inv();
+who.alert("시체에서 다음과 같은 것들을 발견했습니다: " + list, true);
+take = true;
+}
+}
+corpse@ get_corpse_handle(const string& in the_id)
+{
+if (!corpses.exists(the_id)) return null;
+corpse@ temp;
+corpses.get(the_id, @ temp);
+return temp;
+}
+void new_corpse(int x, int y, int z, mapdata@ map, const string& in owner, const string& in inv, uint id = 99999999)
+{
+if (map is null) return;
+if (id <= 99999999)
+{
+do
+{
+id = (100000000 * random(1, 9)) + (10000 * random(0, 9999)) + random(0, 9999);
+}
+while (corpses.exists(id));
+}
+corpse c1;
+c1.x = x;
+c1.y = y;
+c1.z = z;
+@ c1.map = map;
+c1.owner = owner;
+c1.oldinv = inv;
+c1.id = id;
+map.corpses.insert_last(c1);
+corpses.set(id, @ c1);
+}
+void save_corpses()
+{
+string final;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int corpseslength = map.corpses.length;
+for (uint i = 0; i < corpseslength; i++)
+{
+final += map.corpses[i].get_rawdata();
+}
+}
+fl.open("./prefs/corpses.svr", "wb");
+fl.write(final);
+fl.close();
+}
+void load_corpses()
+{
+if (!fl.open("./prefs/corpses.svr", "rb")) return;
+string sdata = fl.read();
+fl.close();
+if (sdata.is_empty()) return;
+string[]@ c = string_split(sdata, "+++", true);
+int clength = c.length;
+for (uint i = 0; i < clength; i++)
+{
+string[]@ c2 = string_split(c[i], "[]", true);
+if (c2.length < 7) continue;
+new_corpse(string_to_number(c2[0]), string_to_number(c2[1]), string_to_number(c2[2]), get_map_handle(c2[3]), c2[4], c2[6], string_to_number(c2[5]));
+}
+}
+void corpseloop(mapdata@ map)
+{
+for (int i = map.corpses.length - 1; i > -1; i--)
+{
+corpse@ this = map.corpses[i];
+if (this.take or this.timeouttimer.elapsed >= 600000)
+{
+corpses.delete(this.id);
+map.corpses.remove_at(i);
+continue;
+}
+if (this.get) continue;
+if (this.beeptimer.elapsed >= 750)
+{
+this.beeptimer.force(0);
+play("obj", this.x, this.y, this.z, this.map, null, -1, true);
+}
+}
+}

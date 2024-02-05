@@ -1,0 +1,268 @@
+
+mapname:세이프존
+maxx:120
+maxy:120
+survival:0
+tile:0:120:0:120:0:0:concrete15
+tile:0:120:0:120:20:20:concrete6
+tile:0:120:0:120:40:40:concrete6
+tile:0:10:0:10:-30:-30:carpet
+tile:0:10:11:11:-30:-20:wallfence
+zone:0:10:0:10:-30:-2:안녕하십니까? 저희 쇼핑몰을 찾아주셔서 진심으로 감사드립니다
+tile:0:120:0:120:-1:-1:wallgeneric
+tile:0:120:0:120:19:19:wallgeneric
+tile:0:120:0:120:39:39:wallgeneric
+zone:0:120:0:120:0:60:쇼핑몰
+tile:12:15:0:3:-30:-30:bleacher
+tile:10:10:1:1:-30:-30:metal9
+zone:10:10:1:1:-30:-30:엘리베이터:trackme
+zone:12:15:0:3:-30:-20:엘리베이터
+tile:11:16:4:4:-30:60:wallmetal
+tile:16:16:0:4:-30:60:wallmetal
+tile:12:15:0:3:0:0:bleacher
+tile:12:15:0:3:20:20:bleacher
+tile:12:15:0:3:40:40:bleacher
+zone:12:15:0:3:-30:60:엘리베이터
+src:0:120:0:120:0:20:people:95
+tile:15:15:25:55:0:19:wallgeneric2
+tile:15:55:55:55:0:19:wallgeneric2
+tile:55:55:25:55:0:19:wallgeneric2
+zone:16:54:26:54:0:19:식요품점
+tile:16:54:26:54:0:0:carpet
+tile:16:16:26:26:0:0:bleacher
+tile:16:16:54:54:0:0:bleacher
+tile:54:54:54:54:0:0:bleacher
+tile:54:54:26:26:0:0:bleacher
+zone:16:16:26:26:0:0:육류코너:trackme
+zone:16:16:54:54:0:0:과일코너:trackme
+zone:54:54:54:54:0:0:과자코너:trackme
+zone:54:54:26:26:0:0:페스트푸드코너:trackme
+tile:39:39:54:54:0:0:bleacher
+zone:39:39:54:54:0:0:제과점:trackme
+tile:39:39:26:26:0:0:metal5
+tile:39:39:24:24:0:0:metal5
+zone:39:39:24:26:0:0:식요품점 출입문:trackme
+tile:110:120:110:110:0:19:wall
+tile:111:120:111:120:0:0:carpet4
+tile:10:10:100:120:0:19:wall
+tile:10:30:100:100:0:19:wall
+zone:11:29:101:120:0:19:엑세서리판매점
+tile:11:29:101:120:0:0:shelter
+zone:110:120:110:120:0:19:의료용품점
+tile:100:120:30:30:20:39:wall
+tile:101:120:16:29:20:20:marble1
+tile:11:11:4:11:-30:-20:wallfence
+tile:11:11:2:3:-30:-20:wallfence
+tile:11:11:0:0:-30:-20:wallfence
+gate:11:11:1:1:-30:-20:wallglass5:0:1000:elevator_door_open:2500:1000:elevator_door_close:5:0:-1
+tile:5:5:10:12:0:0:metal5
+zone:5:5:10:12:0:0:1층 쇼핑몰 출입문:trackme
+tile:0:4:11:11:0:60:wall
+tile:6:120:11:11:0:60:wall
+zone:12:12:0:0:-30:-30:1층 식요품 및 의료 용품점
+switch:10:12:1:1:-30:-30:11:16:1:1:-26:-25:1000:문:elevator_button_open
+zone:13:13:0:0:-30:-30:2층 차량 및 잡화점
+tile:11:11:1:1:-30:-30:bleacher
+zone:14:14:0:0:-30:-30:3층 무기 상점
+door:12:12:0:0:-30:-30:12:0:0:1층:100:1:elevator1:2
+gate:5:5:11:11:0:12:wallglass6:0:1000:door7_open:1000:1000:door7_close:5:0:0
+switch:5:5:10:12:0:0:5:5:11:11:6:6:1000:출입문:button7_open
+zone:12:12:0:0:0:0:지하 1층
+zone:13:13:0:0:0:0:2층 차량 및 잡화점
+zone:14:14:0:0:0:0:3층 무기 상점
+door:12:12:0:0:0:0:12:0:-30:지하 1층:100:1:elevator1:2
+door:13:13:0:0:-30:-30:13:0:20:2층:100:1:elevator1:2
+tile:11:11:0:0:0:18:wallmetal
+door:14:14:0:0:-30:-30:14:0:40:3층:100:1:elevator1:2
+door:13:13:0:0:0:0:13:0:20:2층:100:1:elevator1:2
+tile:11:11:2:3:0:18:wallmetal
+door:14:14:0:0:0:0:14:0:40:3층:100:1:elevator1:2
+tile:10:10:1:1:0:0:metal5
+zone:12:12:0:0:20:20:지하 1층
+zone:10:10:1:1:0:0:엘리베이터:trackme
+zone:13:13:0:0:20:20:1층 식요품 및 의료 용품점
+zone:14:14:0:0:20:20:3층 무기 상점
+door:12:12:0:0:20:20:12:0:-30:지하 1층:100:1:elevator1:0
+door:13:13:0:0:20:20:13:0:0:1층:100:1:elevator1:2
+door:14:14:0:0:20:20:14:0:40:3층:100:1:elevator1:2
+gate:11:11:1:1:0:18:wallcar:0:1000:elevator_door_open:2500:1000:elevator_door_close:5:0:-1
+zone:12:12:0:0:40:40:지하 1층
+zone:13:13:0:0:40:40:1층 식요품 및 의료 용품점
+zone:14:14:0:0:40:40:2층 차량 및 잡화점
+switch:10:12:1:1:0:0:11:16:1:1:8:9:1000:문:elevator_button_open
+door:12:12:0:0:40:40:12:0:-30:지하 1층:100:1:elevator1:2
+door:13:13:0:0:40:40:13:0:0:1층:100:1:elevator1:2
+door:14:14:0:0:40:40:14:0:20:2층:100:1:elevator1:2
+tile:11:11:0:0:20:38:wallbuilding
+tile:11:11:2:3:20:38:wallbuilding
+tile:10:10:1:1:20:20:metal5
+zone:10:10:1:1:20:20:엘리베이터:trackme
+gate:11:11:1:1:20:38:wallcar:0:1000:elevator_door_open:2500:1000:elevator_door_close:5:0:-1
+switch:10:12:1:1:20:20:11:16:1:1:28:29:1000:문:elevator_button_open
+public:0
+tile:10:10:1:1:40:40:metal5
+zone:10:10:1:1:40:40:엘리베이터:trackme
+tile:11:11:0:0:40:60:wallbuilding
+tile:5:5:10:12:20:20:metal5
+gate:5:5:11:11:40:50:wallglass6:0:1000:vdoor2_open:5000:1000:vdoor2_close:5:0:0
+switch:5:5:10:12:40:40:5:5:11:11:45:45:1000:문:button7_open
+tile:11:11:2:3:40:60:wallbuilding
+zone:5:5:10:12:20:20:2층 쇼핑몰 출입문:trackme
+tile:5:5:10:12:40:40:metal5
+zone:5:5:10:12:40:40:3층 쇼핑몰 출입문:trackme
+gate:11:11:1:1:40:60:wallcar:0:1000:elevator_door_open:2500:1000:elevator_door_close:5:0:-1
+switch:5:5:13:13:40:40:5:5:10:10:45:45:1000:문:button7_open
+switch:10:12:1:1:40:40:11:16:1:1:49:50:1000:문:elevator_button_open
+src:0:10:0:10:-30:-20:musiczgp19:95
+gate:39:39:25:25:0:19:wall:0:100:door7_open:1000:100:door7_close:0:0:5
+switch:39:39:24:24:0:0:39:39:25:26:9:9:500:식요품점:button5_open
+tile:15:38:25:25:0:19:wall
+tile:40:55:25:25:0:19:wall
+switch:39:39:26:26:0:0:39:39:25:25:11:12:500:식요품점:button5_open
+gate:5:5:11:11:20:39:wall:0:100:door7_open:2000:100:door7_close:1:0:0
+switch:5:5:10:10:20:20:5:6:11:11:29:29:500:문:button2_open
+switch:5:5:12:12:20:20:5:6:11:11:29:29:500:문:button2_open
+tile:101:120:12:15:20:20:marble1
+zone:101:120:12:29:20:39:차량 판매소
+tile:100:100:11:19:20:39:wall
+tile:100:100:21:30:20:39:wall
+tile:99:101:20:20:20:20:metal5
+zone:99:101:20:20:20:20:차량 판매소 출입문:trackme
+gate:100:100:20:20:20:20:wall:0:100:door7_open:2000:100:door7_close:0:1:0
+switch:99:99:20:20:20:20:100:100:20:21:20:20:500:차량 판매소 출입문:button7_open
+switch:101:101:20:20:20:20:100:100:20:21:20:20:500:차량 판매소 출입문:button7_open
+tile:110:110:112:120:0:19:wall
+tile:109:111:111:111:0:0:metal5
+zone:109:111:111:111:0:0:의료 용품점 출입문:trackme
+tile:30:30:101:109:0:19:wall
+tile:30:30:111:120:0:19:wall
+tile:29:31:110:110:0:0:metal5
+zone:29:31:110:110:0:0:엑세서리 판매점 출입문:trackme
+gate:110:110:111:111:0:19:wall:0:100:door7_open:2000:100:door7_close:0:1:0
+switch:109:109:111:111:0:0:110:110:111:112:9:9:500:의료 용품점 출입문:button7_open
+switch:111:111:111:111:0:0:110:110:111:112:9:9:500:의료 용품점 출입문:button7_open
+gate:30:30:110:110:0:19:wall:0:100:door7_open:2000:100:door7_close:0:1:0
+switch:29:29:110:110:0:0:30:30:110:111:9:9:500:문:button7_open
+tile:11:11:120:120:0:0:bleacher
+zone:11:11:120:120:0:0:의류:trackme
+switch:31:31:110:110:0:0:30:30:110:111:9:9:500:문:button7_open
+tile:11:11:101:101:0:0:bleacher
+zone:11:11:101:101:0:0:엑세서리 코너:trackme
+tile:0:29:90:90:40:60:wall
+tile:31:80:90:90:40:60:wall
+tile:80:80:90:120:40:60:wall
+tile:0:79:91:120:40:40:wood5
+tile:30:30:89:91:40:40:metal5
+zone:0:79:91:120:40:60:무기상점
+zone:30:30:89:91:40:40:무기 상점 출입문:trackme
+tile:0:0:120:120:40:40:bleacher
+zone:0:0:120:120:40:40:기관총:trackme
+tile:79:79:120:120:40:40:bleacher
+zone:79:79:120:120:40:40:저격소총:trackme
+tile:40:40:120:120:40:40:bleacher
+zone:40:40:120:120:40:40:권총:trackme
+src:0:100:48:120:40:52:factory4:100
+tile:100:100:20:20:21:39:wall
+gate:30:30:90:90:40:59:wall:0:100:door7_open:2000:100:door7_close:1:0:0
+switch:30:30:89:89:40:40:30:31:90:90:49:49:500:문:button7_open
+tile:0:120:0:120:130:130:stone2
+switch:30:30:91:91:40:40:30:31:90:90:49:49:500:문:button7_open
+tile:101:101:12:12:20:20:bleacher
+zone:101:101:12:12:20:30:자가용:trackme
+tile:110:110:12:12:20:20:bleacher
+zone:110:110:12:12:20:30:전투기:trackme
+tile:120:120:12:12:20:20:bleacher
+zone:120:120:12:12:20:30:motor_cycle:trackme
+tile:120:120:20:20:20:20:bleacher
+zone:120:120:20:20:20:30:truck:trackme
+tile:120:120:29:29:20:20:bleacher
+zone:120:120:29:29:20:30:전차 및 장갑차:trackme
+src:0:0:120:120:40:40:factory2:100
+src:79:79:120:120:40:40:factory2#old:100
+src:40:40:120:120:40:40:factory1:100
+
+tile:11:16:0:4:-20:-20:wall1
+tile:0:10:0:10:-60:-31:wallwoodpile
+tile:0:0:10:10:-50:-30:ladder2
+tile:0:0:11:11:-70:-31:wallwoodpile
+zone:0:0:10:10:-60:-30:전용 계단:trackme
+tile:0:0:10:10:-50:-50:bleacher
+tile:0:0:10:10:-50:-50:bleacher
+zone:0:0:10:10:-50:-50:입문자 미션 하러 가기:trackme
+src:0:0:10:10:-50:-50:elevator2:100
+tile:0:4:11:11:40:50:wallglass6
+tile:0:0:91:91:40:40:bleacher
+zone:0:0:91:91:40:40:함정:trackme
+tile:79:79:91:91:40:40:bleacher
+zone:79:79:91:91:40:40:폭발물:trackme
+tile:20:20:120:120:40:40:bleacher
+zone:20:20:120:120:40:40:laser_gun:trackme
+tile:60:60:120:120:40:40:bleacher
+zone:60:60:120:120:40:40:luncher:trackme
+tile:60:60:91:91:40:40:bleacher
+zone:60:60:91:91:40:40:자동 권총:trackme
+tile:20:20:91:91:40:40:bleacher
+zone:20:20:91:91:40:40:돌격 소총:trackme
+tile:0:30:100:100:20:39:wall
+tile:32:50:100:100:20:39:wall
+tile:50:50:100:120:20:39:wall
+tile:0:49:101:120:20:20:hardwood1
+tile:31:31:99:101:20:20:metal5
+zone:0:49:100:120:20:39:잡화점
+zone:31:31:99:101:20:20:잡화점 출입문:trackme
+gate:31:31:100:100:20:39:wall:0:100:door7_open:2000:100:door7_close:-1:0:0
+switch:31:31:101:101:20:20:30:31:100:100:29:29:500:문:button2_open
+switch:31:31:99:99:20:20:30:31:100:100:29:29:500:문:button2_open
+tile:70:70:11:12:40:40:metal5
+gate:70:70:11:12:40:52:wallsign:0:5000:vdoor4_open:9000:5000:vdoor4_close:0:0:12
+tile:6:69:12:23:40:58:wallgeneric3
+tile:6:120:30:30:40:58:wallgeneric3
+tile:69:69:24:120:40:58:wallgeneric3
+tile:100:120:12:29:40:58:wallgeneric3
+tile:0:120:0:120:80:80:carpet2
+tile:0:120:0:120:79:79:wallgeneric
+tile:5:6:0:0:-30:79:ladder2
+zone:0:120:0:120:80:100:locker_room:trackme
+zone:5:6:0:0:-30:90:계단.
+zone:5:5:5:5:0:10:메인:trackme
+src:0:120:0:120:80:98:hum:100
+zone:10:10:5:5:0:10:서바이벌:trackme
+tile:69:69:120:120:40:50:wood5
+src:85:85:25:25:40:40:fridge1:100
+tile:5:5:5:5:0:0:plywood
+startingx:0
+startingy:0
+startingz:-30
+src:70:70:17:17:40:40:desktop3:100
+tile:70:70:17:17:40:40:metal6
+tile:85:85:20:25:40:40:metal4
+tile:85:85:25:25:40:40:metal6
+tile:85:85:26:29:40:40:metal4
+switch:75:75:10:10:40:40:70:70:11:11:46:46:300:비밀출구:button1_open
+switch:70:70:13:13:40:40:70:70:11:11:46:46:300:비밀문:button1_open
+tile:10:10:5:5:0:0:plywood
+zone:70:70:17:17:40:40:환전기
+tile:10:10:10:10:-30:-30:bleacher
+zone:10:10:10:10:-30:-30:로봇 사냥하러 가기:trackme
+travelpoint:10:10:10:10:-30:-30:robotland:-1:-1:0:레벨1:1
+travelpoint:10:10:10:10:-30:-30:robotland0:-1:-1:0:레벨2:1
+travelpoint:10:10:10:10:-30:-30:robotland1:-1:-1:0:레벨3:1
+travelpoint:10:10:10:10:-30:-30:robotland2:-1:-1:0:레벨4:1
+travelpoint:10:10:10:10:-30:-30:robotland3:-1:-1:0:레벨5:1
+travelpoint:10:10:10:10:-30:-30:robotland4:-1:-1:0:레벨6:1
+travelpoint:10:10:10:10:-30:-30:robotland5:-1:-1:0:레벨7:1
+travelpoint:10:10:10:10:-30:-30:robotland6:-1:-1:0:레벨8:1
+travelpoint:10:10:10:10:-30:-30:robotland7:-1:-1:0:레벨9:1
+travelpoint:10:10:10:10:-30:-30:robotland8:-1:-1:0:레벨10:1
+travelpoint:10:10:10:10:-30:-30:robotland9:-1:-1:0:레벨11:1
+travelpoint:10:10:10:10:-30:-30:robotland_boss:-1:-1:0:레벨12:1
+fightingstate:0
+
+src:0:120:0:37:40:58:room34:100
+tile:0:5:13:29:40:40:marble2
+tile:70:99:13:29:40:40:carpet2
+tile:70:70:17:17:40:40:chair
+tile:85:85:13:29:40:40:metal4
+tile:85:85:25:25:40:40:chair
+
+owner:program,sky,dream

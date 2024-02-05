@@ -1,0 +1,10 @@
+const uint km_rg = 7478279;
+const uint km_vehicle = 1439352870;
+const uint km_poison = 1967332171;
+const uint km_suffocate = 675835156;
+const uint km_gravity = 1843763627;
+const uint km_drown = 2004721509;
+const uint km_withdrawal = 2936075861;
+const uint km_trap = 1301994455;
+const uint km_trap_v = 603550813;
+const uint km_gravity_v = 418635222;

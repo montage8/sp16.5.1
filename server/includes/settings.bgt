@@ -1,0 +1,65 @@
+class savedata
+{
+// internal variables for the class.
+string key;
+string fn;
+dictionary d;
+// no constructor
+// the function to load the saved data into the dictionary.
+void load()
+{
+// fn is our previously declared filename string, so use that.
+if (!fl.open(fn, "rb")) return;
+// check for a decryption key.
+d = deserialize(key.is_empty() ? fl.read() : string_decrypt(fl.read(), key));
+// close the file
+fl.close();
+}
+// function to save the data into the file.
+void save()
+{
+// again, use the FN string
+if (!fl.open(fn, "wb")) return;
+// check for a key.
+fl.write(key.is_empty() ? serialize(d) : string_encrypt(serialize(d), key));
+fl.close();
+}
+// function to add a value.
+void add(const string& in name, double value)
+{
+d.set(name, value);
+}
+// function to read a number.
+double readn(const string& in name)
+{
+double tmp;
+if (d.get(name, tmp)) return tmp;
+string tmp2;
+d.get(name, tmp2);
+return string_to_number(tmp2);
+}
+// overloaded function of add to add a string.
+void add(const string& in name, const string& in value)
+{
+d.set(name, value);
+}
+// overloaded function of add to add a dictionary.
+void add(const string& in name, dictionary value, bool base64 = false)
+{
+d.set(name, (base64 ? string_base64_encode(serialize(value)) : serialize(value)));
+}
+// function to read a string
+string read(const string& in name)
+{
+string tmp;
+d.get(name, tmp);
+return tmp;
+}
+// function to read a dictionary
+dictionary readd(const string& in name, bool base64 = false)
+{
+string tmp;
+d.get(name, tmp);
+return deserialize(base64 ? string_base64_decode(tmp) : tmp);
+}
+}

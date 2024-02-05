@@ -1,0 +1,25 @@
+// online menus.
+class server_menu
+{
+string items;
+string initial_packet;
+string intro;
+int channel = 0;
+bool direct = false;
+bool multi_checking = false;
+void add(const string& in item, string id = empty)
+{
+items += item + (multi_checking ? "~~" : ":") + (id.is_empty() ? item : id) + "[]";
+}
+void reset()
+{
+channel = 0;
+items.resize(0);
+direct = false;
+multi_checking = false;
+}
+void send(uint id)
+{
+n.send_reliable(id, string_encrypt((direct ? "launchmenudirect " : multi_checking ? "launchmenumulti " : "launchmenu ") + string_replace(intro, " ", "[SPCE]", true) + " " + string_replace(initial_packet, " ", "[SPCE]", true) + " " + items, pcps), channel);
+}
+}

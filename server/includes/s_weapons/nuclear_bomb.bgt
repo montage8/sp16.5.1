@@ -1,0 +1,80 @@
+class nuclear_bomb
+{
+string owner;
+timer explodetimer;
+mapdata@ map;
+int x, y, z;
+int mindam = 500000000;
+int maxdam = 500000000;
+string hitn;
+amb@ warning_id;
+} // class.nuclear_bomb.
+
+void nuclear_bombloop(mapdata@ map)
+{
+string name = "mass_bomb";
+for (int i = map.nuclear_bombs.length - 1; i > -1; i--)
+{
+nuclear_bomb@ this = map.nuclear_bombs[i];
+if (this.explodetimer.elapsed >= 20000)
+{
+play("nuclearbomb", this.x, this.y, this.z, this.map);
+play_dist("nuclearbombdist", this.x, this.y, this.z, this.map, 0.00000001);
+int playerslength = map.players.length;
+for (uint x = 0; x < playerslength; x++)
+{
+player@ temp = map.players[x];
+if (temp.health <= 0) continue;
+if (temp.newb == 1) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (temp.rank > 0) continue;
+temp.hit(random(this.mindam, this.maxdam), this.hitn, true, true);
+}
+int robotslength = map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.health <= 0) continue;
+if (temp.level <= 0) continue;
+temp.hit(random(this.mindam, this.maxdam), name, this.owner);
+}
+int objslength = map.objs.length;
+for (uint i2 = 0; i2 < objslength; i2++)
+{
+obj@ temp = map.objs[i2];
+if (temp.breaking) continue;
+temp.break_now();
+}
+int hobjslength = map.hobjs.length;
+for (uint i2 = 0; i2 < hobjslength; i2++)
+{
+hittable@ temp = map.hobjs[i2];
+if (temp.health <= 0) continue;
+temp.hit(random(this.mindam, this.maxdam), this.hitn, name); 
+}
+int vslength = map.vs.length;
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.health <= 0) continue;
+temp.hit(random(this.mindam, this.maxdam), this.hitn, false, true);
+}
+if (this.warning_id !is null) this.warning_id.destroy();
+map.nuclear_bombs.remove_at(i);
+}
+}
+}
+void placenuclear_bomb(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+nuclear_bomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.hitn = owner + "ÀÇ nuclear bomb";
+play("nuclearbombuse", x, y, z, map);
+@ bomb1.warning_id = spawn_amb("nuclear_siren", 0, map.max.x, 0, map.max.y, -100000000, 100000000, map);
+map.nuclear_bombs.insert_last(bomb1);
+}

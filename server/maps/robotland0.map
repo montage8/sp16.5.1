@@ -1,0 +1,18 @@
+
+mapname:robotland0
+maxx:128
+maxy:128
+maxz:128
+zone:0:128:0:128:0:128:robot land strong level
+travelpoint:0:128:0:0:0:128:세이프존:3001:3001:30:포탈:0
+zone:0:128:0:0:0:128:여기를 통해 탈출하세요.
+travelpoint:0:128:128:128:0:128:세이프존:3001:3001:30:포탈:0
+zone:0:128:128:128:0:128:여기를 통해 탈출하세요.
+tile:0:128:0:128:0:0:marsh
+src:0:128:0:128:0:128:marsh:128
+robots:0:128:0:128:0:0:9:500:boar_meca,cat,coyote,dog,fly,hog,rat_meca,snake_meca,technosquito:.:1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:64
+startingy:64
+startingz:0

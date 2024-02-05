@@ -1,0 +1,21 @@
+
+mapname:탁구장
+owner:yamamoto
+maxx:50
+maxy:200
+survival:0
+tile:0:50:0:200:0:0:ball
+src:0:50:0:200:-100:100:stadium_battle:90
+tile:0:50:0:200:-25:-25:carpet2
+travelpoint:0:50:200:200:0:0:탁구장:0:0:0:포탈:1
+travelpoint:0:50:0:0:0:0:탁구장:0:200:0:포탈:1
+
+travelpoint:0:50:1:199:0:0:탁구장:0:0:-25:관중석 포탈:1
+travelpoint:0:50:0:200:-25:-25:탁구장:0:0:0:관중석 포탈:1
+fightingstate:1
+
+zone:0:50:0:200:-25:-1:관중석
+zone:0:50:0:200:0:100:경기장
+zone:0:50:0:99:0:0:red팀 영역
+zone:0:50:101:200:0:0:blue팀 영역
+zone:0:50:100:100:0:0:경계

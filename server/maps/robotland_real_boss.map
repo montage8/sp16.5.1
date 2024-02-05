@@ -1,0 +1,18 @@
+
+mapname:robotland_real_boss
+maxx:100
+maxy:100
+maxz:100
+zone:0:100:0:100:0:100:미친 코더의 연구실
+travelpoint:100:100:100:100:0:100:세이프존:3001:3001:30:세이프존:0
+zone:100:100:100:100:0:100:여기를 통해 탈출하세요.
+tile:0:100:0:100:0:0:metal4
+tile:0:100:0:100:10000000:10000000:air
+src:0:100:0:100:0:100:madlab
+robots:0:100:0:100:0:0:1:300000:ivan:metal4:4294967295
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:mountain_ticket:temple_ticket:nuclear_bomb
+startingx:-1
+startingy:-1
+startingz:0
+no_coord:1

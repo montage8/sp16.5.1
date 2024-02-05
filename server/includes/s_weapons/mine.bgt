@@ -1,0 +1,140 @@
+class mine
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+bool d = false;
+timer lifetimer;
+hittable@ hid;
+int depth = 0;
+string id;
+}
+void mineloop(mapdata@ map)
+{
+string name = "mine";
+for (int i = map.mines.length - 1; i > -1; i--)
+{
+mine@ this = map.mines[i];
+if (this.hid.health <= 0) this.d = true;
+if (this.d)
+{
+this.hid.health = -1;
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+map.mine_locs.delete(this.id);
+map.mines.remove_at(i);
+}
+}
+}
+mine@ place_mine(int x, int y, int z, mapdata@ map, const string& in owner, int depth = 0)
+{
+mine bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+bomb1.depth = depth;
+@ bomb1.map = map;
+play("mineplace", x, y, z, map);
+int tz = z - depth;
+@ bomb1.hid = spawn_hobj(x, y, tz, map, 3000, 3600000, empty, empty, "mine");
+bomb1.hid.defense = 5000;
+bomb1.id = x + ":" + y + ":" + tz;
+map.mine_locs.set(bomb1.id, @ bomb1);
+map.mines.insert_last(bomb1);
+return bomb1;
+}
+void step_mine(int x, int y, int z, mapdata@ map, const string& in name = empty)
+{
+int mineslength = map.mines.length;
+if (!name.is_empty())
+{
+for (uint i = 0; i < mineslength; i++)
+{
+mine@ temp = map.mines[i];
+if (are_teamed(temp.owner, name)) continue;
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+temp.d = true;
+}
+return;
+}
+for (uint i = 0; i < mineslength; i++)
+{
+mine@ temp = map.mines[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+temp.d = true;
+}
+}
+int get_mine_depth(int x, int y, int z, mapdata@ map)
+{
+int low = z - map.min.z;
+if (low < 0) return 0;
+int[] remaining = {1, 2, 3, 4, 5};
+int[] depth;
+for (int i = 4; i >= low; i--)
+{
+int c = remaining[i];
+remaining.remove_at(i);
+depth.insert_last(c);
+}
+int rl = remaining.length - 1;
+for (int i = map.mapgates.length - 1; i > -1; i--)
+{
+if (rl == -1) break;
+maptile@ temp = map.mapgates[i];
+if (x < temp.minx) continue;
+if (x > temp.maxx) continue;
+if (y < temp.miny) continue;
+if (y > temp.maxy) continue;
+for (int j = rl; j > -1; j--)
+{
+int d = remaining[j];
+int tz = z - d;
+if (tz < temp.minz) continue;
+if (tz > temp.maxz) continue;
+if (depth.find(d) < 0) depth.insert_last(d);
+remaining.remove_at(j);
+rl--;
+}
+}
+for (int i = map.maptiles.length - 1; i > -1; i--)
+{
+if (rl == -1) break;
+maptile@ temp =  map.maptiles[i];
+if (x < temp.minx) continue;
+if (x > temp.maxx) continue;
+if (y < temp.miny) continue;
+if (y > temp.maxy) continue;
+for (int j = rl; j > -1; j--)
+{
+int d = remaining[j];
+int tz = z - d;
+if (tz < temp.minz) continue;
+if (tz > temp.maxz) continue;
+if (depth.find(d) < 0) depth.insert_last(d);
+remaining.remove_at(j);
+rl--;
+}
+}
+int dl = depth.length;
+if (dl == 0) return 0;
+depth.sort_descending();
+string def = x + ":" + y + ":";
+int d = 0;
+for (uint i = 0; i < dl; i++)
+{
+if (map.mine_locs.exists(def + (z - depth[i]))) continue;
+d = depth[i];
+break;
+}
+return d;
+}
+void load_mines(string[]@ parsed, mapdata@ map)
+{
+if (parsed.length < 8) return;
+mine@ new = place_mine(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5], string_to_number(parsed[7]));
+new.lifetimer.force(string_to_number(parsed[6]));
+}

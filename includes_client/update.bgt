@@ -1,0 +1,51 @@
+void update_system()
+{
+http download;
+    file upgradeFile;
+    string binary = download.get("http://13.124.115.172/upgrade/upgrade.exe");
+    if(get_last_error() < 0)
+{
+alert("다운로드가 실패하였습니다.", "다운로드도 중 에러가 발생하였습니다. 다시 시도하십시오. 문제가 지속되면 개발자에게 문의하십시오.");
+        exit();
+}
+    upgradeFile.open("upgrade.exe", "wb");
+    if(upgradeFile.active == false)
+{
+alert("Error", "파일 열기에 실패했습니다. 개발자에게 문의하세요.");
+        exit();
+}
+    while(download.progress)
+{
+        binary += download.request();
+        if(binary.length() >= 8192)
+{
+            upgradeFile.write(binary);
+            binary = "";
+}
+        wait(5);
+}
+    if(binary != "")
+{
+        upgradeFile.write(binary);
+}
+upgradeFile.close();
+}
+void check_for_updates_sp()
+{
+string local_version, server_version;
+file local_version_file;
+if(local_version_file.open("sounds\\v.txt", "r"))
+{
+local_version = local_version_file.read();
+local_version_file.close();
+}
+else
+{
+local_version = "0.0";
+}
+server_version = url_get("http://13.124.115.172/upgrade/v.txt"); // 서버 주소를 실제 주소로 변경해야 함
+if (string_to_number(server_version) > string_to_number(local_version))
+{
+run("upgrade.exe", "", false, false);
+}
+}

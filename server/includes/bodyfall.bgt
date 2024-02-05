@@ -1,0 +1,37 @@
+bodyfall@[] bodyfalls(0);
+class bodyfall
+{
+int btime = 3000;
+int x, y, z;
+player@ owner;
+mapdata@ map;
+timer btimer;
+bool& loop()
+{
+if (this.btimer.elapsed < this.btime) return true_t;
+if (owner is null) return false_t;
+sendmap("hardland " + this.x + " " + this.y + " " + this.z, this.map, 0);
+this.owner.sitting = 1;
+this.owner.sendpacket("sitstart");
+return false_t;
+}
+}
+void bodyfallloop()
+{
+for (int i = bodyfalls.length - 1; i > -1; i--)
+{
+if (bodyfalls[i].loop()) continue;
+bodyfalls.remove_at(i);
+}
+}
+void spawn_bodyfall(int x, int y, int z, mapdata@ map, int time, player@ owner)
+{
+bodyfall b;
+b.x = x;
+b.y = y;
+b.z = z;
+@ b.map = map;
+b.btime = time;
+@ b.owner = owner;
+bodyfalls.insert_last(b);
+}

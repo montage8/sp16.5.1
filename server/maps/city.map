@@ -1,0 +1,15 @@
+
+mapname:city
+owner:goojoonpyo2382
+maxx:10000
+maxy:10000
+survival:0
+fightingstate:0
+tile:0:10000:0:10000:0:0:concrete1
+src:41:49:0:10000:0:10000:amb3:100
+tile:50:10000:0:30:0:3:wallstone1
+tile:50:10000:0:30:4:4:cement1
+src:50:10000:31:39:0:10000:amb3:100
+startingx:0
+startingy:0
+startingz:0

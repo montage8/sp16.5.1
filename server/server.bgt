@@ -1,0 +1,695 @@
+#include "./includes.bgt"
+#include "./includes/constant_includes.bgt"
+string version = "Catalina 16쩜5";
+string lastupdate = "01/01/2024";
+string changes = "업데이트 시 변경 사항은 changelog_kor.txt 파일을 확인하세요.";
+library re;
+int maintime = 1;
+int loopcount = 0;
+string oldmotd;
+bool varified = false;
+string pcps = "index-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1";
+int storex = 250, storey = 250, storez = 0, fstorex = 250, fstorey = 250, fstorez = 0;
+string storesound;
+int packetlogging = 2; // only turn this on if you want chan_0 to be logged with player.
+timer storemovetimer;
+int currentlyonline;
+int writeprefs = 1;
+int chatting = 1;
+int serverchats = 0, serversteps = 0, serverkillr = 0, servercommands = 0, serverbans = 0, serverkicks = 0, servershots = 0, serverlogins = 0;
+int speaktime = 1;
+string adminlog;
+string default_inv;
+int storemovestage = 1;
+uint storemovetime = 1 * 1;
+int storeopened = 1;
+int objtime = 800;
+bool notify = false, public_uploading = false;
+bool netsetup;
+int filterstuff = 1;
+bool spawnobj = true;
+string minverstring = "Catalina 16.5.1";
+timer garbagetimer;
+timer objectspawntimer;
+timer versiontimer;
+int connections = 0, disconnections = 0;
+int fakeadmining = 0;
+int objgrabs = 0, objspawns = 0;
+int can_upload_files = 1;
+int objspawntime = 1200;
+bool beta = false;
+bool spawnai = false;
+int port = 1116, betaport = 7020;
+int activations = 0;
+int peak;
+string[] animaltypes;
+string peakreached;
+network n;
+network_event@ e;
+double file_size_limit_kb = 2000;
+timer uptimer, accumulated_uptimer;
+timer announcertimer;
+timer timetimer;
+timer savetimer;
+int firetime_starter = 300000;
+int timetime = 60000;
+savedata@ sd;
+string[] killmsgs, killheadmsgs, destroymsgs;
+string[] store_items;
+string[] descriptions;
+int[] amounts;
+timer updatingtimer;
+bool updatingsvr = false, updatevstopped = false, updatevkilled = false, updatenotified = false, updatergkilled = false;
+dictionary passresets;
+file fl;
+server_menu sm;
+dictionary sellitems;
+string[] selllist;
+int missiletime = 4000, subtract = 1, storefight = 0;
+http httpn;
+bool svrmon = false;
+int debuger = 0;
+int profiler = 0;
+mapdata@ minigame_room;
+mapdata@ locker_room;
+mapdata@ practice_room;
+mapdata@ default_sv;
+multiversion@ minver;
+bool netloopupdate = false;
+timer logtimer, restarttimer;
+int logtime = 10000, restarttime = 5000;
+dictionary rank_data;
+dictionary@[] reserved_dicts = {robottemps, weapon_list, splash_list, trapitems, vehicledict};
+
+void main()
+{
+filelib.load("./file.dll");
+re.load("./filter.dll");
+@ minver = create_version(minverstring);
+if (!directory_exists("./logs")) directory_create("./logs");
+if (!directory_exists("./chars")) directory_create("./chars");
+if (!directory_exists("./teams")) directory_create("./teams");
+if (!directory_exists("./prefs")) directory_create("./prefs");
+if (!directory_exists("./lockers")) directory_create("./lockers");
+if (!directory_exists("./upsounds")) directory_create("./upsounds");
+if (!directory_exists("./votes")) directory_create("./votes");
+directory_delete("./kill");
+httpn.user_agent = "srsvr" + version;
+install_cod_hash();
+install_weapon_hash();
+install_item_hash();
+install_item_grab_hash();
+install_combines();
+install_map_hash();
+install_maporder_hash();
+install_special_robot_hash();
+install_carrier_missile_hash();
+install_bomb_hash();
+install_vehicle_hash();
+init_mapsystem();
+load_public_maps();
+load_market_system();
+@ minigame_room = get_map_handle("미니게임");
+@ locker_room = get_map_handle("세이프존");
+@ practice_room = get_map_handle("사격연습장");
+@ default_sv = get_map_handle("서바이벌");
+savedata snew;
+snew.fn = "./prefs/server_state.dat";
+snew.key = "GK-y4Za%=m?A3xVn";
+@ sd = snew;
+loaddata();
+if (profiler == 1) start_profiling();
+if (debuger == 1) error_output = "debuger.log";
+gifts.insert_last("street_check");
+load_shipments();
+load_splashs();
+load_weapons();
+load_robots();
+load_all_teams();
+load_vehicles();
+load_corpses();
+string[]@ stuff = find_files("./lockers/*.locker");
+if (!stuff.is_empty())
+{
+int alength = stuff.length;
+for (uint i = 0; i < alength; i++)
+{
+load_locker(string_replace(stuff[i], ".locker", empty, false));
+}
+}
+load_bombs();
+if (!fl.open("./prefs/motd.svr", "rb"))
+{
+fl.open("./prefs/motd.svr", "wb");
+fl.write("반갑습니다, Street program에 잘 오셨습니다.");
+fl.close();
+}
+else
+{
+oldmotd = fl.read();
+fl.close();
+}
+if (file_exists("./maps/.map"))
+file_delete("./maps/.map");
+netsetup = n.setup_server((beta ? betaport : port), 20, 500);
+if (!netsetup) return;
+setup_filterchars();
+playerdata_parser_level1 = array_to_dictionary(playerdata_parser_list1);
+playerdata_parser_level2 = array_to_dictionary(playerdata_parser_list2);
+install_equipments();
+load_item_descriptions();
+load_item_limits();
+load_snacks();
+load_obj_data();
+bladeitems = array_to_dictionary(bladelist);
+dontlosedict = array_to_dictionary(dontlose);
+trapitems = array_to_dictionary(traplist);
+heavyweapons = array_to_dictionary(heavylist);
+newbdict = array_to_dictionary(newbitems);
+if (fl.open("./prefs/death_messages.svr", "rb"))
+{
+killmsgs = string_split(fl.read(), "\r\n", false);
+fl.close();
+}
+if (fl.open("./prefs/death_messages_headshot.svr", "rb"))
+{
+killheadmsgs = string_split(fl.read(), "\r\n", false);
+fl.close();
+}
+if (fl.open("./prefs/destroy_messages.svr", "rb"))
+{
+destroymsgs = string_split(fl.read(), "\r\n", false);
+fl.close();
+}
+if (file_exists("./real_offline.txt")) file_delete("./real_offline.txt");
+fl.open("./prefs/inventories/default.inv", "rb");
+default_inv = fl.read();
+fl.close();
+setup_quiz();
+
+sound s;
+tone_synth synth;
+synth.volume = -25.0;
+synth.waveform_type = 3;
+if (beta)
+{
+s.load("prefs\\start.wav");
+}
+if (profiler == 1)
+{
+synth.note("A4", 0.5);
+synth.rest(0.75);
+}
+if (debuger == 1)
+{
+synth.note("E5", 0.5);
+}
+s.load("prefs\\start.wav");
+log("system_message", "서버가 시작되었습니다.");
+
+int netloopset;
+while (true)
+{
+wait(maintime);
+netloopupdate = true;
+do
+{
+netloop();
+}
+while (netloopupdate);
+loopcount += maintime + 1;
+if (loopcount < 5) continue;
+loopcount = 0;
+
+// Loops
+teamloop();
+playerloop();
+for (int i = maps.length - 1; i > -1; i--) maps[i].loop();
+tempbanloop();
+lockerloop();
+timeloop();
+timeitemloop();
+timepacketloop();
+bodyfallloop();
+tremgunloop();
+minigameloop();
+gngameloop();
+auctionloop();
+
+if (players.length > peak)
+{
+peak = players.length;
+send(0, "notify " + peak + "번째 동시 접속 플레이어가 등장했습니다, 환영합니다!", 0);
+peakreached = get_date(true, false) + ", " + get_time();
+}
+if (gifting > 0)
+{
+if (gifttimer.elapsed > 600000)
+{
+gifttimer.force(0);
+if (players.length > 0) givegift(null);
+}
+}
+if (vote_started)
+{
+if (electimer.elapsed >= electime) stop_vote();
+}
+
+// Lets save our data.
+// I will hate myself for writing such messy code in the main fucking while loop, but oh well. Shit happens.
+if (restarttimer.elapsed >= restarttime)
+{
+restarttimer.force(0);
+if (directory_exists("./kill"))
+{
+directory_delete("./kill");
+send(0, "서버가 닫힙니다. 10초 후 접속을 종료합니다.", 2); 
+exitsvr();
+}
+if (directory_exists("./temp/shutdown")) directory_delete("./temp/shutdown");
+}
+if (logtimer.elapsed >= logtime)
+{
+logtimer.force(0);
+save_logs();
+}
+if (writeprefs == 1)
+{
+if (savetimer.elapsed >= 300000)
+{
+savetimer.force(0);
+send(0, "데이터가 저장됩니다.", 0);
+save_all();
+}
+}
+if (garbagetimer.elapsed >= 30000)
+{
+garbagetimer.force(0);
+garbage_collect();
+}
+// some stuff to prevent the server from overflowing with stuff if players aren't connected
+if (players.is_empty())
+{
+kill_objs();
+kill_robots();
+}
+}
+}
+
+void loaddata()
+{
+if (fl.open("./prefs/admin_log.svr", "rb"))
+{
+adminlog = fl.read();
+fl.close();
+}
+if (fl.open("./prefs/passresets.dat", "rb"))
+{
+passresets = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./prefs/compbans.svr", "rb"))
+{
+compbans = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./prefs/ipbans.svr", "rb"))
+{
+ipbans = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./prefs/namebans.svr", "rb"))
+{
+namebans = deserialize(fl.read());
+fl.close();
+}
+load_all_tempbans();
+sd.load();
+if (sd.d.exists("숫자게임")) gnstart_auto = sd.readn("숫자게임");
+if (sd.d.exists("최대동시접속자")) peak = sd.readn("최대동시접속자");
+if (sd.d.exists("채팅")) chatting = sd.readn("채팅");
+if (sd.d.exists("활성화")) activations = sd.readn("활성화");
+if (sd.d.exists("분")) minute = sd.readn("분");
+if (sd.d.exists("시간")) hour = sd.readn("시간");
+if (sd.d.exists("일")) day = sd.readn("일");
+if (sd.d.exists("월")) month = sd.readn("월");
+if (sd.d.exists("년")) year = sd.readn("년");
+if (sd.d.exists("최대동시접속달성일")) peakreached = sd.read("최대동시접속달성일");
+if (sd.d.exists("선물")) gifting = sd.readn("선물");
+if (sd.d.exists("루프속도")) maintime = sd.readn("루프속도");
+if (sd.d.exists("상점열림")) storeopened = sd.readn("상점열림");
+if (sd.d.exists("디버거")) debuger = sd.readn("디버거");
+if (sd.d.exists("프로파일러")) profiler = sd.readn("프로파일러");
+if (sd.d.exists("파일업로드")) can_upload_files = sd.readn("파일업로드");
+if (sd.d.exists("미사일시간")) missiletime = sd.readn("미사일시간");
+if (sd.d.exists("상점내전투")) storefight = sd.readn("상점내전투");
+}
+
+void writedata(const string& in fv = empty, int fvv = -55555)
+{
+sd.add("활성화", activations);
+sd.add("숫자게임", gnstart_auto);
+sd.add("디버거", debuger);
+sd.add("프로파일러", profiler);
+sd.add("파일업로드", can_upload_files);
+sd.add("선물", gifting);
+sd.add("루프속도", maintime);
+sd.add("최대동시접속자", peak);
+sd.add("최대동시접속달성일", peakreached);
+sd.add("상점열림", storeopened);
+sd.add("채팅", chatting);
+sd.add("미사일시간", missiletime);
+sd.add("분", minute);
+sd.add("시간", hour);
+sd.add("일", day);
+sd.add("월", month);
+sd.add("년", year);
+sd.add("상점내전투", storefight);
+if (!fv.is_empty() and fvv != -55555)
+sd.add(fv, fvv);
+file_put_contents("./prefs/admin_log.svr", adminlog, 250);
+string bandata = serialize(compbans);
+fl.open("./prefs/compbans.svr", "wb");
+fl.write(bandata);
+fl.close();
+bandata = serialize(ipbans);
+fl.open("./prefs/ipbans.svr", "wb");
+fl.write(bandata);
+fl.close();
+bandata = serialize(namebans);
+fl.open("./prefs/namebans.svr", "wb");
+fl.write(bandata);
+fl.close();
+bandata = serialize(passresets);
+fl.open("./prefs/passresets.dat", "wb");
+fl.write(string_encrypt(bandata, "%9X5nke6.3unGcW#"));
+fl.close();
+sd.save();
+save_tempbans();
+save_public_maps();
+}
+
+void exitsvr(bool save = true)
+{
+if (save) save_all();
+wait(5);
+send(0, "killclient", 0);
+sound ss;
+ss.load("prefs\\stop.ogg");
+ss.play_wait();
+exit();
+}
+
+void netloop()
+{
+@ e = n.request();
+if (e.type == event_none)
+{
+netloopupdate = false;
+return;
+}
+if (e.type == event_disconnect)
+{
+player@ temp = get_pid_handle(e.peer_id);
+if (temp is null) return;
+if (temp.disconnected) return;
+if (!temp.hidden) send(0, temp.name + "님의 접속이 끊겼습니다.", 2);
+log("system_message", temp.name + "님의 접속이 끊겼습니다.");
+remove_player(temp.name, false);
+return;
+}
+if (e.type == event_receive)
+{
+string message = string_decrypt(e.message, pcps);
+if (message.is_empty()) return;
+switch (e.channel)
+{
+case 1: order_func_chat(get_pid_handle(e.peer_id), message);
+break; case 2: order_func_xplay(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; case 3: order_func_acount(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; case 4: order_func_ui(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; case 5: order_func_info(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; case 6: order_func_item(get_pid_handle(e.peer_id), message);
+break; case 7: order_func_special(get_pid_handle(e.peer_id), message);
+break; case 8: order_func_sound(get_pid_handle(e.peer_id), message);
+break; case 9: order_func_record(get_pid_handle(e.peer_id), message);
+break; case 10: order_func_minigame_play(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; case 11: order_func_minigame_main(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+break; default: order_func_action(get_pid_handle(e.peer_id), message, string_split(message, " ", true));
+}
+}
+}
+
+void login(const string& in u, const string& in p, const string& in yv, uint id, const string& in compid)
+{
+string ip = string_base64_encode(n.get_peer_address(id));
+if (is_banned(u, true) > 0 or is_banned(ip, false) > 0 or is_banned(compid, false) > 0)
+{
+send(id, "banned", 0);
+return;
+}
+if (tempban_list.exists(u))
+{
+tempban@ bantemp = get_tempban_handle(u);
+send(id, "block " + ms_to_readable_time(bantemp.ms - bantemp.tempbantimer.elapsed) + " 후에 다시 접속할 수 있습니다.", 0);
+return;
+}
+multiversion@ yver = create_version(yv);
+if (yver < minver)
+{
+send(id, "block 구버전 " + yv + "을 사용하고 있습니다. 최소 " + minverstring + " 버전 이상으로 업그레이드 해야 합니다.", 0);
+return;
+}
+string charfile = "./chars/" + u + ".usr";
+if (!file_exists(charfile))
+{
+send(id, "nochar", 0);
+return;
+}
+fl.open(charfile, "rb");
+dictionary ddd = deserialize(fl.read());
+fl.close();
+if (!ddd.exists("암호"))
+{
+send(id, "알 수 없는 오류로 인해 세이브 파일이 손상되었습니다. 개발자 또는 운영진에게 문의 바랍니다.", 0);
+return;
+}
+string dstring;
+ddd.get("암호", dstring);
+if (dstring != string_hash(p, 2, false))
+{
+send(id, "wrongpass", 0);
+return;
+}
+if (remove_player(u) > 0) send(0, u + "님이 재접속합니다.", 2);
+send(id, "motd " + oldmotd, 0);
+log("system_message", u + "님이 로그인합니다.");
+send(id, "loggedin", 0);
+}
+
+void create_char(const string& in username, const string& in password, const string& in email, uint id, const string& in compid)
+{
+if (string_contains(username, ".", 1) > -1)
+{
+send(id, "invalidchar", 0);
+return;
+}
+if (string_is_digits(username))
+{
+send(id, "invalidchar", 0);
+return;
+}
+if (filter(username))
+{
+send(id, "eloerror", 0);
+return;
+}
+if (filterchar(username))
+{
+send(id, "invalidchar", 0);
+return;
+}
+int level = 1;
+int rdl = reserved_dicts.length;
+for (uint i = 0; i < rdl; i++)
+{
+if (!reserved_dicts[i].exists(username)) continue;
+level = 0;
+break;
+}
+if (level == 0)
+{
+send(id, "로봇, 무기, 폭발물, 함정, 차량 이름으로 닉네임을 정할 수 없습니다. 심각한 오류를 야기할 수 있습니다.", 0);
+return;
+}
+string ip = string_base64_encode(n.get_peer_address(id));
+if (is_banned(username, true) > 0 or is_banned(ip, false) > 0 or is_banned(compid, false) > 0)
+{
+send(id, "banned", 0);
+return;
+}
+string charfile = "./chars/" + username + ".usr";
+if (file_exists(charfile))
+{
+send(id, "alreadyexists", 0);
+return;
+}
+dictionary nu;
+nu.set("이름", username);
+nu.set("언어", "korean1");
+nu.set("이메일", email);
+nu.set("암호", string_hash(password, 2, false));
+nu.set("플래그", 80);
+nu.set("맵", "세이프존");
+nu.set("x", random(0, 20));
+nu.set("y", random(0, 20));
+nu.set("z", 0);
+string[]@ chars = find_files("./chars/*.usr");
+if (chars.is_empty()) nu.set("등급", 3); // First char is developer
+fl.open(charfile, "wb");
+fl.write(serialize(nu));
+fl.close();
+send(id, "createdchar", 0);
+}
+
+string email(const string& in address, const string& in from, const string& in subject, const string& in message)
+{
+return url_post("http://pgr.kr/mail.php", "who=" + address + "&name=Street program server&f=" + from + "&sub=" + subject + "&mess=" + message);
+}
+
+string destmsg(const string& in player1, const string& in target1, const string& in player1weapon)
+{
+string temp = destroymsgs[random(0, destroymsgs.length - 1)];
+string temp1 = player1;
+int ff = string_contains(player1, "'", 1);
+if (ff > -1) temp1 = string_left(player1, 66);
+string temp2 = target1;
+ff = string_contains(target1, "'", 1);
+if (ff > -1) temp2 = string_left(target1, 66);
+if (string_left(temp2, 9) == "internal:") temp = internal_killmsg(string_trim_left(temp2, 9));
+temp = string_replace(temp, "%1", temp1, true);
+temp = string_replace(temp, "%2", temp2, true);
+temp = string_replace(temp, "%3", player1weapon, true);
+log("system_message", "완파: " + temp);
+return temp;
+}
+
+string killmsg(const string& in player1, const string& in player2, const string& in player1weapon, bool hit_head = false)
+{
+string temp = (hit_head ? killheadmsgs[random(0, killheadmsgs.length - 1)] : killmsgs[random(0, killmsgs.length - 1)]);
+string temp1 = player1;
+int ff = string_contains(player1, "'", 1);
+if (ff > -1) temp1 = string_left(player1, 66);
+string temp2 = player2;
+ff = string_contains(player2, "'", 1);
+if (ff > -1) temp2 = string_left(player2, 66);
+if (string_left(temp2, 9) == "internal:") temp = internal_killmsg(string_trim_left(temp2, 9));
+temp = string_replace(temp, "%1", temp1, true);
+temp = string_replace(temp, "%2", temp2, true);
+temp = string_replace(temp, "%3", player1weapon, true);
+log("system_message", "사망: " + temp);
+return temp;
+}
+
+const string& internal_killmsg(const string& in act)
+{
+string[]@ mess = string_split(act, ":", true);
+ref_string.resize(0);
+switch (string_to_hash(mess[0]))
+{
+case km_drown: return "%1님은 애석하게도 물귀신이 되었습니다!";
+case km_gravity: return "%1님은 애석하게도 중력의 법칙을 거스를 수 없었습니다.";
+case km_gravity_v: return "중력의 법칙이 %1의 꿈과 희망을 앗아갑니다.";
+case km_trap: return "%1님이 문 함정에 걸려 빈대떡이 되고 맙니다.";
+case km_trap_v: return "%1, 그것은 문 함정과 치킨게임을 벌이다 파편만 남은 고철 덩어리로 전락합니다.";
+case km_poison: return "%1님이 무참히 독살당합니다.";
+case km_withdrawal: return "%1님이 약물 남용의 후유증을 더이상 버티지 못합니다.";
+case km_suffocate: return "%1님이 질식하여 고통스럽게 죽어갑니다.";
+case km_rg:
+{
+if (mess.length < 2) break;
+if (mess[1] == "expire") return "%1, 녹슬어 사용할 가치가 없어집니다!";
+else if (mess[1] == "destruct") return "%1, 장렬히 자폭합니다!";
+}
+break; case km_vehicle:
+{
+if (mess.length > 1) ref_string = "%1님이 " + mess[1] + "의 폭발 충격으로 전사합니다.";
+}
+break;
+}
+if (ref_string.is_empty()) ref_string = "%1님이 " + act + "에 의해 산산조각납니다.";
+return ref_string;
+}
+
+bool& regexp(const string& in message, const string& in pattern)
+{
+int handle = -1;
+int rex = -1;
+int matches = -1;
+dictionary@ result = re.call("int regexp_create();");
+result.get("0", handle);
+@ result = re.call("int result_create();");
+result.get("0", rex);
+re.call("void regexp_compile(int, char*, int);", handle, pattern, 0);
+re.call("void regexp_match(int, char*, int, int);", handle, message, -1, rex);
+@ result = re.call("int result_ismatched(int);", rex);
+result.get("0", matches);
+re.call("void result_free(int);", rex);
+re.call("void regexp_free(int);", handle);
+if (matches > 0)
+{
+return true_t;
+}
+return false_t;
+}
+
+string url_ret(const string& in url, const string& in data = empty)
+{
+string what = (data.is_empty() ? httpn.get(url) : httpn.post(url, data));
+while (httpn.progress)
+{
+what += httpn.request();
+if (last_error < 0)
+{
+return last_error_text;
+}
+netloop();
+}
+return what;
+}
+
+string localgrab_url(const string& in filename)
+{
+return file_get_contents("../../var/www/html/" + filename);
+}
+
+bool write_to_webfile(const string& in filename, const string& in content)
+{
+return file_put_contents("../../var/www/html/" + filename, content, 250);
+}
+
+bool dm(const string& in username, const string& in mess)
+{
+return run("dm.exe", "--username " + username + " --message \"" + mess + "\"", true, true);
+}
+
+void save_all(bool save_bomb = false)
+{
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+players[i].save();
+}
+int teamslength = teams.length;
+for (uint i = 0; i < teamslength; i++)
+{
+teams[i].team_save();
+}
+save_vehicles();
+savelockers();
+save_shipments();
+save_corpses();
+writedata();
+rank_data.delete_all();
+if (!save_bomb) file_delete("./prefs/save.bomb");
+}

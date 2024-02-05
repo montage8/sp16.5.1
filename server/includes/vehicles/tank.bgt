@@ -1,0 +1,160 @@
+vehicle spawn_tank()
+{
+vehicle v;
+v.type = "tank";
+v.maxhealth = 80000;
+v.defense = 6000;
+v.sight_range = 10000;
+v.missile_range = 350;
+v.maxspeed = 17;
+v.accelpower = 0.004;
+v.decelpower = 0.004;
+v.breakpower = 0.0075;
+v.vfueltime = 1100;
+v.vfuelspeed = 20;
+v.vfuelpitch = 6;
+v.vsspawn = 4510;
+v.vsstart = 1954;
+v.vsstop = 1000;
+v.gear1_minpitch = 50;
+v.gear1_maxpitch = 100;
+v.explode_min = 7500;
+v.explode_max = 10000;
+v.maxpassengers = 3;
+vehicle_interior new1;
+new1.x = 3;
+new1.y = 1;
+new1.z = 4;
+new1.type = INTERIOR_DOOR;
+v.interiors.insert_last(new1);
+vehicle_interior new2;
+new2.x = 1;
+new2.y = 4;
+new2.z = 0;
+new2.type = INTERIOR_STEERING;
+v.interiors.insert_last(new2);
+vehicle_interior new3;
+new3.x = 3;
+new3.y = 4;
+new3.z = 10;
+new3.type = INTERIOR_WEAPON;
+new3.reusetime = 6000;
+new3.pretime = 686;
+new3.max_ammo = 45;
+new3.require_ammo = "_120mm_armor_piercing_bullet";
+@ new3.prework = @ prework_tank_weapon1;
+@ new3.work = @ work_tank_weapon1;
+v.interiors.insert_last(new3);
+vehicle_interior new4;
+new4.x = 3;
+new4.y = 4;
+new4.z = 9;
+new4.type = INTERIOR_WEAPON;
+new4.reusetime = 50;
+new4.pretime = 100;
+new4.looptime = 100;
+@ new4.prework = @ prework_tank_weapon2;
+@ new4.work = @ work_tank_weapon2;
+@ new4.loop = @ loop_tank_weapon2;
+new4.max_ammo = 3000;
+new4.require_ammo = "_50_bmg_bullet";
+v.interiors.insert_last(new4);
+vehicle_interior mint;
+mint.x = 1;
+mint.y = 1;
+mint.z = 10;
+mint.type = INTERIOR_WEAPON;
+@ mint.prework = @ prework_vehicle_weapon2;
+@ mint.work = @ work_vehicle_weapon2;
+v.interiors.insert_last(mint);
+vehicle_interior smoke;
+smoke.x = 1;
+smoke.y = 1;
+smoke.z = 9;
+smoke.type = INTERIOR_WEAPON;
+smoke.reusetime = 1000;
+smoke.pretime = 200;
+@ smoke.prework = @ prework_vehicle_weapon1;
+@ smoke.work = @ work_vehicle_weapon1;
+smoke.max_ammo = 12;
+smoke.require_ammo = "smoke_grenade";
+v.interiors.insert_last(smoke);
+vehicle_interior lk;
+lk.x = 2;
+lk.y = 1;
+lk.z = 0;
+lk.type = INTERIOR_LOCKER;
+v.interiors.insert_last(lk);
+return v;
+}
+
+bool prework_tank_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1)
+{
+vi.user.alert("철갑탄 무장창이 텅 비었습니다.");
+return false_t;
+}
+vi.dir = vi.user.facing;
+this.playsound("tank_artillery_beforeshot", true, false);
+return true_t;
+}
+
+bool work_tank_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+vi.current_ammo--;
+int facing = this.facing + vi.dir;
+play_dist("tank_artillery_fire_dist", this.x, this.y, this.z, this.map, 0.04);
+this.playsound("tank_artillery_fire" + random(1, 4), true, true);
+spawn_weapon(this.x, this.y, this.z, facing, "artillery", this.map, vi.user, empty, -1);
+return true_t;
+}
+
+bool prework_tank_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.looping)
+{
+vi.pretimer.force(vi.pretime);
+return true_t;
+}
+if (!vi.user.a.exists("이변의 순간"))
+{
+vi.user.alert("그 무기를 다루기엔 자질이 부족합니다.");
+return false_t;
+}
+if (vi.current_ammo < 1)
+{
+vi.user.alert("탄약이 부족합니다.");
+return false_t;
+}
+if (vi.user.zfacing < -20)
+{
+vi.user.alert("그 무기의 조준경은 그렇게 많이 돌아가지 않습니다.");
+return false_t;
+}
+vi.dir = vi.user.facing;
+return true_t;
+}
+
+bool work_tank_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.looping)
+{
+vi.looping = false;
+return true_t;
+}
+vi.looping = true;
+return true_t;
+}
+
+bool loop_tank_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+if (vi.user.zfacing < -20) return false_t;
+vi.current_ammo--;
+int dir = this.facing + vi.user.facing;
+weapon@ new = spawn_weapon(this.x, this.y, this.z, dir, "tank_machine_gun", this.map, vi.user, empty, 1);
+if (new !is null) this.playsound("browning_m2_heavy_50_cal_machine_gun", true);
+return true_t;
+}

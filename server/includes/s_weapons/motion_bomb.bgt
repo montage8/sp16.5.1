@@ -1,0 +1,108 @@
+class motion_bomb
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+int beeptime = 1;
+timer beeptimer, bombtimer;
+bool d = false;
+timer scantimer;
+hittable@ hid;
+}
+void motion_bombloop(mapdata@ map)
+{
+string name = "motion_bomb";
+int vslength = map.vs.length;
+int robotslength = map.robots.length;
+int playerslength = map.players.length;
+for (int i = map.motion_bombs.length - 1; i > -1; i--)
+{
+motion_bomb@ this = map.motion_bombs[i];
+if (this.scantimer.elapsed > 1000)
+{
+this.scantimer.force(0);
+if (!this.d)
+{
+for (uint i2 = 0; i2 < vslength; i2++)
+{
+vehicle@ temp = map.vs[i2];
+if (are_teamed(this.owner, temp.owner)) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+this.bombtimer.force(0);
+this.beeptimer.force(0);
+this.d = true;
+break;
+}
+}
+}
+if (!this.d)
+{
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+this.bombtimer.force(0);
+this.beeptimer.force(0);
+this.d = true;
+break;
+}
+}
+}
+if (!this.d)
+{
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (are_teamed(this.owner, temp.name)) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+this.bombtimer.force(0);
+this.beeptimer.force(0);
+this.d = true;
+break;
+}
+}
+}
+}
+bool dest_now = false;
+if (this.d)
+{
+if (this.beeptimer.elapsed >= this.beeptime)
+{
+this.beeptimer.force(0);
+play("motion_bombbeep", this.x, this.y, this.z, this.map);
+this.beeptime = 50 + 0.2 * (5000 - this.bombtimer.elapsed);
+}
+if (this.bombtimer.elapsed >= 5000) dest_now = true;
+}
+if (this.hid.health <= 0) dest_now = true;
+if (dest_now)
+{
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+map.motion_bombs.remove_at(i);
+}
+}
+}
+void spawn_motion_bomb(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+motion_bomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+play("motion_bomb_place", x, y, z, map);
+@ bomb1.hid = spawn_hobj(x, y, z, map, 10000, 86400000, empty, empty, "motion_bomb");
+bomb1.hid.defense = 2000;
+map.motion_bombs.insert_last(bomb1);
+}
+void load_motion_bombs(string[]@ parsed, mapdata@ map)
+{
+if (parsed.length < 6) return;
+spawn_motion_bomb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5]);
+}

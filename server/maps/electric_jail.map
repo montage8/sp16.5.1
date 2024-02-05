@@ -1,0 +1,13 @@
+
+mapname:electric_jail
+owner:올빼미
+maxx:10000
+maxy:10000
+survival:0
+no_teleport:1
+noitem:0:10000:0:10000:0:0:mountain_ticket:temple_ticket
+fightingstate:0
+
+tile:0:9999:0:9999:0:0:electricity:0:50:hazard
+tile:0:10000:10000:10000:0:0:electricity:2:50:hazard
+zone:0:10000:0:10000:0:0:전기 고문실

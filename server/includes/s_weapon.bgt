@@ -1,0 +1,86 @@
+#include "./s_weapons/nuclear_bomb.bgt"
+#include "./s_weapons/canister.bgt"
+#include "./s_weapons/stickybomb.bgt"
+#include "./s_weapons/wirebomb.bgt"
+#include "./s_weapons/carrier_missile.bgt"
+#include "./s_weapons/sec_bomb.bgt"
+#include "./s_weapons/impact_bomb.bgt"
+#include "./s_weapons/ultrabomb.bgt"
+#include "./s_weapons/mine.bgt"
+#include "./s_weapons/missile.bgt"
+#include "./s_weapons/motion_bomb.bgt"
+#include "./s_weapons/remote_gun.bgt"
+#include "./s_weapons/remote_timebomb.bgt"
+#include "./s_weapons/timebomb.bgt"
+#include "./s_weapons/concussive_grenade.bgt"
+#include "./s_weapons/smoke_grenade.bgt"
+#include "./s_weapons/stun_grenade.bgt"
+#include "./s_weapons/sound_grenade.bgt"
+#include "./s_weapons/bomb_cracker.bgt"
+
+void save_bombs()
+{
+string rawdata;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int mineslength = map.mines.length;
+for (uint i = 0; i < mineslength; i++)
+{
+mine@ temp = map.mines[i];
+rawdata += "mine:" + temp.x + ":" + temp.y + ":" + temp.z + ":" + map.name + ":" + temp.owner + ":" + temp.lifetimer.elapsed + ":" + temp.depth + "\r\n";
+}
+int motion_bombslength = map.motion_bombs.length;
+for (uint i = 0; i < motion_bombslength; i++)
+{
+motion_bomb@ temp = map.motion_bombs[i];
+rawdata += "motion_bomb:" + temp.x + ":" + temp.y + ":" + temp.z + ":" + map.name + ":" + temp.owner + "\r\n";
+}
+int security_bombslength = map.security_bombs.length;
+for (uint i = 0; i < security_bombslength; i++)
+{
+security_bomb@ temp = map.security_bombs[i];
+rawdata += "security_bomb:" + temp.x + ":" + temp.y + ":" + temp.z + ":" + map.name + ":" + temp.owner + "\r\n";
+}
+int wirebombslength = map.wirebombs.length;
+for (uint i = 0; i < wirebombslength; i++)
+{
+wirebomb@ temp = map.wirebombs[i];
+rawdata += "wirebomb:" + temp.x + ":" + temp.y + ":" + temp.z + ":" + map.name + ":" + temp.owner + "\r\n";
+}
+}
+fl.open("./prefs/save.bomb", "wb");
+fl.write(rawdata);
+fl.close();
+}
+
+void load_bombs()
+{
+if (!fl.open("./prefs/save.bomb", "rb")) return;
+string[]@ list = string_split(fl.read(), "\r\n", false);
+fl.close();
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+string[]@ parsed = string_split(list[i], ":", false);
+if (parsed.length < 6) continue;
+mapdata@ map = get_map_handle(parsed[4]);
+if (map is null) continue;
+load_bomb_func@ func;
+if (!bomb_handles.get(parsed[0], @ func)) continue;
+func(parsed, map);
+}
+}
+
+funcdef void load_bomb_func(string[]@ parsed, mapdata@ map);
+dictionary bomb_handles;
+
+void install_bomb_hash()
+{
+bomb_handles.set("mine", @ load_mines);
+bomb_handles.set("motion_bomb", @ load_motion_bombs);
+bomb_handles.set("remote_timebomb", @ load_remote_timebombs);
+bomb_handles.set("security_bomb", @ load_security_bombs);
+bomb_handles.set("wirebomb", @ load_wirebombs);
+}

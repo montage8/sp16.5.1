@@ -1,0 +1,183 @@
+loop_sound@[] loop_sounds;
+class loop_sound
+{
+bool remove = false;
+sound_pool_item@ sp;
+string[]@ sounds;
+int current = 0;
+int loopmin = 0;
+int loopmax = 0;
+int nextlooptime = 0;
+timer looptimer;
+int looplimit = 0;
+int loopcount = 1;
+bool random_play = true;
+bool is_a_pause_timer = true;
+bool playing = true;
+bool sleep = false;
+int sleeptime = 0;
+timer sleeptimer;
+
+bool update()
+{
+this.looptimer.force(0);
+this.nextlooptime = random(this.loopmin, this.loopmax);
+int new = 0;
+if (this.random_play) new = random(0, this.sounds.length - 1);
+else
+{
+new = current + 1;
+if (new == this.sounds.length) new = 0;
+}
+if (new == current) return false_t;
+current = new;
+return true_t;
+}
+}
+
+string create_loop_sound(string soundname, sound_pool_item@ temp_item)
+{
+if (string_right(soundname, 4) == ".ogg") soundname.resize(soundname.size - 4);
+string[]@ data = string_split(soundname, "*", false);
+string[]@ sounds = string_split(data[0], "|", false);
+int datalength = data.length;
+int soundslength = sounds.length;
+if (datalength < 2 and soundslength < 2) return soundname + ".ogg";
+for (uint i = 0; i < soundslength; i++)
+{
+if (string_right(sounds[i], 4) != ".ogg") sounds[i] += ".ogg";
+}
+loop_sound loop;
+@ loop.sounds = sounds;
+if (datalength > 1)
+{
+string[]@ parsed = string_split(data[1], "|", false);
+loop.loopmin = string_to_number(parsed[0]);
+loop.loopmax = (parsed.length > 1 ? string_to_number(parsed[1]) : loop.loopmin);
+loop.nextlooptime = random(loop.loopmin, loop.loopmax);
+}
+if (datalength > 2) loop.looplimit = string_to_number(data[2]);
+if (datalength > 3)
+{
+int tempflag = string_to_number(data[3]);
+loop.random_play = (tempflag & 1 == 1);
+loop.is_a_pause_timer = (tempflag & 2 == 2);
+}
+if (loop.random_play) loop.current = random(0, sounds.length - 1);
+if (loop.looplimit < 1) loop.looplimit = (temp_item.looping ? 0 : 1);
+temp_item.looping = true;
+@ temp_item.loop_expression = loop;
+@ loop.sp = temp_item;
+loop_sounds.insert_last(loop);
+return loop.sounds[loop.current];
+}
+
+void loop_sound_check()
+{
+string filename;
+for (int i = loop_sounds.length - 1; i > -1; i--)
+{
+loop_sound@ temp = loop_sounds[i];
+if (temp.remove)
+{
+loop_sounds.remove_at(i);
+continue;
+}
+if (temp.sp.handle is null)
+{
+loop_sounds.remove_at(i);
+continue;
+}
+if (temp.sp.paused) continue;
+bool changed = false;
+if (temp.sleep)
+{
+if (temp.sleeptimer.elapsed < temp.sleeptime) continue;
+temp.sleep = false;
+changed = temp.update();
+}
+else
+{
+if (!temp.is_a_pause_timer)
+{
+if (temp.looptimer.elapsed < temp.nextlooptime) continue;
+temp.update();
+changed = true;
+}
+else
+{
+if (temp.playing)
+{
+if (temp.sp.handle.playing) continue;
+temp.playing = false;
+temp.looptimer.force(0);
+continue;
+}
+else
+{
+if (temp.sp.handle.playing)
+{
+temp.playing = true;
+continue;
+}
+if (temp.looptimer.elapsed < temp.nextlooptime) continue;
+changed = temp.update();
+}
+}
+}
+if (temp.looplimit > 0)
+{
+if (temp.loopcount >= temp.looplimit)
+{
+temp.sp.soft_reset();
+loop_sounds.remove_at(i);
+continue;
+}
+}
+if (changed or temp.sp.handle.playing)
+{
+filename = temp.sounds[temp.current];
+if (string_left(filename, 1) == "/")
+{
+temp.sleep = true;
+temp.sleeptime = string_to_number(string_trim_left(filename, 1));
+temp.sleeptimer.force(0);
+continue;
+}
+if (string_left(filename, 2) == out_bound_delimiter) filename = string_trim_left(filename, 2);
+temp.sp.filename = filename;
+if (temp.sp.in_range and temp.sp.handle.active)
+{
+double temp_volume = temp.sp.handle.volume;
+double temp_pitch = temp.sp.handle.pitch;
+double temp_pan = temp.sp.handle.pan;
+temp.sp.handle.close();
+if (!sound_load(temp.sp.handle, temp.sp.filename)) continue;
+temp.sp.handle.volume = temp_volume;
+temp.sp.handle.pitch = temp_pitch;
+temp.sp.handle.pan = temp_pan;
+}
+}
+temp.playing = temp.sp.handle.play();
+temp.loopcount++;
+}
+}
+
+void add_to_sound_list( sound_pool@ s, int slot, const string& in name)
+{
+if (!s.verify_slot(slot)) return;
+sound_pool_item@ temp = s.items[slot];
+if (temp.loop_expression is null) return;
+temp.loop_expression.sounds.insert_last(name);
+}
+
+void remove_to_sound_list(sound_pool@ s, int slot, const string& in name)
+{
+if (!s.verify_slot(slot)) return;
+sound_pool_item@ temp = s.items[slot];
+if (temp.loop_expression is null) return;
+string[]@ list = temp.loop_expression.sounds;
+if (list.length < 2) return;
+int counter = list.find(name);
+if (counter > -1) list.remove_at(counter);
+}

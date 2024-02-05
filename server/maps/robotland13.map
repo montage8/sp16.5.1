@@ -1,0 +1,14 @@
+
+mapname:robotland13
+owner:kt9020
+maxx:100
+maxy:100
+survival:0
+tile:0:100:0:100:0:0:concrete6
+fightingstate:1
+src:0:200:0:200:0:15:desktop1:100
+src:0:200:0:200:0:15:laptop1:100robots:00:100:0:100:0:0:5:500:imac:android:.:1robots:0:100:0:100:0:0:8:450:android,imac:.:1robots:0:100:0:100:0:1:1000:2:android,imacrobots:0:100:0:100:0:1:2:30:android,imacrobots:0:100:0:100:0:1:2:30:android,imacrobots:0:100:0:100:0:1:2:2:android,imac
+travelpoint:100:100:100:100:0:0:세이프존:3001:3001:30:여기를 통해 탈출하세요:1
+zone:100:100:100:100:0:0:여기를 통해 탈출하세요
+zone:39:39:100:100:0:0:다이빙을 위해 올라가세요:trackme
+tile:39:39:100:100:0:100:ladder2

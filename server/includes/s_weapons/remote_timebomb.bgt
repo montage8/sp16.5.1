@@ -1,0 +1,53 @@
+class remote_timebomb
+{
+string owner;
+int code;
+mapdata@ map;
+int x, y, z;
+int seconds = 2000;
+int beeptime;
+timer beeptimer, bombtimer;
+bool d = false;
+hittable@ hid;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+void remote_timebombloop(mapdata@ map)
+{
+string name = "remote_timebomb";
+for (int i = map.remote_timebombs.length - 1; i > -1; i--)
+{
+remote_timebomb@ this = map.remote_timebombs[i];
+bool dest_now = false;
+if (this.d)
+{
+this.seconds = 2000 - this.bombtimer.elapsed;
+if (this.seconds <= 0) dest_now = true;
+}
+if (this.hid.health <= 0) dest_now = true;
+if (!dest_now) continue;
+this.hid.health = -1;
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+map.remote_timebombs.remove_at(i);
+}
+}
+void place_remote_timebomb(int x, int y, int z, mapdata@ map, const string& in owner, int code)
+{
+remote_timebomb bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.code = code;
+play("remote_timebombplace", x, y, z, map);
+@ bomb1.hid = spawn_hobj(x, y, z, map, 15000, 86400000, empty, empty, "remote_timebomb");
+map.remote_timebombs.insert_last(bomb1);
+}
+void load_remote_timebombs(string[]@ parsed, mapdata@ map)
+{
+if (parsed.length < 7) return;
+place_remote_timebomb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5], string_to_number(parsed[6]));
+}

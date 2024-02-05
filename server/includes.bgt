@@ -1,0 +1,60 @@
+#include "./includes/orders.bgt"
+#include "./includes/s_weapon.bgt"
+#include "./includes/shipment.bgt"
+#include "./includes/tempban.bgt"
+#include "./includes/hittable_object.bgt"
+#include "./includes/corpses.bgt"
+#include "./includes/mserver.bgt"
+#include "./includes/minilocker.bgt"
+#include "./includes/ban_pro.bgt"
+#include "./includes/vending_machine.bgt"
+#include "./includes/timeitem.bgt"
+#include "./includes/achievement.bgt"
+#include "./includes/timepacket.bgt"
+#include "./includes/itemlist.bgt"
+#include "./includes/fire.bgt"
+#include "./includes/vehicle.bgt"
+#include "./includes/admincommands.bgt"
+#include "./includes/bodyfall.bgt"
+#include "./includes/char_data.bgt"
+#include "./includes/utils.bgt"
+#include "./includes/dateandtime.bgt"
+#include "./includes/hip.bgt"
+#include "./includes/logger.bgt"
+#include "./includes/map.bgt"
+#include "./includes/moving_sound_serverside_handler.bgt"
+#include "./includes/object.bgt"
+#include "./includes/player.bgt"
+#include "./includes/rotation.bgt"
+#include "./includes/settings.bgt"
+#include "./includes/sizer.bgt"
+#include "./includes/speech.bgt"
+#include "./includes/team.bgt"
+#include "./includes/weapon.bgt"
+#include "./includes/robot.bgt"
+#include "./includes/store.bgt"
+#include "./includes/constants.bgt"
+#include "./includes/extrafunctions.bgt"
+#include "./includes/ambience.bgt"
+#include "./includes/quiz.bgt"
+#include "./includes/minigame.bgt"
+#include "./includes/splash.bgt"
+#include "./includes/chat_commands.bgt"
+#include "./includes/item_function.bgt"
+#include "./includes/equipment.bgt"
+#include "./includes/events.bgt"
+
+bool true_t = true;
+bool false_t = false;
+string ref_string, ref_string2, ref_string3, empty;
+string[] ref_string_array, empty_s;
+uint[] ref_uint_array, empty_ui;
+int[] ref_int_array, empty_i;
+dictionary empty_d;
+vector ref_vector;
+int _0 = 0;
+int _pos1 = 1;
+int _pos2 = 2;
+int _neg1 = -1;
+int _neg2 = -2;
+typedef uint8 usmall; typedef int8 small; 

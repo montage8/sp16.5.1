@@ -1,0 +1,1471 @@
+sound mapeditor_player;
+void mapeditor_play(const string &in name)
+{
+mapeditor_player.close();
+if (!mapeditor_player.stream(sndfolder + name + ".ogg")) return;
+mapeditor_player.play();
+}
+
+string[]@ select_mapdata_type(bool admin = false)
+{
+setupmenu();
+m.multi_checking = true;
+m.add_item_tts("플래폼", "tile");
+m.add_item_tts("문", "gate");
+m.add_item_tts("문 스위치", "switch");
+m.add_item_tts("사운드 효과", "src");
+m.add_item_tts("사운드 환경", "amb");
+m.add_item_tts("엔터로 재생", "etp");
+m.add_item_tts("사운드 경계", "sb");
+m.add_item_tts("텍스트 지역", "zone");
+m.add_item_tts("포탈", "travelpoint");
+m.add_item_tts("리프트", "door");
+m.add_item_tts("아이템 소환", "ispawn");
+m.add_item_tts("깃발 게임 지역", "ctf");
+m.add_item_tts("아이템 제한", "noitem");
+m.add_item_tts("체크 포인트", "checkpoint");
+m.add_item_tts("로봇", "robots");
+m.add_item_tts("아이템 설명", "idscr", empty, true, true);
+m.add_item_tts("기존 데이터 편집", "edit", empty, true, true);
+m.add_item_tts("명령 프롬프트를 통한 고급 설정", "cmd", empty, true, true);
+int mres = m.run("무엇을 만들까요?", true);
+if (mres <= 0)
+{
+return empty_s;
+}
+string result = m.get_item_name(mres);
+if (result.is_empty()) return empty_s;
+string[]@ new = m.get_checked_item_list();
+if (new.is_empty()) new.insert_last(result);
+return new;
+}
+
+bool& buildsomething(const string& in old_data = empty, bool admin = false)
+{
+string[]@ what;
+string[] old_parsed;
+if (!old_data.is_empty()) old_parsed = string_split(old_data, ":", false);
+if (old_parsed.is_empty()) @ what = select_mapdata_type(admin);
+else
+{
+if (old_parsed[0] == "edit") return false_t;
+if (old_parsed[0] == "cmd") return false_t;
+if (old_parsed[0] == "ispawn") return false_t;
+if (old_parsed[0] == "ctf") return false_t;
+string[] new;
+new.insert_last(old_parsed[0]);
+@ what = new;
+}
+if (what is null) return false_t;
+if (what.is_empty()) return false_t;
+uint whatnum = string_to_hash(what[0]);
+switch (whatnum)
+{
+case maporder_edit:
+{
+map_editor(admin);
+}
+break; case maporder_cmd:
+{
+string ntext = input_box_pro("명령어를 입력하세요.");
+if (!text_builder(ntext)) return true_t;
+send_reliable("/맵설 " + mapname + " " + ntext, 1);
+}
+break; case maporder_idscr:
+{
+string ntext = input_box_pro("아이템 이름을 입력하세요. 사용자 지정 아이템은 뒤에 언더바 한개를 붙이세요.", (old_parsed.length > 1 ? old_parsed[1] : empty));
+if (!text_builder(ntext)) return true_t;
+string ntext2 = input_box_pro("아이템 설명을 입력하세요.", (old_parsed.length > 2 ? old_parsed[2] : empty));
+if (!text_builder(ntext2)) return true_t;
+ntext += ":" + ntext2;
+if (old_data.is_empty()) send_reliable("buildnow \r\nidscr:" + ntext, 4);
+else send_reliable("mapedit \r\n" + old_data + "\r\n[]\r\nidscr:" + ntext + "\r\n", 4);
+}
+break; default:
+{
+string sendtext;
+string minx, maxx, miny, maxy, minz, maxz;
+if (!old_data.is_empty())
+{
+string[]@ locs = get_old_loc_array(old_data);
+if (locs is null) return false_t;
+minx = locs[0];
+maxx = locs[1];
+miny = locs[2];
+maxy = locs[3];
+minz = locs[4];
+maxz = locs[5];
+}
+else
+{
+minx = number_builder("서쪽 끝 X 좌표를 입력하세요.", mr.x);
+if (minx.is_empty()) return true_t;
+maxx = number_builder("동쪽 끝 X 좌표를 입력하세요.", string_to_number(minx));
+if (maxx.is_empty()) return true_t;
+miny = number_builder("남쪽 끝 Y 좌표를 입력하세요.", mr.y);
+if (miny.is_empty()) return true_t;
+maxy = number_builder("북쪽 끝 Y 좌표를 입력하세요.", string_to_number(miny));
+if (maxy.is_empty()) return true_t;
+minz = number_builder("아래쪽 끝 Z 좌표를 입력하세요.", me.z);
+if (minz.is_empty()) return true_t;
+maxz = number_builder("위쪽 끝 Z 좌표를 입력하세요.", string_to_number(minz));
+if (maxz.is_empty()) return true_t;
+}
+string loc = minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz;
+int xlength = abs(string_to_number(maxx) - string_to_number(minx));
+int ylength = abs(string_to_number(maxy) - string_to_number(miny));
+int zlength = abs(string_to_number(maxz) - string_to_number(minz));
+string default_string;
+double default_double = 0;
+int whatlength = what.length;
+for (uint i = 0; i < whatlength; i++)
+{
+whatnum = string_to_hash(what[i]);
+switch (whatnum)
+{
+case maporder_noitem:
+{
+default_string = (old_parsed.length > 7 ? string_replace(string_trim_left(old_data, string_contains(old_data, ":", 7)), ":", " ", true) : empty);
+string ntext = input_box_pro("사용 제한을 걸 아이템 목록을 입력하세요. 여러 개를 한번에 입력할 때는 아이템 이름 사이에 빈 칸이나 쉼표를 삽입하세요. 아이템 그룹으로 현재 무기, 차량, 식음료, 탄약, 함정, 폭발물이 있으며, 해당 분류의 아이템을 사용할 수 없게 합니다.", default_string);
+if (!text_builder(ntext)) return true_t;
+ntext = string_replace(ntext, " ", ":", true);
+ntext = string_replace(ntext, ",", ":", true);
+sendtext += "\r\nnoitem:" + loc + ":" + ntext;
+}
+break; case maporder_zone:
+{
+default_string = (old_parsed.length > 7 ? old_parsed[7] : empty);
+string ztext = input_box_pro("지역 이름, 묘사 등을 입력하세요.", default_string);
+if (!text_builder(ztext)) break;
+string temp;
+int trackable = yesno("M키로 추적이 가능하게 할까요?", (old_parsed.length > 8 ? 1 : 0));
+if (trackable <= 0) break;
+if (trackable == 1) temp = ":trackme";
+sendtext += "\r\nzone:" + loc + ":" + ztext + temp;
+}
+break; case maporder_checkpoint:
+{
+string temp;
+int trackable = yesno("최초 한 번만 저장되게 하시겠습니까?", (old_parsed.length > 7 ? 1 : 0));
+if (trackable <= 0) break;
+if (trackable == 1) temp = ":once";
+sendtext += "\r\ncheckpoint:" + loc + temp;
+}
+break; case maporder_ctf:
+{
+int cz = ctf_zone_select();
+if (cz == 0) break;
+if (cz == 3)
+{
+string unit = number_builder("S flag를 몇 밀리초마다 소환되게 만들까요? 기본값은 1초, 최소 100 밀리초입니다.", 1000);
+if (string_to_number(unit) < 100) break;
+string unspawn = number_builder("S flag를 몇 밀리초 뒤에 사라지게 할까요? 기본값은 2분, 최소 100 밀리초입니다.", 120000);
+if (string_to_number(unspawn) < 100) break;
+sendtext += "\r\nispawn:" + loc + ":1:" + unit + ":" + unspawn + ":0:0:s_flag";
+break;
+}
+if (cz == 4)
+{
+string unit = number_builder("R flag를 몇 밀리초마다 소환되게 만들까요? 기본값은 1초, 최소 100 밀리초입니다.", 1000);
+if (string_to_number(unit) < 100) break;
+string unspawn = number_builder("R flag를 몇 밀리초 뒤에 사라지게 할까요? 기본값은 2분, 최소 100 밀리초입니다.", 120000);
+if (string_to_number(unspawn) < 100) break;
+if (unspawn.is_empty()) break;
+sendtext += "\r\nispawn:" + loc + ":1:" + unit + ":" + unspawn + ":0:0:r_flag";
+break;
+}
+sendtext += "\r\nctf:" + loc + ":" + cz;
+}
+break; case maporder_ispawn:
+{
+default_double = (old_parsed.length > 7 ? string_to_number(old_parsed[7]) : 1);
+string amount = number_builder("몇 개까지 누적 소환할까요? 음수를 입력하면 플레이어 수에 맞춰 가변으로 소환합니다. 경고: 렉 방지를 위해 5를 초과한 값은 입력할 수 없습니다. 기본값은 " + default_double + "입니다.", default_double);
+if (amount.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 1000);
+string unit = number_builder("몇 밀리초마다 소환하게 할까요? 기본값은 " + default_double + "밀리초, 최소 100 밀리초입니다.", default_double);
+if (string_to_number(unit) < 100) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : 120000);
+string unspawn = number_builder("몇 밀리초 뒤에 사라지게 할까요? 기본값은 " + default_double + "밀리초, 최소 100 밀리초입니다.", default_double);
+if (string_to_number(unspawn) < 100) break;
+default_string = (old_parsed.length > 10 ? old_parsed[10] : 0);
+string limit = input_box_pro("습득할 수 있는 개수를 제한할까요? 기본값은 " + default_string + "입니다. 0보다 작은 값을 입력하면 습득할 수 있는 갯수를 모든 플레이어가 공유하고, 0보다 큰 값을 입력하면 플레이어별로 따로 계산합니다.", default_string);
+if (limit != "a" and string_to_number(limit) == 0) limit = "0:0";
+else
+{
+default_double = (old_parsed.length > 11 ? string_to_number(old_parsed[11]) : 3600000);
+string limittime = number_builder("몇 밀리초마다 초기화할까요? 기본값은 " + default_double + "밀리초입니다.", default_double);
+if (string_to_number(limittime) <= 0) break;
+else limit += ":" + limittime;
+}
+default_string = (old_parsed.length > 12 ? string_replace(string_trim_left(old_data, string_contains(old_data, ":", 12)), ":", " ", true) : empty);
+string itemnames = input_box_pro("아이템 이름을 입력하세요. 두 개 이상의 아이템 중 무작위로 소환하게 하려면 아이템 이름 사이에 빈 칸이나 쉼표를 삽입하세요. 아이템 이름 안에는 빈 칸, 쉼표, 더하기, 등호, 쌍점, 대괄호, 새문단 기호가 들어갈 수 없습니다. 경고: 사용자 맵 전용 아이템 이름에는 자동으로 뒤에 언더바 한 개가 붙으므로 관련 편집 시 참고 바랍니다.", default_string);
+if (!text_builder(itemnames)) break;
+if (string_contains(itemnames, "+", 1) > -1) break;
+if (string_contains(itemnames, "=", 1) > -1) break;
+itemnames = string_replace(itemnames, " ", ":", true);
+itemnames = string_replace(itemnames, ",", ":", true);
+sendtext += "\r\nispawn:" + loc + ":" + amount + ":" + unit + ":" + unspawn + ":" + limit + ":" + itemnames;
+break;
+}
+break; case maporder_door:
+{
+default_double = (old_parsed.length > 7 ? string_to_number(old_parsed[7]) : mr.x);
+string arx = number_builder("도착할 X 좌표를 입력하세요.", default_double);
+if (arx.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : mr.y);
+string ary = number_builder("도착할 Y 좌표를 입력하세요.", default_double);
+if (ary.is_empty()) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : me.z);
+string arz = number_builder("도착할 Z 좌표를 입력하세요.", default_double);
+if (arz.is_empty()) break;
+default_string = (old_parsed.length > 10 ? old_parsed[10] : "리프트");
+string dn = input_box_pro("리프트 이름을 입력하세요. 기본값은 " + default_string + "입니다.", default_string);
+if (!text_builder(dn)) break;
+default_double = (old_parsed.length > 11 ? string_to_number(old_parsed[11]) : 100);
+int movingspeed = string_to_number(input_box_pro("이동 속도를 입력하세요. 기본값은 " + default_double + "밀리초입니다.", default_double));
+if (movingspeed < 1) break;
+default_double = (old_parsed.length > 12 ? string_to_number(old_parsed[12]) : 0);
+int movepattern = select_course(default_double);
+if (movepattern == 0) break;
+string doortype;
+if (old_parsed.length < 18) doortype = list_doors(old_parsed.length > 13 ? old_parsed[13] : empty);
+else
+{
+int reset = yesno("현재 리프트 사운드는 사용자 지정 버전으로 동작하고 있습니다. 초기화하고 처음부터 다시 설정하시겠습니까?", 2);
+if (reset == 0) break;
+if (reset == 1) doortype = list_doors(empty);
+else
+{
+default_string = (old_parsed.length > 13 ? old_parsed[13] : empty);
+string open = input_box_pro("리프트가 출발할 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.", default_string);
+if (!text_builder(open)) break;
+default_string = (old_parsed.length > 14 ? old_parsed[14] : empty);
+string close = input_box_pro("리프트가 도착할 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.", default_string);
+if (!text_builder(close)) break;
+default_string = (old_parsed.length > 15 ? old_parsed[15] : empty);
+string loop = input_box_pro("리프트가 움직일 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.", default_string);
+if (!text_builder(loop)) break;
+default_double = (old_parsed.length > 16 ? string_to_number(old_parsed[16]) : 0);
+string ready = number_builder("리프트가 출발할 때까지 몇 밀리초동안 준비해야 합니까? 기본값은 " + default_double + "밀리초입니다.", default_double);
+if (!string_is_digits(ready)) break;
+doortype = open + ":" + close + ":" + loop + ":" + ready;
+}
+}
+if (doortype.is_empty()) break;
+default_double = (old_parsed.length > 17 ? string_to_number(old_parsed[17]) : old_parsed.length > 14 ? string_to_number(old_parsed[14]) : 0);
+if (old_parsed.length == 16 and old_parsed.length == 19) default_double += doorflag_limit;
+int flags = select_door_flags(default_double);
+if (flags == -1) break;
+int tempflag = 0;
+if (flags & doorflag_auto > 0) tempflag += doorflag_auto;
+if (flags & doorflag_smart > 0) tempflag += doorflag_smart;
+if (flags & doorflag_no_enter_sound > 0) tempflag += doorflag_no_enter_sound;
+if (flags & doorflag_no_leave_sound > 0) tempflag += doorflag_no_leave_sound;
+string wtext;
+if (flags & doorflag_limit > 0)
+{
+default_string = (old_parsed.length == 19 ? old_parsed[18] : old_parsed.length == 16 ? old_parsed[15] : empty);
+string wtext2 = input_box_pro("사용 자격을 입력하세요. 하나만 입력 가능합니다. 숫자만 입력하면 경험치로 사용 가능 여부를 판단합니다. 사용자 맵 전용 아이템인 경우 아이템 이름을 쓰고 뒤에 언더바 1개를 붙이세요.", default_string);
+if (!text_builder(wtext2)) break;
+wtext = ":" + wtext2;
+if (string_contains(wtext2, "=", 1) == -1)
+{
+string amount = input_box_pro("아이템 이름으로 자격을 지정하는 경우에만 입력하세요. 몇 개가 필요합니까? 기본값은 1입니다. 모두 필요한 경우 a를 입력하세요.", 0, false, -1, -1, 2, false);
+int am = string_to_number(amount);
+if (am > 0)
+{
+int atext = yesno("이용하면 아이템을 소모하게 할까요?");
+if (atext == 1) am *= -1;
+}
+if (am != 0) wtext += "*" + am;
+else if (amount == "a") wtext += "*a";
+}
+}
+if (flags & (doorflag_auto + doorflag_smart + doorflag_oppo) == (doorflag_smart + doorflag_oppo)) sendtext += "\r\ndoor:" + arx + ":" + int(string_to_number(arx) + xlength) + ":" + ary + ":" + int(string_to_number(ary) + ylength) + ":" + arz + ":" + int(string_to_number(arz) + zlength) + ":" + minx + ":" + miny + ":" + minz + ":" + dn + ":" + movingspeed + ":" + movepattern + ":" + doortype + ":" + tempflag + wtext;
+sendtext += "\r\ndoor:" + loc + ":" + arx + ":" + ary + ":" + arz + ":" + dn + ":" + movingspeed + ":" + movepattern + ":" + doortype + ":" + tempflag + wtext;
+}
+break; case maporder_travelpoint:
+{
+default_string = (old_parsed.length > 7 ? old_parsed[7] : mapname);
+string newmap = input_box_pro("도착할 맵 이름을 입력하세요. 경고: 현재 맵과 다른 맵을 입력하는 경우 해당 맵의 개발자 목록에 등록되어 있어야 사용 가능합니다.", default_string);
+if (!text_builder(newmap)) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : mr.x);
+string newx = number_builder("도착할 X 좌표를 입력하세요. 랜덤 이동은 -1, 체크 포인트로 이동은 -2를 입력하세요.", default_double);
+if (newx.is_empty()) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : mr.y);
+string newy = number_builder("도착할 Y 좌표를 입력하세요. 랜덤 이동은 -1, 체크 포인트로 이동은 -2를 입력하세요.", default_double);
+if (newy.is_empty()) break;
+default_double = (old_parsed.length > 10 ? string_to_number(old_parsed[10]) : me.z);
+string newz = number_builder("도착할 Z 좌표를 입력하세요.", default_double);
+if (newz.is_empty()) break;
+default_string = (old_parsed.length > 11 ? old_parsed[11] : "포탈");
+string dn = input_box_pro("포탈 이름을 입력하세요. 기본값은 " + default_string + "입니다.", default_string);
+if (!text_builder(dn)) break;
+int tempflag = 0;
+int smart = yesno("스마트 포인터를 사용할까요?", (old_parsed.length > 12 ? (string_to_number(old_parsed[12]) & 1 > 0 ? 1 : 2) : 0));
+if (smart <= 0) break;
+if (smart == 1) tempflag += 1;
+int auto1 = yesno("자동 포탈을 만들까요?", (old_parsed.length > 12 ? (string_to_number(old_parsed[12]) & 2 > 0 ? 1 : 2) : 0));
+if (auto1 <= 0) break;
+if (auto1 == 1) tempflag += 2;
+string wtext;
+int atext = yesno("사용 가능한 사람을 제한할까요?", (old_parsed.length > 13 ? 1 : 0));
+if (atext <= 0) break;
+if (atext == 1)
+{
+default_string = (old_parsed.length > 13 ? old_parsed[13] : empty);
+string wtext2 = input_box_pro("사용 자격을 입력하세요. 하나만 입력 가능합니다. 숫자만 입력하면 경험치로 사용 가능 여부를 판단합니다. 사용자 맵 전용 아이템인 경우 아이템 이름을 쓰고 뒤에 언더바 1개를 붙이세요.", default_string);
+if (!text_builder(wtext2)) break;
+wtext = ":" + wtext2;
+if (string_contains(wtext2, "=", 1) == -1)
+{
+string amount = input_box_pro("아이템 이름으로 자격을 지정하는 경우에만 입력하세요. 몇 개가 필요합니까? 기본값은 1입니다. 모두 필요한 경우 a를 입력하세요.", 0, false, -1, -1, 2, false);
+int am = string_to_number(amount);
+if (am > 0)
+{
+atext = yesno("이용하면 아이템을 소모하게 할까요?");
+if (atext == 1) am *= -1;
+}
+if (am != 0) wtext += "*" + am;
+else if (amount == "a") wtext += "*a";
+}
+}
+if (mapname == newmap and smart == 1 and auto1 != 1)
+{
+int oppo = yesno("반대쪽에도 만들까요?");
+if (oppo < 1) break;
+if (oppo == 1) sendtext += "\r\ntravelpoint:" + newx + ":" + int(string_to_number(newx) + xlength) + ":" + newy + ":" + int(string_to_number(newy) + ylength) + ":" + newz + ":" + int(string_to_number(newz) + zlength) + ":" + newmap + ":" + minx + ":" + miny + ":" + minz + ":" + dn + ":" + tempflag + wtext;
+}
+sendtext += "\r\ntravelpoint:" + loc + ":" + newmap + ":" + newx + ":" + newy + ":" + newz + ":" + dn + ":" + tempflag + wtext;
+}
+break; case maporder_sb:
+{
+default_string = (old_parsed.length > 7 ? old_parsed[7] : empty);
+string btext = input_box_pro("경계 이름을 입력하세요.", default_string);
+if (!text_builder(btext)) break;
+if (btext == sb_last) break;
+default_string = (old_parsed.length > 8 ? old_parsed[8] : empty);
+string vol = input_box_pro("볼륨 크기를 입력하세요. 0 이하 또는 50 초과는 음소거입니다.", default_string);
+if (!string_is_digits(vol)) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : 0);
+string priority = number_builder("우선순위를 0 이상의 숫자로 입력하세요. 숫자가 높을 수록 우선순위가 높습니다.", default_double);
+if (!string_is_digits(priority)) break;
+int tempflag = 0;
+int lay = yesno("걸쳐 있는 사운드는 경계 대상에서 제외할까요?", (old_parsed.length > 9 ? (string_to_number(old_parsed[9]) & 1 > 0 ? 1 : 2) : 0));
+if (lay <= 0) break;
+if (lay == 1) tempflag += 1;
+int inclu = yesno("경계보다 큰 사운드는 경계 대상에서 제외할까요?", (old_parsed.length > 9 ? (string_to_number(old_parsed[9]) & 2 > 0 ? 1 : 2) : 0));
+if (inclu <= 0) break;
+if (inclu == 1) tempflag += 2;
+sendtext += "\r\nsb:" + loc + ":" + btext + ":" + vol + ":" + priority + ":" + tempflag;
+}
+break; case maporder_etp:
+{
+string sn = list_ambiences(old_parsed.length > 7 ? old_parsed[7] : empty);
+if (sn.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 1000);
+string cooldown = number_builder("사운드를 재생할 쿨다운을 밀리초 단위로 입력하세요. 기본값은 " + default_double + "밀리초, 최소는 50밀리초입니다.", default_double);
+if (cooldown.is_empty()) break;
+if (string_to_number(cooldown) < 50) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : 0);
+string autoplay = number_builder("들어가면 자동으로 재생되게 할까요? 기본값은 " + default_double + "이며, 0을 입력하면 엔터 키를 눌러 재생합니다. 1 이상의 숫자를 입력하면 해당 칸에 들어가면 지정된 횟수만큼 자동 재생하며, 다른 플레이어의 엔터로 재생과 중복됩니다. 중복 재생 없는 무한 재생은 -1을 입력하세요.", default_double);
+if (autoplay.is_empty()) break;
+if (string_to_number(autoplay) <= -2) break;
+default_double = (old_parsed.length > 10 ? string_to_number(old_parsed[10]) : 100);
+string volume = number_builder("볼륨 크기를 0에서 100 사이의 값으로 입력하세요. 기본값은 " + default_double + "입니다.", default_double);
+if (!string_is_digits(volume)) break;
+sendtext += "\r\netp:" + loc + ":" + sn + ":" + cooldown + ":" + autoplay + ":" + volume;
+}
+break; case maporder_src:
+{
+string soundfile = list_ambiences(old_parsed.length > 7 ? old_parsed[7] : empty);
+if (soundfile.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 100);
+string volume = number_builder("볼륨 크기를 0에서 100 사이의 값으로 입력하세요. 기본값은 " + default_double + "입니다.", default_double);
+if (!string_is_digits(volume)) break;
+sendtext += "\r\nsrc:" + loc + ":" + soundfile + ":" + volume;
+}
+break; case maporder_amb:
+{
+string soundfile = list_ambiences(old_parsed.length > 7 ? old_parsed[7] : empty);
+if (soundfile.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 100);
+string volume = number_builder("볼륨 크기를 0에서 100 사이의 값으로 입력하세요. 기본값은 " + default_double + "입니다.", default_double);
+if (!string_is_digits(volume)) break;
+sendtext += "\r\namb:" + loc + ":" + soundfile + ":" + volume;
+}
+break; case maporder_robots:
+{
+default_double = (old_parsed.length > 7 ? string_to_number(old_parsed[7]) : 1);
+string amount = number_builder("몇 개까지 누적 소환할까요? 음수를 입력하면 플레이어 수에 맞춰 가변으로 소환합니다. 기본값은 " + default_double + "입니다.", default_double);
+if (amount.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 1000);
+string unit = number_builder("몇 밀리초마다 소환하게 할까요? 기본값은 " + default_double + "밀리초, 최소 50 밀리초입니다.", default_double);
+if (string_to_number(unit) < 50) break;
+default_double = (old_parsed.length > 11 ? string_to_number(old_parsed[11]) : 0);
+string teamnum = number_builder("팀 번호를 부호 없는 32비트 정수로 입력하세요. 기본값은 " + default_double + "입니다.", default_double);
+teamnum = uint(string_to_number(teamnum));
+default_string = (old_parsed.length > 10 ? old_parsed[10] : ".");
+string platform = plattypemenu(default_string, true);
+if (platform.is_empty()) break;
+default_string = (old_parsed.length > 9 ? old_parsed[9] : empty);
+string rtnames = input_box_pro("로봇 이름을 입력하세요. 두 개 이상의 로봇 중 무작위로 소환하게 하려면 로봇 이름 사이에 빈 칸이나 쉼표를 삽입하세요. 로봇 이름 안에는 더하기, 등호, 쌍점, 대괄호, 새문단 기호가 들어갈 수 없습니다.", default_string);
+if (!text_builder(rtnames)) break;
+if (string_contains(rtnames, "+", 1) > -1) break;
+if (string_contains(rtnames, "=", 1) > -1) break;
+rtnames = string_replace(rtnames, " ", ",", true);
+sendtext += "\r\nrobots:" + loc + ":" + amount + ":" + unit + ":" + rtnames + ":" + platform + ":" + teamnum;
+break;
+}
+break; case maporder_tile:
+{
+default_string = (old_parsed.length > 7 ? old_parsed[7] : empty);
+string platform = plattypemenu(default_string);
+if (platform.is_empty()) break;
+string temp;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[8]) : -2);
+int slide = select_slide(default_double);
+if (slide > -1)
+{
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : 200);
+int movingspeed = string_to_number(input_box_pro("플래폼 위에서 자동으로 움직일 속도를 입력하세요. 기본값은 " + default_double + "밀리초입니다.", default_double));
+if (movingspeed < 1) break;
+temp += ":" + slide + ":" + movingspeed;
+}
+int trackable = yesno("카메라로 조사 가능한 플래폼입니까?", (old_parsed.length == 9 or old_parsed.length == 11 ? 2 : 0));
+if (trackable <= 0) break;
+if (trackable == 2) temp += ":hazard";
+sendtext += "\r\ntile:" + loc + ":" + platform + temp;
+}
+break; case maporder_gate:
+{
+default_string = (old_parsed.length > 7 ? old_parsed[7] : empty);
+string platform = plattypemenu(default_string);
+if (platform.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : 0);
+int open1 = string_to_number(number_builder("문을 몇 밀리초 뒤에 자동으로 열까요? 기본값은 " + default_double + "입니다. 0을 입력하면 문을 자동으로 열지 않습니다.", default_double));
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : 0);
+int open2 = string_to_number(number_builder("문을 열 때 몇 밀리초가 걸립니까? 기본값은 " + default_double + "입니다. 음수를 입력하면 문 좌표에 물체가 있으면 문을 열지 않습니다.", default_double));
+default_string = (old_parsed.length > 10 ? old_parsed[10] : empty);
+string sound_f = list_ambiences(default_string, true);
+if (sound_f.is_empty()) break;
+default_double = (old_parsed.length > 11 ? string_to_number(old_parsed[11]) : 0);
+int close1 = string_to_number(number_builder("문을 몇 밀리초 뒤에 자동으로 닫을까요? 기본값은 " + default_double + "입니다. 0을 입력하면 문을 자동으로 닫지 않습니다.", default_double));
+default_double = (old_parsed.length > 12 ? string_to_number(old_parsed[12]) : 0);
+int close2 = string_to_number(number_builder("문을 닫을 때 몇 밀리초가 걸립니까? 기본값은 " + default_double + "입니다. 음수를 입력하면 문 좌표 위에 물체가 있으면 문을 닫지 않습니다.", default_double));
+default_string = (old_parsed.length > 13 ? old_parsed[13] : empty);
+string sound_s = list_ambiences(default_string, true);
+if (sound_s.is_empty()) break;
+string temp;
+default_double = (old_parsed.length > 14 ? string_to_number(old_parsed[14]) : 0);
+string movex = input_box_pro("열린 문은 X 축으로 몇 칸 움직입니까? 기본값은 " + default_double + "입니다. 음수는 서쪽, 양수는 동쪽입니다. 칸 수를 잘 모르겠다면 방향만 입력하세요. 0을 입력하면 문은 X 축으로 움직이지 않습니다.", default_double);
+int plus_x = string_to_number(movex);
+if (word_east.exists(movex)) plus_x = (xlength + 1);
+else if (word_west.exists(movex)) plus_x = -(xlength + 1);
+default_double = (old_parsed.length > 15 ? string_to_number(old_parsed[15]) : 0);
+string movey = input_box_pro("열린 문은 Y 축으로 몇 칸 움직입니까? 기본값은 " + default_double + "입니다. 음수는 남쪽, 양수는 북쪽입니다. 칸 수를 잘 모르겠다면 방향만 입력하세요. 0을 입력하면 문은 Y 축으로 움직이지 않습니다.", default_double);
+int plus_y = string_to_number(movey);
+if (word_north.exists(movey)) plus_y = (ylength + 1);
+else if (word_south.exists(movey)) plus_y = -(ylength + 1);
+default_double = (old_parsed.length > 16 ? string_to_number(old_parsed[16]) : 0);
+string movez = input_box_pro("열린 문은 Z 축으로 몇 칸 움직입니까? 기본값은 " + default_double + "입니다. 음수는 아래쪽, 양수는 위쪽입니다. 칸 수를 잘 모르겠다면 방향만 입력하세요. 0을 입력하면 문은 Z 축으로 움직이지 않습니다.", default_double);
+int plus_z = string_to_number(movez);
+if (word_up.exists(movez)) plus_z = (zlength + 1);
+else if (word_down.exists(movez)) plus_z = -(zlength + 1);
+default_double = (old_parsed.length > 18 ? string_to_number(old_parsed[17]) : -2);
+int slide = select_slide(default_double);
+if (slide > -1)
+{
+default_double = (old_parsed.length > 18 ? string_to_number(old_parsed[18]) : 200);
+int movingspeed = string_to_number(input_box_pro("플래폼 위에서 자동으로 움직일 속도를 입력하세요. 기본값은 " + default_double + "밀리초입니다.", default_double));
+if (movingspeed < 1) break;
+temp += ":" + slide + ":" + movingspeed;
+}
+int trackable = yesno("카메라로 조사 가능한 플래폼입니까?", (old_parsed.length == 18 or old_parsed.length == 20 ? 2 : 0));
+if (trackable <= 0) break;
+if (trackable == 2) temp += ":hazard";
+sendtext += "\r\ngate:" + loc + ":" + platform + ":" + open1 + ":" + open2 + ":" + sound_f + ":" + close1 + ":" + close2 + ":" + sound_s + ":" + plus_x + ":" + plus_y + ":" + plus_z + temp;
+}
+break; case maporder_switch:
+{
+string targetloc;
+if (old_parsed.length < 13) targetloc = set_switch_radius();
+else
+{
+int reset = yesno("스위치 관할 구역을 초기화하고 처음부터 다시 설정하시겠습니까?", 2);
+if (reset == 0) break;
+if (reset == 1) targetloc = set_switch_radius();
+else
+{
+default_double = (old_parsed.length > 7 ? string_to_number(old_parsed[7]) : mr.x);
+string targetminx = number_builder("스위치의 관할 영역 서쪽 끝 X 좌표를 입력하세요.", default_double);
+if (targetminx.is_empty()) break;
+default_double = (old_parsed.length > 8 ? string_to_number(old_parsed[8]) : string_to_number(targetminx));
+string targetmaxx = number_builder("스위치의 관할 영역 동쪽 끝 X 좌표를 입력하세요.", default_double);
+if (targetmaxx.is_empty()) break;
+default_double = (old_parsed.length > 9 ? string_to_number(old_parsed[9]) : mr.y);
+string targetminy = number_builder("스위치의 관할 영역 남쪽 끝 Y 좌표를 입력하세요.", default_double);
+if (targetminy.is_empty()) break;
+default_double = (old_parsed.length > 10 ? string_to_number(old_parsed[10]) : string_to_number(targetminy));
+string targetmaxy = number_builder("스위치의 관할 영역 북쪽 끝 Y 좌표를 입력하세요.", default_double);
+if (targetmaxy.is_empty()) break;
+default_double = (old_parsed.length > 11 ? string_to_number(old_parsed[11]) : me.z);
+string targetminz = number_builder("스위치의 관할 영역 아래쪽 끝 Z 좌표를 입력하세요.", default_double);
+if (targetminz.is_empty()) break;
+default_double = (old_parsed.length > 12 ? string_to_number(old_parsed[12]) : string_to_number(targetminz));
+string targetmaxz = number_builder("스위치의 관할 영역 위쪽 끝 Z 좌표를 입력하세요.", default_double);
+if (targetmaxz.is_empty()) break;
+targetloc = targetminx + ":" + targetmaxx + ":" + targetminy + ":" + targetmaxy + ":" + targetminz + ":" + targetmaxz;
+}
+}
+default_double = (old_parsed.length > 13 ? string_to_number(old_parsed[13]) : 1000);
+int time = string_to_number(number_builder("쿨다운을 밀리초 단위로 입력하세요. 기본값은 " + default_double + "밀리초, 최소 200 밀리초입니다.", default_double));
+if (time < 200) break;
+default_string = (old_parsed.length > 14 ? old_parsed[14] : "문");
+string name = input_box_pro("문 이름을 입력하세요. 기본값은 " + default_string + "입니다.", default_string);
+if (name.is_empty()) break;
+default_string = (old_parsed.length > 15 ? old_parsed[15] : empty);
+string press = list_ambiences(default_string, true);
+if (press.is_empty()) break;
+string wtext;
+int atext = yesno("사용 가능한 사람을 제한할까요?", (old_parsed.length > 16 ? 1 : 0));
+if (atext <= 0) break;
+if (atext == 1)
+{
+default_string = (old_parsed.length > 16 ? old_parsed[16] : empty);
+string wtext2 = input_box_pro("사용 자격을 입력하세요. 하나만 입력 가능합니다. 숫자만 입력하면 경험치로 사용 가능 여부를 판단합니다. 사용자 맵 전용 아이템인 경우 아이템 이름을 쓰고 뒤에 언더바 1개를 붙이세요.", default_string);
+if (!text_builder(wtext2)) break;
+wtext = ":" + wtext2;
+if (string_contains(wtext2, "=", 1) == -1)
+{
+string amount = input_box_pro("아이템 이름으로 자격을 지정하는 경우에만 입력하세요. 몇 개가 필요합니까? 기본값은 1입니다. 모두 필요한 경우 a를 입력하세요.", 0, false, -1, -1, 2, false);
+int am = string_to_number(amount);
+if (am > 0)
+{
+atext = yesno("이용하면 아이템을 소모하게 할까요?");
+if (atext == 1) am *= -1;
+}
+if (am != 0) wtext += "*" + am;
+else if (amount == "a") wtext += "*a";
+}
+}
+sendtext += "\r\nswitch:" + loc + ":" + targetloc + ":" + time + ":" + name + ":" + press + wtext;
+}
+break;
+}
+}
+if (!sendtext.is_empty())
+{
+if (old_data.is_empty()) send_reliable("buildnow " + sendtext, 4);
+else send_reliable("mapedit \r\n" + old_data + "\r\n[]" + sendtext + "\r\n", 4);
+}
+}
+}
+return true_t;
+}
+
+void map_editor(bool admin = false)
+{
+string xyz;
+int ldatalength = ldata.length;
+if (ldatalength == 0) return;
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.multi_checking = true;
+m.set_callback(editor_loop, empty);
+for (uint i = 0; i < ldatalength; i++)
+{
+string[]@ params = string_split(ldata[i], ":", false);
+if (params.length < 3) continue;
+if (params[0] == "idscr")
+{
+m.add_item_tts("아이템 설명: " + params[1] + ", " + params[2], ldata[i]);
+continue;
+}
+if (params.length < 7) continue;
+xyz = "X " + params[1] + " ~ " + params[2] + ", Y " + params[3] + " ~ " + params[4] + ", Z " + params[5] + " ~ " + params[6];
+switch (string_to_hash(params[0]))
+{
+case maporder_tile:
+{
+int pl = params.length;
+if (pl < 8) continue;
+string mess = params[7] + ", " + xyz;
+if (pl > 10) m.add_item_tts("미지의 플래폼: " + mess + ", 미끄러짐 " + (get_slide(params[8])) + ", 속도 " + params[9], ldata[i]);
+else if (pl > 9) m.add_item_tts("플래폼: " + mess + ", 미끄러짐 " + (get_slide(params[8])) + ", 속도 " + params[9], ldata[i]);
+else if (pl > 8) m.add_item_tts("미지의 플래폼: " + mess, ldata[i]);
+else m.add_item_tts("플래폼: " + mess, ldata[i]);
+}
+break; case maporder_gate:
+{
+int pl = params.length;
+if (pl < 17) continue;
+string mess = params[7] + ", " + xyz + ", 열림 유지 시간 " + params[8] + ", 열림 준비 시간 " + params[9] + ", 열림 사운드 " + params[10] + ", 닫힘 유지 시간 " + params[11] + ", 닫힘 준비 시간 " + params[12] + ", 닫힘 사운드 " + params[13] + ", X 축 이동 " + params[14] + ", Y 축 이동 " + params[15] + ", Z 축 이동 " + params[16];
+if (pl > 19) m.add_item_tts("미지의 문: " + mess + ", 미끄러짐 " + (get_slide(params[17])) + ", 속도 " + params[18], ldata[i]);
+else if (pl > 18) m.add_item_tts("문: " + mess + ", 미끄러짐 " + (get_slide(params[17])) + ", 속도 " + params[18], ldata[i]);
+else if (pl > 17) m.add_item_tts("미지의 문: " + mess, ldata[i]);
+else m.add_item_tts("문: " + mess, ldata[i]);
+}
+break; case maporder_switch:
+{
+if (params.length > 15) m.add_item_tts("문 스위치: " + params[14] + ", 사운드 " + params[15] + ", " + xyz + ", 관할 구역: X " + params[7] + " ~ " + params[8] + ", Y " + params[9] + " ~ " + params[10] + ", Z " + params[11] + " ~ " + params[12] + ", 쿨다운 " + params[13] + (params.length > 16 ? ", 자격 " + params[16] : empty), ldata[i]);
+}
+break; case maporder_robots:
+{
+int pl = params.length;
+if (pl < 10) continue;
+string mess = "로봇 팀 " + (pl > 11 ? params[11] : 0) + ": 로봇 이름 " + string_replace(params[9], ",", ", ", true) + ", " + xyz + ", 최대 소환 기수 " + params[7] + ", " + params[8] + "밀리초마다 소환";
+if (pl > 10) m.add_item_tts(mess + ", 타일 제한 " + string_replace(params[10], ",", ", ", true), ldata[i]);
+else m.add_item_tts( mess, ldata[i]);
+}
+break; case maporder_zone:
+{
+if (params.length < 8) continue;
+string mess = params[7] + ", " + xyz;
+if (params.length > 8) m.add_item_tts("추적 가능한 텍스트 지역: " + mess, ldata[i]);
+else m.add_item_tts("텍스트 지역: " + mess, ldata[i]);
+}
+break; case maporder_checkpoint:
+{
+if (params.length < 7) continue;
+if (params.length > 7) m.add_item_tts("체크 포인트 1회용: " + xyz, ldata[i]);
+else m.add_item_tts("체크 포인트: " + xyz, ldata[i]);
+}
+break; case maporder_noitem:
+{
+if (params.length < 8) break;
+string text;
+int pl = params.length;
+for (uint x = 7; x < pl; x++)
+{
+text += params[x] + ", ";
+}
+m.add_item_tts("아이템 제한 " + text + ": " + xyz, ldata[i]);
+}
+break; case maporder_ctf:
+{
+if (params.length < 8) break;
+string name;
+int type = string_to_number(params[7]);
+switch (type)
+{
+case 1:
+name = "S 깃대";
+break;
+case 2:
+name = "R 깃대";
+break;
+}
+m.add_item_tts("깃발 게임 지역: " + name + ", " + xyz, ldata[i]);
+}
+break; case maporder_ispawn:
+{
+int pl = params.length;
+if (pl < 13) continue;
+string tempi;
+for (uint i = 12; i < pl; i++)
+{
+if (i > 12) tempi += ", ";
+tempi += params[i];
+}
+m.add_item_tts("아이템 소환 " + tempi + ": " + xyz + ", 최대 누적 소환 " + params[7] + "개, " + params[8] + "밀리초마다 소환하여 " + params[9] + "밀리초 동안 유지" + (string_to_number(params[10]) <= 0 ? empty : ", " + params[11] + "밀리초당 " + params[10] + "개 습득 가능"), ldata[i]);
+}
+break; case maporder_sb:
+{
+if (params.length < 8) continue;
+string mess = params[7] + ", " + xyz;
+if (params.length > 10) m.add_item_tts("사운드 경계 볼륨 " + params[8] + ": " + mess + ", 우선순위 " + params[9] + ", 플래그 " + flag_analysis("sb", params[10]), ldata[i]);
+else if (params.length > 8) m.add_item_tts("사운드 경계 볼륨 " + params[8] + ": " + mess, ldata[i]);
+else m.add_item_tts("사운드 경계 음소거: " + mess, ldata[i]);
+}
+break; case maporder_src:
+{
+if (params.length > 7) m.add_item_tts("사운드 효과: " + params[7] + (params.length > 8 ? ", 볼륨 " + params[8] : empty) + ", " + xyz, ldata[i]);
+}
+break; case maporder_amb:
+{
+if (params.length > 7) m.add_item_tts("사운드 환경" + (params.length > 8 ? " 볼륨 " + params[8] : empty) + ": " + params[7] + ", " + xyz, ldata[i]);
+}
+break; case maporder_travelpoint:
+{
+if (params.length > 12) m.add_item_tts("포탈: " + params[11] + ", 출발: " + xyz + ", 도착: " + params[8] + ", " + params[9] + ", " + params[10] + ", 도착 맵: " + params[7] + ", 플래그 " + flag_analysis("travelpoint", params[12]) + (params.length > 13 ? ", 자격 " + params[13] : empty), ldata[i]);
+}
+break; case maporder_etp:
+{
+if (params.length < 10) continue;
+int mode = string_to_number(params[9]);
+string mode_text;
+switch (mode)
+{
+case -1: mode_text = "자동 재생, 중복 금지";
+break; case 0: mode_text = "수동 재생";
+break; default: mode_text = mode + "회 자동 재생, 중복 허용";
+break;
+}
+m.add_item_tts("엔터로 재생: " + params[7] + ", 모드 " + mode_text + ", " + xyz + ", 쿨다운 " + params[8] + "밀리초" + (params.length > 10 ? ", 볼륨 " + params[10] : empty), ldata[i]);
+}
+break; case maporder_door:
+{
+if (params.length < 15) continue;
+string mess;
+if (params.length > 17) mess = params[10] + ", 출발 사운드 " + params[13] + ", 도착 사운드 " + params[14] + ", 루프 사운드 " + params[15] + ", 루프 준비 시간 " + params[16] + ", 출발: " + xyz + ", 도착: " + params[7] + ", " + params[8] + ", " + params[9] + ", 속도 " + params[11] + ", 진행 방향 " + params[12] + ", 플래그 " + flag_analysis("door", params[17]);
+else mess = params[10] + ", 사운드 " + params[13] + ", 출발: " + xyz + ", 도착: " + params[7] + ", " + params[8] + ", " + params[9] + ", 속도 " + params[11] + ", 진행 방향 " + params[12] + ", 플래그 " + flag_analysis("door", params[14]);
+if (params.length > 18) m.add_item_tts("리프트: " + mess + ", 자격 " + params[18], ldata[i]);
+else if (params.length > 17) m.add_item_tts("리프트: " + mess, ldata[i]);
+else if (params.length > 15) m.add_item_tts("리프트: " + mess + ", 자격 " + params[15], ldata[i]);
+else m.add_item_tts("리프트: " + mess, ldata[i]);
+}
+break;
+}
+}
+int mres = m.run("맵 데이터 편집기", true);
+if (mres < 0) return;
+if (mres == 0)
+{
+speak("취소되었습니다.");
+return;
+}
+if (mres == -5) return;
+string result = m.get_item_name(mres);
+if (result.is_empty())
+{
+speak("취소되었습니다.");
+return;
+}
+string[]@ selected = m.get_checked_item_list();
+int checknum = selected.length;
+if (checknum == 0)
+{
+if (!buildsomething(result, admin))
+{
+int init = yesno("직접 편집이 불가능한 데이터입니다. 삭제할까요?");
+if (init == 1) send_reliable("mapdelete \r\n" + result + "\r\n", 4);
+}
+return;
+}
+string final;
+for (uint i = 0; i < checknum; i++)
+{
+final += "\r\n" + selected[i] + "\r\n[]";
+}
+send_reliable("mapdelete " + final, 4);
+}
+
+int editor_loop(dynamic_menu_pro@ m, string data)
+{
+if (key_pressed(KEY_F5))
+{
+string old_convert = m.get_item_name(m.menu_position);
+string convert = mapeditor_change_loc(old_convert, shift_is_down);
+if (!convert.is_empty() and convert != old_convert)
+{
+send_reliable("mapedit \r\n" + old_convert + "\r\n[]\r\n" + convert + "\r\n", 4);
+return -5;
+}
+}
+if (key_pressed(KEY_F6))
+{
+string old_convert = m.get_item_name(m.menu_position);
+string selected;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (m.item_list[i].checked)
+{
+selected = m.item_list[i].name;
+break;
+}
+}
+string convert = mapeditor_change_loc(old_convert, shift_is_down);
+if (!convert.is_empty())
+{
+if (selected.is_empty()) send_reliable("buildnow \r\n" + convert, 4);
+else send_reliable("mapedit \r\n" + selected + "\r\n[]\r\n" + convert + "\r\n" + selected + "\r\n", 4);
+return -5;
+}
+}
+if (key_pressed(KEY_F7))
+{
+string old_convert = m.get_item_name(m.menu_position);
+string convert = mapeditor_split_loc(old_convert, shift_is_down);
+if (!convert.is_empty() and convert != old_convert)
+{
+send_reliable("mapedit \r\n" + old_convert + "\r\n[]\r\n" + convert + "\r\n", 4);
+return -5;
+}
+}
+if (key_pressed(KEY_F8))
+{
+string current;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (m.item_list[i].checked) current += "\r\n" + m.item_list[i].name;
+}
+if (current.is_empty()) current = m.get_item_name(m.menu_position);
+string mapname = input_box_pro("어떤 맵으로 내보낼까요?");
+if (!mapname.is_empty())
+{
+send_reliable("buildothermap " + mapname + " \r\n" + current, 4);
+return -5;
+}
+}
+return 0;
+}
+
+string mapeditor_change_loc(const string& in origin, bool my_loc = false)
+{
+string[]@ params = string_split(origin, ":", true);
+if (params.length < 7) return empty;
+if (params[0] == "idscr") return empty;
+int oldminx = (my_loc ? mr.x : string_to_number(params[1]));
+string minx = number_builder("서쪽 끝 X 좌표를 입력하세요. 기본값은 " + oldminx + "입니다.", oldminx);
+if (minx.is_empty()) return empty;
+int oldmaxx = (my_loc ? string_to_number(minx) : string_to_number(params[2]));
+string maxx = number_builder("동쪽 끝 X 좌표를 입력하세요. 기본값은 " + oldmaxx + "입니다.", oldmaxx);
+if (maxx.is_empty()) return empty;
+int oldminy = (my_loc ? mr.y : string_to_number(params[3]));
+string miny = number_builder("남쪽 끝 Y 좌표를 입력하세요. 기본값은 " + oldminy + "입니다.", oldminy);
+if (miny.is_empty()) return empty;
+int oldmaxy = (my_loc ? string_to_number(miny) : string_to_number(params[4]));
+string maxy = number_builder("북쪽 끝 Y 좌표를 입력하세요. 기본값은 " + oldmaxy + "입니다.", oldmaxy);
+if (maxy.is_empty()) return empty;
+int oldminz = (my_loc ? me.z : string_to_number(params[5]));
+string minz = number_builder("아래쪽 끝 Z 좌표를 입력하세요. 기본값은 " + oldminz + "입니다.", oldminz);
+if (minz.is_empty()) return empty;
+int oldmaxz = (my_loc ? string_to_number(minz) : string_to_number(params[6]));
+string maxz = number_builder("위쪽 끝 Z 좌표를 입력하세요. 기본값은 " + oldmaxz + "입니다.", oldmaxz);
+if (maxz.is_empty()) return empty;
+string result = params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz;
+int pl = params.length;
+for (uint i = 7; i < pl; i++) result += ":" + params[i];
+return result;
+}
+
+string mapeditor_split_loc(const string& in origin, bool my_loc = false)
+{
+string[]@ params = string_split(origin, ":", true);
+if (params.length < 7) return empty;
+if (params[0] == "idscr") return empty;
+string stype = input_box_pro("어느 방향으로 나눌까요? X, Y, Z 중 하나를 입력하세요.");
+if (stype.is_empty()) return empty;
+string mess = string_trim_left(origin, string_contains(origin, ":", 7));
+int minx = string_to_number(params[1]);
+int maxx = string_to_number(params[2]);
+int miny = string_to_number(params[3]);
+int maxy = string_to_number(params[4]);
+int minz = string_to_number(params[5]);
+int maxz = string_to_number(params[6]);
+string final;
+int split = character_to_ascii(string_to_lower_case(stype));
+switch (split)
+{
+case ascii_x:
+{
+int tx = (my_loc ? mr.x : (minx + maxx) * 0.5);
+string newx = input_box_pro("어디를 기준으로 나눌까요? 3개 이상 나누려면 기준이 되는 좌표와 좌표 사이를 한 칸씩 띄우세요.", tx);
+if (newx.is_empty()) return empty;
+string[]@ splits = string_split(newx, " ", true);
+splits.sort_ascending();
+int slength = splits.length;
+for (uint i = 0; i <= slength; i++)
+{
+if (i == slength)
+{
+if (final.is_empty()) return empty;
+final += "\r\n" + params[0] + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxx + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz + mess;
+return final;
+}
+if (final.is_empty())
+{
+int f = string_to_number(splits[i]);
+if (f < minx) continue;
+if (f >= maxx) return empty;
+final = params[0] + ":" + minx + ":" + f + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz + mess;
+continue;
+}
+int f = string_to_number(splits[i]);
+if (f >= maxx)
+{
+final += "\r\n" + params[0] + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxx + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz + mess;
+return final;
+}
+final += "\r\n" + params[0] + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + f + ":" + miny + ":" + maxy + ":" + minz + ":" + maxz + mess;
+}
+}
+break; case ascii_y:
+{
+int ty = (my_loc ? mr.y : (miny + maxy) * 0.5);
+string newy = input_box_pro("어디를 기준으로 나눌까요? 3개 이상 나누려면 기준이 되는 좌표와 좌표 사이를 한 칸씩 띄우세요.", ty);
+if (newy.is_empty()) return empty;
+string[]@ splits = string_split(newy, " ", true);
+splits.sort_ascending();
+int slength = splits.length;
+for (uint i = 0; i <= slength; i++)
+{
+if (i == slength)
+{
+if (final.is_empty()) return empty;
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxy + ":" + minz + ":" + maxz + mess;
+return final;
+}
+if (final.is_empty())
+{
+int f = string_to_number(splits[i]);
+if (f < miny) continue;
+if (f >= maxy) return empty;
+final = params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + f + ":" + minz + ":" + maxz + mess;
+continue;
+}
+int f = string_to_number(splits[i]);
+if (f >= maxy)
+{
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxy + ":" + minz + ":" + maxz + mess;
+return final;
+}
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + f + ":" + minz + ":" + maxz + mess;
+}
+}
+break; case ascii_z:
+{
+int tz = (my_loc ? me.z : (minz + maxz) * 0.5);
+string newz = input_box_pro("어디를 기준으로 나눌까요? 3개 이상 나누려면 기준이 되는 좌표와 좌표 사이를 한 칸씩 띄우세요.", tz);
+if (newz.is_empty()) return empty;
+string[]@ splits = string_split(newz, " ", true);
+splits.sort_ascending();
+int slength = splits.length;
+for (uint i = 0; i <= slength; i++)
+{
+if (i == slength)
+{
+if (final.is_empty()) return empty;
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxz + mess;
+return final;
+}
+if (final.is_empty())
+{
+int f = string_to_number(splits[i]);
+if (f < minz) continue;
+if (f >= maxz) return empty;
+final = params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + minz + ":" + f + mess;
+continue;
+}
+int f = string_to_number(splits[i]);
+if (f >= maxz)
+{
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + maxz + mess;
+return final;
+}
+final += "\r\n" + params[0] + ":" + minx + ":" + maxx + ":" + miny + ":" + maxy + ":" + (string_to_number(splits[i - 1]) + 1) + ":" + f + mess;
+}
+}
+}
+return empty;
+}
+
+string[]@ get_old_loc_array(const string& in origin)
+{
+string[]@ params = string_split(origin, ":", true);
+if (params.length < 7) return null;
+if (params[0] == "idscr") return null;
+string[] new = {string_to_number(params[1]), string_to_number(params[2]), string_to_number(params[3]), string_to_number(params[4]), string_to_number(params[5]), string_to_number(params[6])};
+return new;
+}
+
+string flag_analysis(const string& in type, const string& in flag)
+{
+uint thash = string_to_hash(type);
+uint tflag = string_to_number(flag);
+string temp;
+switch (thash)
+{
+case maporder_door:
+{
+if (tflag & doorflag_auto > 0) temp += "자동리프트, ";
+if (tflag & doorflag_smart > 0) temp += "스마트 포인터, ";
+if (tflag & doorflag_no_enter_sound > 0) temp += "출발 사운드 없음, ";
+if (tflag & doorflag_no_leave_sound > 0) temp += "도착 사운드 없음, ";
+}
+break;
+case maporder_travelpoint:
+{
+if (tflag & 1 > 0) temp += "스마트 포인터, ";
+if (tflag & 2 > 0) temp += "자동 포탈, ";
+}
+break;
+case maporder_sb:
+{
+if (tflag & 1 > 0) temp += "걸치기 금지, ";
+if (tflag & 2 > 0) temp += "덮기 금지, ";
+}
+break;
+}
+if (temp.is_empty()) temp = "없음";
+return temp;
+}
+
+string plattypemenu(const string& in defv = empty, bool multi = false)
+{
+setupmenu();
+m.multi_checking = multi;
+dictionary old_list;
+if (multi) old_list = text_to_dictionary(defv, ",", VALUE_NONE);
+int platformlen = tilearray.length;
+for (uint i = 0; i < platformlen; i++)
+{
+m.add_item_tts(tilearray[i], empty, empty, true, false, old_list.exists(tilearray[i]));
+}
+m.set_callback(plm, empty);
+int mres = m.run("플래폼을 선택하세요.", true, m.get_item_index(defv));
+mapeditor_player.close();
+if (mres <= 0) return empty;
+if (multi)
+{
+string new;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (!m.item_list[i].checked) continue;
+if (!new.is_empty()) new += ",";
+new += m.item_list[i].name;
+}
+if (new.is_empty()) new = ".";
+return new;
+}
+return m.get_item_name(mres);
+}
+
+int plm(dynamic_menu_pro@ m, string data)
+{
+data = m.get_item_name(m.menu_position);
+if (key_pressed(KEY_F5))
+{
+if (string_left(data, 4) == "wall") mapeditor_play(data);
+else mapeditor_play(data + "step" + random(1, 5));
+}
+else if (key_pressed(KEY_F6))
+{
+mapeditor_play(data + "land");
+}
+else if (key_pressed(KEY_F7))
+{
+mapeditor_play(data + "hardland");
+}
+return 0;
+}
+
+const string& list_doors(const string& in defv = empty)
+{
+setupmenu();
+m.add_item_tts("직접 입력하기", "...", empty);
+int doorlen = doorarray.length;
+for (uint i = 0; i < doorlen; i++)
+{
+m.add_item_tts(doorarray[i]);
+}
+m.set_callback(doormenu, empty);
+int mres = m.run("리프트 종류를 선택하세요.", true, m.get_item_index(defv));
+mapeditor_player.close();
+if (mres <= 0) return empty;
+string result = m.get_item_name(mres);
+if (result.is_empty()) return empty;
+if (result == "...")
+{
+string open = input_box_pro("리프트가 출발할 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.");
+if (!text_builder(open)) return empty;
+string close = input_box_pro("리프트가 도착할 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.");
+if (!text_builder(close)) return empty;
+string loop = input_box_pro("리프트가 움직일 때 재생할 사운드 이름을 입력하세요. 없으면 없는 사운드 이름을 입력하세요.");
+if (!text_builder(loop)) return empty;
+string ready = number_builder("리프트가 출발할 때까지 몇 밀리초동안 준비해야 합니까? 기본값은 0입니다.", 0);
+if (!string_is_digits(ready)) return empty;
+ref_string = open + ":" + close + ":" + loop + ":" + ready;
+return ref_string;
+}
+ref_string = result;
+return ref_string;
+}
+
+int doormenu(dynamic_menu_pro@ m, string data)
+{
+data = m.get_item_name(m.menu_position);
+if (key_pressed(KEY_F5))
+{
+mapeditor_play(data + "_loop");
+}
+else if (key_pressed(KEY_F6))
+{
+mapeditor_play(data + "_open");
+}
+else if (key_pressed(KEY_F7))
+{
+mapeditor_play(data + "_close");
+}
+return 0;
+}
+
+string list_ambiences(const string& in defv = empty, bool is_door_sound = false)
+{
+setupmenu();
+m.multi_checking = true;
+string[] old_parsed;
+dictionary old_list;
+if (!defv.is_empty())
+{
+old_parsed = string_split(defv, "*", false);
+string nsn = input_box_pro("사운드 이름을 입력하세요. 확장자는 붙이지 않아도 되며, 표현식을 사용할 수 있습니다. 초기화하고 처음부터 다시 선택하려면 마침표를 입력하세요.", defv);
+if (nsn.is_empty()) return empty;
+if (nsn != ".") return nsn;
+old_list = text_to_dictionary(old_parsed[0], "|", VALUE_NONE);
+}
+m.add_item_tts("직접 입력하기.", "???", empty, true, true);
+m.add_item_tts("고급 설정을 시작하려면 1개 이상의 항목을 선택 후 여기를 누르세요.", "...", empty, true, true);
+if (is_door_sound)
+{
+int doorlen = doorarray.length;
+for (uint i = 0; i < doorlen; i++)
+{
+if (file_exists(sndfolder + doorarray[i] + "_open.ogg")) m.add_item(doorarray[i] + "_open.ogg", doorarray[i] + "_open", empty, true, false, (old_list.exists(doorarray[i])));
+if (file_exists(sndfolder + doorarray[i] + "_close.ogg")) m.add_item(doorarray[i] + "_close.ogg", doorarray[i] + "_close", empty, true, false, (old_list.exists(doorarray[i])));
+}
+}
+else
+{
+int srcarraylength = srcarray.length;
+for (uint i = 0; i < srcarraylength; i++)
+{
+if (file_exists(sndfolder + srcarray[i] + ".ogg")) m.add_item(srcarray[i] + ".ogg", srcarray[i], empty, true, false, (old_list.exists(srcarray[i])));
+}
+}
+m.set_callback(srcclb, empty);
+int mres = m.run("사운드를 선택하세요.", true);
+if (mres <= 0) return empty;
+string result = m.get_item_name(mres);
+if (result.is_empty()) return empty;
+string new;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (!m.item_list[i].checked) continue;
+if (!new.is_empty()) new += "|";
+new += m.item_list[i].name;
+}
+if (new.is_empty())
+{
+if (result == "...")
+{
+speak("아무것도 선택되어 있지 않습니다.");
+return list_ambiences(defv);
+}
+new = result;
+}
+if (result == "???")
+{
+string sn = input_box_pro("사운드 이름을 입력하세요. 확장자는 붙이지 않아도 되며, 표현식을 사용할 수 있습니다.", new);
+if (!text_builder(sn)) return empty;
+return sn;
+}
+if (result != "...") return new;
+string mins = number_builder("무작위 재생 시간 최소 밀리초를 입력하세요.", 0);
+if (mins.is_empty()) return empty;
+string maxs = number_builder("무작위 재생 시간 최대 밀리초를 입력하세요.", string_to_number(mins));
+if (maxs.is_empty()) return empty;
+string limit = number_builder("재생 횟수를 입력하세요. 기본값은 0이며, 0으로 지정하면 무한 재생합니다.", 0);
+if (limit.is_empty()) return empty;
+int tempflag = 0;
+int rand = yesno("재생 순서를 무작위로 할까요?");
+if (rand <= 0) return empty;
+if (rand == 1) tempflag++;
+else
+{
+new = src_swap_array(string_split(new, "|", false));
+if (new.is_empty()) return empty;
+}
+int paused = yesno("무작위 재생 시간 카운트는 사운드 재생을 마친 후부터 할까요?");
+if (paused <= 0) return empty;
+if (paused == 1) tempflag += 2;
+return new + "*" + mins + "|" + maxs + "*" + limit + "*" + tempflag;
+}
+
+int srcclb(dynamic_menu_pro@ m, string data)
+{
+if (key_pressed(KEY_TAB))
+{
+speak(m.get_item_name(m.menu_position) + ", 「" + m.menu_position + " / " + m.item_list.length) + "」";
+return 0;
+}
+if (key_pressed(KEY_F9))
+{
+if (m.menu_position > 0 and m.menu_position <= m.item_list.length)
+{
+if (m.item_list[m.menu_position - 1].is_filename and m.internal_sound !is null)
+{
+speak(m.internal_sound.length + "밀리초");
+return 0;
+}
+}
+}
+return 0;
+}
+
+int select_slide(int dir = -2)
+{
+setupmenu(true);
+m.add_item_tts("안 함", "-1");
+m.add_item_tts("북", "0");
+m.add_item_tts("동", "1");
+m.add_item_tts("남", "2");
+m.add_item_tts("서", "3");
+m.add_item_tts("위", "4");
+m.add_item_tts("밑", "5");
+m.add_item_tts("북동", "6");
+m.add_item_tts("북서", "7");
+m.add_item_tts("남동", "8");
+m.add_item_tts("남서", "9");
+int mres = m.run("이 플래폼 위에 서 있으면 미끄러지게 만들까요?", true, dir + 2);
+if (mres <= 0) return -1;
+return string_to_number(m.get_item_name(mres));
+}
+
+int select_course(int start_p = 0)
+{
+setupmenu(true);
+m.add_item_tts("x, y, z", "1");
+m.add_item_tts("y, x, z", "2");
+m.add_item_tts("x, z, y", "3");
+m.add_item_tts("y, z, x", "4");
+m.add_item_tts("z, x, y", "5");
+m.add_item_tts("z, y, x", "6");
+int mres = m.run("좌표를 움직일 순서를 지정하세요.", true, start_p);
+return string_to_number(m.get_item_name(mres));
+}
+
+int ctf_zone_select()
+{
+setupmenu(true);
+m.add_item_tts("S 깃대", "1");
+m.add_item_tts("R 깃대", "2");
+m.add_item_tts("S 깃발 소환 지점", "3");
+m.add_item_tts("R 깃발 소환 지점", "4");
+int mres = m.run("여기에 무엇을 만들까요?", true);
+return string_to_number(m.get_item_name(mres));
+}
+
+string src_swap_array(string[]@ temp_array, int last_cursor = 0)
+{
+setupmenu();
+m.multi_checking = true;
+m.add_item_tts("새 사운드 추가.", "/new", empty, true, true);
+m.add_item_tts("슬립 삽입", "/sleep", empty, true, true);
+m.add_item_tts("사운드를 복사하려면 1개 이상의 항목 선택 후 여기를 누르세요.", "/copy", empty, true, true);
+m.add_item_tts("사운드를 삭제하려면 1개 이상의 항목 선택 후 여기를 누르세요.", "/delete", empty, true, true);
+int arraylength = temp_array.length;
+for (uint i = 0; i < arraylength; i++)
+{
+if (string_left(temp_array[i], 1) == "/") m.add_item_tts("슬립 " + string_trim_left(temp_array[i], 1) + "밀리초", temp_array[i], empty);
+else if (file_exists(sndfolder + temp_array[i] + ".ogg")) m.add_item(temp_array[i] + ".ogg", temp_array[i], empty);
+else m.add_item_tts(temp_array[i] + ".ogg", temp_array[i], empty);
+}
+m.add_item_tts("모두 다 편집했으면 여기를 누르세요.", "/confirm", empty, true, true);
+m.set_callback(srcclb, empty);
+int mres = m.run("사운드 편집 메뉴", true, last_cursor);
+if (mres <= 0) return empty;
+string result = m.get_item_name(mres);
+if (result.is_empty()) return empty;
+if (result == "/sleep")
+{
+string ntext = input_box_pro("몇 밀리초동안 슬립하게 할까요? 기본값은 1초입니다.", 1000);
+if (string_is_digits(ntext))
+{
+temp_array.insert_last("/" + ntext);
+speak("가장 뒤에 삽입했습니다. 적절한 위치에 배치하세요.");
+}
+return src_swap_array(temp_array);
+}
+if (result == "/new")
+{
+string ntext = input_box_pro("사운드 이름을 입력하세요.");
+if (!ntext.is_empty())
+{
+temp_array.insert_last(ntext);
+speak("가장 뒤에 삽입했습니다. 적절한 위치에 배치하세요.");
+}
+return src_swap_array(temp_array);
+}
+if (result == "/confirm")
+{
+if (temp_array.is_empty())
+{
+speak("사운드는 최소 1개 이상 있어야 합니다.");
+return src_swap_array(temp_array);
+}
+if (string_left(temp_array[0], 1) == "/")
+{
+speak("맨 처음에는 슬립이 올 수 없습니다.");
+return src_swap_array(temp_array);
+}
+string new;
+for (uint i = 0; i < arraylength; i++)
+{
+if (!new.is_empty()) new += "|";
+new += temp_array[i];
+}
+return new;
+}
+int[]@ multi_checked = m.get_checked_item_index(-4);
+if (result == "/copy")
+{
+if (!multi_checked.is_empty())
+{
+int amount = string_to_number(number_builder("몇 번 복사할까요? 기본값은 1입니다.", 1));
+if (amount > 0)
+{
+int multilength = multi_checked.length;
+for (uint j = 0; j < amount; j++)
+{
+for (uint i = 0; i < multilength; i++) temp_array.insert_last(temp_array[multi_checked[i]]);
+}
+speak(multilength + "개 항목을 가장 뒤에 " + amount + "회 복사했습니다. 적절한 위치에 배치하세요.");
+}
+}
+return src_swap_array(temp_array);
+}
+if (result == "/delete")
+{
+if (!multi_checked.is_empty())
+{
+multi_checked.sort_descending();
+int multilength = multi_checked.length;
+for (uint i = 0; i < multilength; i++) temp_array.remove_at(multi_checked[i]);
+speak(multilength + "개 항목을 삭제했습니다.");
+}
+return src_swap_array(temp_array);
+}
+bool success = swap_array(temp_array, multi_checked, mres - 5);
+return src_swap_array(temp_array, mres);
+}
+
+int select_door_flags(int defv = 0)
+{
+m.reset(true, true);
+m.wrap = true;
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+m.multi_checking = true;
+m.add_item_tts("자동리프트입니다. 좌표에 들어가면 자동으로 출발합니다.", doorflag_auto, empty, true, false, defv & doorflag_auto > 0);
+m.add_item_tts("스마트 포인터를 사용합니다.", doorflag_smart, empty, true, false, defv & doorflag_smart > 0);
+m.add_item_tts("출발 사운드가 출력되지 않습니다.", doorflag_no_enter_sound, empty, true, false, defv & doorflag_no_enter_sound > 0);
+m.add_item_tts("도착 사운드가 출력되지 않습니다.", doorflag_no_leave_sound, empty, true, false, defv & doorflag_no_leave_sound > 0);
+m.add_item_tts("사용 가능한 사람을 제한합니다.", doorflag_limit, empty, true, false, defv & doorflag_limit > 0);
+m.add_item_tts("반대쪽에도 만듭니다. 자동리프트가 꺼져 있고, 스마트 포인터가 켜져 있어야 작동합니다.", doorflag_oppo);
+int mres = m.run("원하는 항목을 모두 선택하고 엔터 키를 누르세요.", true);
+if (mres <= 0) return -1;
+int flags = 0;
+int itemlength = m.item_list.length;
+for (uint i = 0; i < itemlength; i++)
+{
+if (!m.item_list[i].checked) continue;
+flags += string_to_number(m.item_list[i].name);
+}
+return flags;
+}
+
+const string& set_switch_radius()
+{
+setupmenu();
+m.add_item_tts("직접 입력하기", "...", empty);
+string colon = ":";
+int mglength = mapgates.length;
+for (uint i = 0; i < mglength; i++)
+{
+maptile@ temp = mapgates[i];
+m.add_item_tts(temp.type + ", 닫힘: X " + temp.minx + " ~ " + temp.maxx + ", Y " + temp.miny + " ~ " + temp.maxy + ", Z " + temp.minz + " ~ " + temp.maxz + ", 열림: X " + int(temp.minx + temp.plus_x) + " ~ " + int(temp.maxx + temp.plus_x) + ", Y " + int(temp.miny + temp.plus_y) + " ~ " + int(temp.maxy + temp.plus_y) + ", Z " + int(temp.minz + temp.plus_z) + " ~ " + int(temp.maxz + temp.plus_z), temp.minx + colon + temp.maxx + colon + temp.miny + colon + temp.maxy + colon + temp.minz + colon + temp.maxz + colon + temp.center_x + colon + temp.center_y + colon + temp.center_z + colon + int(temp.minx + temp.plus_x) + colon + int(temp.maxx + temp.plus_x) + colon + int(temp.miny + temp.plus_y) + colon + int(temp.maxy + temp.plus_y) + colon + int(temp.minz + temp.plus_z) + colon + int(temp.maxz + temp.plus_z) + colon + double(temp.center_x + temp.plus_x) + colon + double(temp.center_y + temp.plus_y) + colon + double(temp.center_z + temp.plus_z) + colon + int(temp.size_x * 2) + colon + int(temp.size_y * 2) + colon + int(temp.size_z * 2));
+}
+int mres = m.run("문 좌표 선택.", true);
+if (mres <= 0) return empty;
+string result = m.get_item_name(mres);
+if (result.is_empty()) return empty;
+if (result == "...")
+{
+string targetminx = number_builder("스위치의 관할 영역 서쪽 끝 X 좌표를 입력하세요.", mr.x);
+if (targetminx.is_empty()) return empty;
+string targetmaxx = number_builder("스위치의 관할 영역 동쪽 끝 X 좌표를 입력하세요.", string_to_number(targetminx));
+if (targetmaxx.is_empty()) return empty;
+string targetminy = number_builder("스위치의 관할 영역 남쪽 끝 Y 좌표를 입력하세요.", mr.y);
+if (targetminy.is_empty()) return empty;
+string targetmaxy = number_builder("스위치의 관할 영역 북쪽 끝 Y 좌표를 입력하세요.", string_to_number(targetminy));
+if (targetmaxy.is_empty()) return empty;
+string targetminz = number_builder("스위치의 관할 영역 아래쪽 끝 Z 좌표를 입력하세요.", me.z);
+if (targetminz.is_empty()) return empty;
+string targetmaxz = number_builder("스위치의 관할 영역 위쪽 끝 Z 좌표를 입력하세요.", string_to_number(targetminz));
+if (targetmaxz.is_empty()) return empty;
+ref_string = targetminx + ":" + targetmaxx + ":" + targetminy + ":" + targetmaxy + ":" + targetminz + ":" + targetmaxz;
+return ref_string;
+}
+string[]@ locs = string_split(result, colon, true);
+if (locs.length < 21) return empty;
+setupmenu();
+int center_x1 = string_to_number(locs[6]);
+int center_x2 = string_to_number(locs[15]);
+int center_y1 = string_to_number(locs[7]);
+int center_y2 = string_to_number(locs[16]);
+int center_z1 = string_to_number(locs[8]);
+int center_z2 = string_to_number(locs[17]);
+int minx, maxx;
+if (abs(center_x1 - center_x2) <= string_to_number(locs[18]))
+{
+minx = floor((center_x1 + center_x2) * 0.5);
+maxx = ceiling((center_x1 + center_x2) * 0.5);
+}
+else if (center_x1 > center_x2)
+{
+minx = string_to_number(locs[10]);
+maxx = string_to_number(locs[0]);
+}
+else
+{
+minx = string_to_number(locs[1]);
+maxx = string_to_number(locs[9]);
+}
+int miny, maxy;
+if (abs(center_y1 - center_y2) <= string_to_number(locs[19]))
+{
+miny = floor((center_y1 + center_y2) * 0.5);
+maxy = ceiling((center_y1 + center_y2) * 0.5);
+}
+else if (center_y1 > center_y2)
+{
+miny = string_to_number(locs[12]);
+maxy = string_to_number(locs[2]);
+}
+else
+{
+miny = string_to_number(locs[3]);
+maxy = string_to_number(locs[11]);
+}
+int minz, maxz;
+if (abs(center_z1 - center_z2) <= string_to_number(locs[20]))
+{
+minz = floor((center_z1 + center_z2) * 0.5);
+maxz = ceiling((center_z1 + center_z2) * 0.5);
+}
+else if (center_z1 > center_z2)
+{
+minz = string_to_number(locs[14]);
+maxz = string_to_number(locs[4]);
+}
+else
+{
+minz = string_to_number(locs[5]);
+maxz = string_to_number(locs[13]);
+}
+m.add_item_tts("열기 및 닫기", minx + colon + maxx + colon + miny + colon + maxy + colon + minz + colon + maxz);
+m.add_item_tts("열기", int(center_x1) + colon + int(center_x1) + colon + int(center_y1) + colon + int(center_y1) + colon + int(center_z1) + colon + int(center_z1));
+m.add_item_tts("닫기", int(center_x2) + colon + int(center_x2) + colon + int(center_y2) + colon + int(center_y2) + colon + int(center_z2) + colon + int(center_z2));
+mres = m.run("스위치의 선택한 문에 대한 움직임을 선택하세요.", true);
+if (mres <= 0) return empty;
+ref_string = m.get_item_name(mres);
+return ref_string;
+}

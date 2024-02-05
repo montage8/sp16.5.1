@@ -1,0 +1,39 @@
+void main()
+{
+file fl;
+string[] files=find_files("*.map");
+string[] lines;
+string[] parsed;
+string result;
+int fileslength=files.length;
+for(uint i=0; i<fileslength; i++)
+{
+fl.open(files[i],"rb");
+lines=string_split(string_replace(fl.read(),".ogg","",true),"\r\n",false);
+fl.close();
+int lineslength=lines.length;
+for(uint j=0; j<lineslength; j++)
+{
+parsed=string_split(lines[j],":",false);
+if(parsed[0]=="ispawn")
+{
+int colon=string_contains(lines[j],":",9);
+if (colon<0) continue;
+string tempdata=string_trim_left(lines[j],colon);
+lines[j]="ispawn:"+parsed[1]+":"+parsed[2]+":"+parsed[3]+":"+parsed[4]+":"+parsed[5]+":"+parsed[6]+":"+parsed[7]+":"+parsed[8]+":120000:0:0"+tempdata;
+continue;
+}
+}
+result.resize(0);
+for(uint j=0; j<lineslength; j++)
+{
+result+=lines[j]+"\r\n";
+}
+result=string_replace(result, "no_driving:1", "noitem:Â÷·®", true);
+result=string_replace(result, "no_driving:0\r\n", "\r\n", true);
+fl.open(files[i],"wb");
+fl.write(result);
+fl.close();
+}
+alert("success","success");
+}

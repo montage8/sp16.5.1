@@ -1,0 +1,435 @@
+uint peer_id = 0;
+string lookname;
+bool prior_connected = false;
+
+void login()
+{
+if (name.is_empty() or password.is_empty())
+{
+dlg("설정된 계정이 없습니다. 엔터를 눌러 계정을 설정하십시오.");
+p.play_stationary("cui1.ogg", false);
+string user = input_box_pro("");
+if (user.is_empty())
+{
+if(macOS == 1) playmusic=1;
+mainmenu();
+return;
+}
+string pass = input_box_pro("암호를 입력하세요.", empty, true);
+if (pass.is_empty())
+{
+mainmenu();
+return;
+}
+name = string_to_lower_case(user);
+password = pass;
+writeprefs();
+dlg("설정 완료. 엔터를 눌러 로그인하세요.");
+}
+if (!SCRIPT_COMPILED) speak("", 1, true);
+if (beta) speak("베타 테스트 클라이언트로 로그인합니다.", 1, true);
+if (!connected)
+{
+if (!prior_connected) speak("", 1, true);
+speak("업데이트 및 연결하는 중");
+}
+{
+if (n.active)
+reset_network();
+n.setup_client(20, 10);
+peer_id = n.connect(netaddress, netport);
+int error_code = last_error;
+if (error_code != 0)
+{
+alert("오류", error_code + " 내부 오류로 인해 네트워크 객체 초기화에 실패했습니다. 개발자에게 문의하세요.");
+exit();
+}
+}
+if (connected or prior_connected)
+{
+@ e = n.request();
+send_reliable("login " + name + " " + password + " " + netver + " " + compid, 3);
+}
+timeouttimer.restart();
+string[]@ parsed;
+string data;
+for (; ; )
+{
+wait(connected ? maintime : 5);
+mouse_update();
+@ e = n.request();
+if (key_pressed(KEY_ESCAPE))
+{
+mainmenu();
+break;
+}
+if (timeouttimer.elapsed >= timeouttime)
+{
+p.play_stationary("cs2.ogg", false);
+dlg("");
+reset_network();
+if(macOS == 1) playmusic=1;
+mainmenu();
+break;
+}
+else if (e.type == event_connect)
+{
+if (!connected)
+{
+peer_id = e.peer_id;
+speak("로그인 중...");
+send_reliable("login " + name + " " + password + " " + netver + " " + compid, 3);
+connected = true;
+}
+}
+else if (e.type == event_receive)
+{
+data = get_event_message();
+if (string_contains(data, "오류", 1) > -1)
+{
+dlg(data);
+reset_network();
+mainmenu();
+break;
+}
+@ parsed = string_split(data, " ", false);
+switch (string_to_hash(parsed[0]))
+{
+case order_nochar:
+{
+playmusic=0;
+dlg("존재하지 않는 계정입니다. 새로 만들기를 통해 계정 생성을 해주시기 바랍니다.");
+if(macOS == 1) playmusic=1;
+mainmenu();
+
+}
+break; case order_wrongpass:
+{
+dlg("잘못된 암호입니다.");
+reset_network();
+mainmenu();
+}
+break; case order_oldversion:
+{
+dlg("클라이언트 버전이 낮아 서버에 연결할 수 없습니다. 사용 중인 버전 " + netver + ", 최소 버전 " + parsed[1]);
+reset_network();
+mainmenu();
+}
+break; case order_banned:
+{
+if (SCRIPT_COMPILED)
+{
+dlg("해당 계정, 컴퓨터, IP 등은 차단되어 접속할 수 없습니다.");
+reset_network();
+mainmenu();
+break;
+}
+else
+{
+dlg("개발자가 자기 자신을 차단하다니...");
+}
+}
+break; case order_update:
+{
+speak("확인 및 연결하는 중");
+login();
+
+
+}
+break; case order_block:
+{
+dlg(string_trim_left(data, 6));
+reset_network();
+mainmenu();
+}
+break; case order_alreadyplaying:
+{
+mainmenu();
+dlg("이미 로그인된 계정입니다.");
+reset_network();
+
+}
+break; case order_admin:
+{
+speak("당신은 운영자입니다.");
+admin = true;
+}
+break; case order_x:
+{
+me.x = string_to_number(parsed[1]);
+}
+break; case order_y:
+{
+me.y = string_to_number(parsed[1]);
+}
+break; case order_z:
+{
+me.z = string_to_number(parsed[1]);
+}
+break; case order_mapname:
+{
+mapname = parsed[1];
+}
+break; case order_motd:
+{
+motd = string_trim_left(data, 5);
+}
+break; case order_m_data:
+{
+load_map(string_trim_left(data, 7));
+}
+break; case order_facing:
+{
+facing = string_to_number(parsed[1]);
+}
+break; case order_loggedin:
+{
+p.update_listener_3d(me.x, me.y, me.z, facing, empty_s);
+sourcepool.update_listener_3d(me.x, me.y, me.z, facing, empty_s);
+mpool.update_listener_3d(me.x, me.y, me.z, facing, empty_s);
+distpool.update_listener_3d(me.x, me.y, me.z, facing, empty_s);
+ambloop();
+checkloc();
+game();
+}
+break;
+}
+}
+}
+}
+
+void create(string user = empty, string pass = empty)
+{
+if (user.is_empty()) user = input_box_pro("사용할 이름을 입력하세요. 빈 칸, 특수문자, 영문 대문자는 사용 불가능합니다.");
+if (user.is_empty())
+{
+speak("취소되었습니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+if (string_contains(user, " ", 1) > -1)
+{
+speak("중간에 빈 칸이 들어갈 수는 없습니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+user = string_to_lower_case(user);
+if (pass.is_empty()) pass = input_box_pro("암호를 입력하세요. 빈 칸은 사용 불가능합니다.", empty, true);
+if (pass.is_empty())
+{
+speak("취소되었습니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+if (string_contains(pass, " ", 1) != -1)
+{
+speak("중간에 빈 칸이 들어갈 수는 없습니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+string email = input_box_pro("이메일 주소를 입력하세요. 이 정보는 계정 복구에 사용합니다.");
+if (email.is_empty())
+{
+speak("취소되었습니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+if (string_contains(email, "@", 1) == -1)
+{
+dlg("잘못된 이메일 주소입니다.");
+creating = false;
+reset_network();
+mainmenu();
+}
+speak("연결 중...");
+n.setup_client(20, 10);
+peer_id = n.connect(netaddress, netport);
+if (connected)
+{
+creating = false;
+send_reliable("newchar " + user + " " + pass + " " + email + " " + compid, 3);
+}
+timeouttimer.restart();
+string data;
+for (; ; )
+{
+wait(connected ? maintime : 5);
+mouse_update();
+@ e = n.request();
+if (key_pressed(KEY_ESCAPE))
+{
+n.destroy();
+mainmenu();
+break;
+}
+if (e.type == event_disconnect or timeouttimer.elapsed >= timeouttime)
+{
+dlg("서버가 열려 있지 않거나, 인터넷 연결이 되어 있지 않습니다.");
+reset_network();
+mainmenu();
+break;
+}
+else if (e.type == event_connect)
+{
+if (!connected)
+{
+peer_id = e.peer_id;
+speak("만드는 중...");
+send_reliable("newchar " + user + " " + pass + " " + email + " " + compid, 3);
+connected = true;
+}
+}
+else if (e.type == event_receive)
+{
+data = get_event_message();
+if (string_contains(data, "오류", 1) > -1)
+{
+dlg(get_event_message());
+creating = false;
+reset_network();
+mainmenu();
+break;
+}
+switch (string_to_hash(data))
+{
+case order_eloerror:
+{
+dlg("서버 폭파 코드를 계정 닉네임으로 사용할 수는 없습니다.");
+exitgame(true);
+creating = false;
+}
+break; case order_invalidchar:
+{
+dlg("바르지 않은 이름입니다.");
+exitgame(true);
+creating = false;
+}
+break; case order_banned:
+{
+dlg("차단되어 사용이 금지된 이름입니다.");
+exitgame(true);
+creating = false;
+}
+break; case order_alreadyexists:
+{
+dlg("그 이름은 누군가가 사용하고 있습니다.");
+exitgame(true);
+creating = false;
+}
+break; case order_createdchar:
+{
+dlg("계정을 만들었습니다. 엔터를 눌러 로그인하세요.");
+name = user;
+password = pass;
+writeprefs();
+creating = false;
+login();
+}
+break;
+}
+}
+}
+}
+
+void reset_network()
+{
+n.disconnect_peer(0);
+timeouttimer.restart();
+peer_id = 0;
+n.destroy();
+prior_connected = false;
+connected = false;
+@ n = null;
+network t;
+@ n = t;
+}
+
+void resetpass()
+{
+m.fade_music(0.09);
+string char = input_box_pro("암호를 재설정할 계정 이름을 입력하세요.");
+if (char.is_empty())
+{
+speak("취소되었습니다.");
+reset_network();
+mainmenu();
+}
+char = string_to_lower_case(char);
+string email = input_box_pro("이메일 주소를 입력하세요.");
+if (email.is_empty())
+{
+speak("취소되었습니다.");
+reset_network();
+mainmenu();
+}
+if (string_contains(email, "@", 1) == -1)
+{
+dlg("잘못된 이메일입니다.");
+reset_network();
+mainmenu();
+}
+speak("연결 중...");
+n.setup_client(20, 10);
+peer_id = n.connect(netaddress, netport);
+timeouttimer.restart();
+for (; ; )
+{
+wait(connected ? maintime : 5);
+mouse_update();
+@ e = n.request();
+if (key_pressed(KEY_ESCAPE))
+{
+mainmenu();
+break;
+}
+if (e.type == event_disconnect or !connected and timeouttimer.elapsed >= timeouttime)
+{
+dlg("서버가 열려 있지 않거나, 인터넷 연결이 되어 있지 않습니다.");
+reset_network();
+mainmenu();
+break;
+}
+if (e.type == event_connect)
+{
+if (!connected)
+{
+connected = true;
+peer_id = e.peer_id;
+send_reliable("resetpassword " + char + " " + compid + " " + email, 3);
+}
+}
+if (e.type == event_receive)
+{
+if (string_left(get_event_message(), 9) == "resetting")
+{
+string newpass = input_box_pro("연결되었습니다. " + string_trim_left(get_event_message(), 10) + "의 새 암호를 입력하세요. 현재 클라이언트에 저장된 암호로 하려면 바로 엔터를 누르세요.", empty, true);
+if (newpass.is_empty())
+{
+newpass = password;
+}
+if (string_contains(newpass, " ", 1) > -1)
+{
+newpass = password;
+}
+else
+{
+password = newpass;
+writeprefs();
+}
+send_reliable("newpassword " + char + " " + newpass, 3);
+}
+if (e.channel == 6)
+{
+dlg(get_event_message());
+reset_network();
+mainmenu();
+break;
+}
+}
+}
+}

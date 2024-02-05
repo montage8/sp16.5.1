@@ -1,0 +1,31 @@
+timepacket@[] timepackets(0);
+class timepacket
+{
+int id = 0;
+string packet;
+int channel;
+int sndtime = 3000;
+timer sndtimer;
+}
+void timepacketloop()
+{
+for (int i = timepackets.length - 1; i > -1; i--)
+{
+timepacket@ temp = timepackets[i];
+if (temp.sndtimer.elapsed >= temp.sndtime)
+{
+send(temp.id, temp.packet, temp.channel);
+timepackets.remove_at(i);
+continue;
+}
+}
+}
+void spawn_timepacket(int id, const string& in packet, int chan, int time)
+{
+timepacket tp1;
+tp1.id = id;
+tp1.packet = packet;
+tp1.channel = chan;
+tp1.sndtime = time;
+timepackets.insert_last(tp1);
+}

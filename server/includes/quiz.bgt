@@ -1,0 +1,230 @@
+// constants
+string[] qtn = {"헬가 후플푸프", "니콜라 플라멜", "더들리 더즐리", "존 돌리시", "브라이언 개과일드", "아만도 디핏", "프랭크 롱보텀", "리머스 루핀", "마커스 플린트", "오거스터스 룩우드", "얼리샤 스피넛", "세드릭 디고리", "아르마 핀스", "퀴리너스 퀴럴", "호러스 슬러그혼", "먼덩거스 플레처", "파이어스 시크니스", "테리 푸트", "스탠 션파이크", "빌 위즐리", "윌헬미나 그러블리플랭크", "피터 페티그루", "드래고미르 데스파드", "로이체루아 판다로스", "올랭프 막심", "허버트 콜리", "피투성이 남작", "스터지스 포드모어", "초 챙", "토바이어스 스네이프", "간식카트 마녀", "매드아이 무디", "도카스 메도스", "밥 오그든", "카커스", "시어도어 노트", "파르바티 파필", "제노필리우스 러브굿", "메로페 리들", "페이비언 프루잇", "시리우스 블랙", "코닐리어스 퍼지", "로돌푸스 레스트레인지", "회색 숙녀"};
+string[] qtg = {"manamon_the_eternal_requiem", "euro_fly", "dream_land", "survive_the_wild", "red_spot", "street_rifleman", "crazy_party", "our_great_adventure", "heros_call", "blind_legend", "swamp", "lords_and_knights", "road_to_rage", "black_box", "dreamy_train", "battle_constant", "3d_velocity", "super_egg_hunt_plus", "sound_rts_continuous", "bari_bari_baseball", "castaways", "seoul_2033", "beat_star", "death_match_new_begining", "blazblue_central_fiction", "skullgirlz", "pokemon_crystal", "battle_zone_reloaded", "screaming_strike", "sequence_storm", "shadow_rine", "audio_game_hub", "pontes_duel", "undead_assault", "starcraft", "papa_sangre", "breathe_memorial", "rhythm_rage", "tactical_battle", "alter_aeon", "cosmic_rage", "crafty_kingdom", "humans_and_robots", "star_trek_final_conflict", "top_speed", "fmud", "treasure_hunt", "rs_client", "quentinc_gameroom", "sense_game"};
+string[] qtr, qtru;
+
+class onlinequiz
+{
+mapdata@ map;
+int x, y, z;
+int type;
+dictionary qx;
+
+void add(const string& in name, const string& in lc, const string& in ca)
+{
+quiz_examinee q2;
+q2.ap = name;
+q2.lc = lc;
+q2.ca = ca;
+qx.set(name, q2);
+}
+
+quiz_examinee@ get_qx_handle(const string& in name)
+{
+if (!qx.exists(name)) return null;
+quiz_examinee@ temp;
+qx.get(name, @ temp);
+return temp;
+}
+}
+
+class quiz_examinee
+{
+string ap;
+string lc;
+string ca;
+}
+
+void spawn_quiz(int x, int y, int z, const string& in mapname, int type)
+{
+mapdata@ map = get_map_handle(mapname);
+if (map is null) return;
+if (find_quiz(x, y, z, map) !is null) return;
+onlinequiz qu;
+qu.x = x;
+qu.y = y;
+qu.z = z;
+@ qu.map = map;
+qu.type = type;
+map.quiz.insert_last(qu);
+}
+
+onlinequiz@ find_quiz(int x, int y, int z, mapdata@ map)
+{
+int quizlength = map.quiz.length;
+for (uint i = 0; i < quizlength; i++)
+{
+onlinequiz@ temp = map.quiz[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return temp;
+}
+return null;
+}
+
+void setup_quiz()
+{
+// mountain quiz 1
+spawn_quiz(152, 252, -200, "필멸의산", 1);
+// mountain quiz 2
+spawn_quiz(152, 298, -147, "필멸의산", 2);
+// mountain quiz 3
+string[]@ rt = robottemps.keys;
+int rtl = rt.length;
+for (uint i = 0; i < rtl; i++)
+{
+RobotTemplate@ r = get_rt_handle(rt[i]);
+if (r is null) continue;
+if (r.undead)
+{
+if (!r.should_subtract) qtru.insert_last(r.name);
+continue;
+}
+if (r.random_move) continue;
+qtr.insert_last(r.name);
+}
+spawn_quiz(475, 25, 405, "필멸의산", 3);
+}
+
+void quiz_examine(player@ me, onlinequiz@ tq)
+{
+if (me is null) return;
+if (tq is null) return;
+string ret;
+string answer;
+switch (tq.type)
+{
+case 1:
+{
+int num1 = random(0, qtn.length - 1);
+int num2;
+do {num2 = random(0, qtn.length - 1); }
+while (num1 == num2);
+string target1 = qtn[num1];
+string target2 = qtn[num2];
+num1 += 4;
+num2 += 4;
+ret = target1 + " 곱하기 " + target2 + "는?";
+int val = num1 * num2;
+answer = val;
+}
+break;
+case 2:
+{
+int num1;
+do {num1 = random(0, qtg.length - 1); }
+while (num1 == 5);
+int num2;
+do {num2 = random(0, qtg.length - 1); }
+while (num2 == num1 or num2 == 5);
+string target1 = qtg[num1];
+string target2 = qtg[num2];
+num1 += 10;
+num2 += 10;
+int val = 0;
+if (random(1, 2) == 1)
+{
+ret = "양수 street_rifleman ";
+val = 15;
+}
+else
+{
+ret = "음수 street_rifleman ";
+val = -15;
+}
+switch (random(0, 3))
+{
+case 0:
+{
+ret += "더하기 " + target1 + " 더하기 " + target2;
+val += num1;
+val += num2;
+}
+break;
+case 1:
+{
+ret += "더하기 " + target1 + " 빼기 " + target2;
+val += num1;
+val -= num2;
+}
+break;
+case 2:
+{
+ret += "빼기 " + target1 + " 빼기 " + target2;
+val -= num1;
+val -= num2;
+}
+break;
+case 3:
+{
+ret += "빼기 " + target1 + " 더하기 " + target2;
+val -= num1;
+val += num2;
+}
+}
+answer = val;
+}
+break;
+case 3:
+{
+if (qtr.length < 2) return;
+answer = qtr[random(0, qtr.length - 1)];
+ret = "영어 단어를 입력하세요. 힌트를 보려면 알파벳을 입력하세요.";
+}
+break;
+default:
+break;
+}
+if (ret.is_empty()) return;
+me.sendpacket("onlinequiz " + ret);
+tq.add(me.name, ret, answer);
+}
+
+void quiz_submit(const string& in answer, player@ me, onlinequiz@ tq)
+{
+if (me is null) return;
+if (tq is null) return;
+quiz_examinee@ px = tq.get_qx_handle(me.name);
+if (px is null) return;
+switch (tq.type)
+{
+case 1:
+{
+if (px.ca == answer) me.go_to("필멸의산", 152, 298, -200);
+else me.go_to("필멸의산", 498, 498, 402);
+}
+break;
+case 2:
+{
+if (px.ca == answer) me.go_to("필멸의산", 248, 252, -150);
+else me.go_to("필멸의산", 498, 498, 402);
+}
+break;
+case 3:
+{
+if (answer.size == 1)
+{
+me.sendsound((string_contains(px.ca, answer, 1) > -1 ? "quizyes" : "quizno"));
+me.sendpacket("onlinequiz " + px.lc);
+}
+else
+{
+if (px.ca == answer)
+{
+me.alert("퀴즈를 맞추자 상자가 열립니다. 당신은 작은 석상을 상자에서 꺼냅니다.");
+me.give("street_sacred_statue", 1);
+}
+else
+{
+me.playsound("quizdie");
+me.hitby = "상자 함정";
+me.death = true;
+}
+}
+}
+break;
+default:
+break;
+}
+}

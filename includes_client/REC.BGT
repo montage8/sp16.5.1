@@ -1,0 +1,114 @@
+sound@[] vclist;
+void adjust_voice_chat_class()
+{
+for (int i = vclist.length - 1; i > -1; i--)
+{
+if (vclist[i] is null)
+{
+vclist.remove_at(i);
+continue;
+}
+if (!vclist[i].playing)
+{
+@ vclist[i] = null;
+vclist.remove_at(i);
+continue;
+}
+}
+}
+void clear_voice_chat_class()
+{
+for (int i = vclist.length - 1; i > -1; i--)
+{
+@ vclist[i] = null;
+}
+vclist.resize(0);
+}
+
+library@ recorder;
+string recorder_version;
+library@ load_recorder()
+{
+if (!file_exists("recorder.dll"))
+{
+speak("recorder.dll 파일이 없어 녹음을 시작할 수 없습니다. 게임을 다시 다운로드 받아 문제를 해결할 수 있습니다.");
+return null;
+}
+library new;
+if (!new.load("recorder.dll"))
+{
+speak("recorder.dll 파일을 불러오는 데에 실패했습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+dictionary d = new.call("int get_ver1();");
+int e = -1;
+if (!d.get("0", e))
+{
+speak("recorder.dll의 버전 정보가 잘못되었습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+d = new.call("int get_ver2();");
+int f = -1;
+if (!d.get("0", f))
+{
+speak("recorder.dll의 버전 정보가 잘못되었습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+d = new.call("int get_ver3();");
+int g = -1;
+if (!d.get("0", g))
+{
+speak("recorder.dll의 버전 정보가 잘못되었습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+d = new.call("int get_ver4();");
+int h = -1;
+if (!d.get("0", h))
+{
+speak("recorder.dll의 버전 정보가 잘못되었습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+recorder_version = e + "." + f + "." + g + "." + h;
+if (recorder_version == "0.0.0.0")
+{
+speak("recorder.dll의 버전 정보가 잘못되었습니다. 계속 같은 문제가 발생하는 경우 개발자에게 문의하세요.");
+return null;
+}
+@ recorder = new;
+return new;
+}
+
+void start_recording()
+{
+if (recorder is null)
+{
+if (load_recorder() is null) return;
+}
+p.play_stationary("von.ogg", false);
+vrectimer.force(0);
+vrecwait = false;
+vrec = true;
+recorder.call("void start_recording_audio();");
+}
+
+void stop_recording()
+{
+if (recorder is null)
+{
+if (load_recorder() is null) return;
+}
+vrec = false;
+int convert = 0;
+recorder.call("void stop_recording_audio(int, char*);", convert, vrecfile);
+run("oggenc2.exe", "-q9 --resample 44100 -s0 \"" + vrecfile + "\" -o \"" + vrecogg + "\"", true, true);
+p.play_stationary("voff.ogg", false);
+}
+
+void send_record()
+{
+if (!fl.open(vrecogg, "rb")) return;
+n.send_reliable(peer_id, string_encrypt(fl.read(), pcps), 9);
+fl.close();
+file_delete(vrecfile);
+file_delete(vrecogg);
+}

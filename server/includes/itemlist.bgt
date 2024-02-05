@@ -1,0 +1,150 @@
+// global item list
+
+dictionary snackitems;
+class snack
+{
+int minfood, maxfood;
+int minhealth, maxhealth;
+int time;
+}
+void load_snacks(string rawdata = empty)
+{
+if (rawdata.is_empty())
+{
+if (!fl.open("./prefs/foods.svr", "rb")) return;
+rawdata = fl.read();
+fl.close();
+}
+else
+{
+if (!fl.open("./prefs/foods.svr", "wb")) return;
+fl.write(rawdata);
+fl.close();
+}
+string[]@ foods = string_split(rawdata, "\r\n", true);
+int foodlength = foods.length;
+for (uint i = 0; i < foodlength; i++)
+{
+string[]@ parsed = string_split(foods[i], ",", false);
+if (parsed.length < 6) continue;
+snack fd;
+fd.minfood = string_to_number(parsed[1]);
+fd.maxfood = string_to_number(parsed[2]);
+fd.minhealth = string_to_number(parsed[3]);
+fd.maxhealth = string_to_number(parsed[4]);
+fd.time = string_to_number(parsed[5]);
+snackitems.set(parsed[0], fd);
+}
+}
+
+dictionary item_descriptions;
+string get_item_description(const string& in name)
+{
+if (!item_descriptions.exists(name))
+{
+return "설명이 없습니다.";
+}
+string new;
+if (!item_descriptions.get(name, new))
+{
+return "설명이 없습니다.";
+}
+// more code here.
+return new;
+}
+void load_item_descriptions(string rawdata = empty)
+{
+if (rawdata.is_empty())
+{
+if (!fl.open("./prefs/item_descriptions.svr", "rb")) return;
+rawdata = fl.read();
+fl.close();
+}
+else
+{
+if (!fl.open("./prefs/item_descriptions.svr", "wb")) return;
+fl.write(rawdata);
+fl.close();
+}
+string[]@ idtemp = string_split(rawdata, "\r\n", true);
+int idtemplength = idtemp.length;
+for (uint i = 0; i < idtemplength; i++)
+{
+string[]@ parsed = string_split(idtemp[i], ": ", true);
+if (parsed.length < 2) continue;
+item_descriptions.set(parsed[0], parsed[1]);
+}
+}
+
+dictionary item_limits;
+dictionary achs;
+bool is_useable(player@ this, const string& in item)
+{
+if (!item_limits.exists(item))
+{
+return true_t;
+}
+string new;
+if (!item_limits.get(item, new))
+{
+return true_t;
+}
+return this.is_available(string_split(new, "*", true), 2);
+}
+void load_item_limits()
+{
+if (!fl.open("./prefs/item_limits.svr", "rb")) return;
+string[]@ idtemp = string_split(fl.read(), "\r\n", true);
+fl.close();
+int idtemplength = idtemp.length;
+for (uint i = 0; i < idtemplength; i++)
+{
+string[]@ parsed = string_split(idtemp[i], ": ", true);
+if (parsed.length < 2) continue;
+item_limits.set(parsed[0], parsed[1]);
+if (parsed.length > 2) achs.set(parsed[1], parsed[0]);
+}
+}
+
+dictionary obj_data_list;
+class obj_data
+{
+int beeptime = 600;
+string beep_sound = "obj", get_sound = "objget";
+}
+void load_obj_data()
+{
+if (!fl.open("./prefs/objs.svr", "rb")) return;
+string[]@ o = string_split(fl.read(), "\r\n", true);
+fl.close();
+int olength = o.length;
+for (uint i = 0; i < olength; i++)
+{
+string[]@ parsed = string_split(o[i], ",", false);
+if (parsed.length < 2) continue;
+obj_data x;
+x.get_sound = parsed[1];
+if (parsed.length > 2) x.beep_sound = parsed[2];
+if (parsed.length > 3) x.beeptime = string_to_number(parsed[3]);
+obj_data_list.set(parsed[0], x);
+}
+}
+
+dictionary ammolist;
+
+dictionary dontlosedict;
+string[] dontlose = {"sky_286_laser_pistol", "sky_386_laser_assault_rifle", "sky_372_laser_machine_gun", "sky_429_laser_shotgun", "ancient_wing", "glock_17_pistol", "glock_18_machine_pistol", "megaton_puncher", "browning_m2_heavy_50_cal_machine_gun", "akm_assault_rifle", "gauss_gun", "bfg9000_argent_plasma_launcher", "m134_minigun", "street_gang_chief_pack", "dong_nae_gunner", "brass_knuckles", "crt17_combat_knife", "crt43_automatic_shotgun", "street_check_pack", "street_vehicle_pack", "street_drug_set", "gewehr_11_no_bullet_casing_assault_rifle", "modern_sub_machine_gun_carbine", "nak_nk1000_decimater", "Arctic_Warfare_Suppressed_Sniper_Rifle", "spw_version_2_absolute_zero_blade", "spw_version_2_hellfire_blade", "spw_version_2_glorious_blade", "spw_version_2_phantasm_blade", "spw_version_2_raged_soul_blade", "dragunov_sniper_rifle_gen_2"};
+
+dictionary newbdict;
+string[] newbitems = {"antibiotic", "antibiotic_pack", "mini_antibiotic_pack", "ultra_antibiotic_pack", "street_drug", "shield", "street_rifleman_starter_kit", "toolbox", "invisibility_shield", "fire_extinguisher", "metal_pack", "wood_pack", "mobile_shopping_device", "warp_box", "air_canister", "item_grabber"};
+
+dictionary bladeitems;
+string[] bladelist = {"knife", "knife#throwing", "crt17_combat_knife", "golden_war_axe", "machete", "nunchaku", "rusty_axe", "sword"};
+
+dictionary trapitems;
+string[] traplist = {"motion_bomb", "impact_bomb", "nuclear_bomb", "ultrabomb", "wirebomb", "security_bomb", "mine", "remote_gun", "remote_timebomb", "carrier_missile"};
+
+dictionary heavyweapons;
+string[] heavylist = {"browning_m2_heavy_50_cal_machine_gun", "bfg9000_argent_plasma_launcher", "cannon", "gauss_gun", "m134_minigun"};
+
+string[] spw = {"spw_version_2_hellfire_blade", "spw_version_2_raged_soul_blade", "spw_version_2_phantasm_blade", "spw_version_2_glorious_blade", "spw_version_2_absolute_zero_blade", "bfg9000_argent_plasma_launcher"};

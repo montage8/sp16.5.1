@@ -1,0 +1,11 @@
+
+mapname:test
+owner:yamamoto
+maxx:0
+maxy:0
+survival:0
+tile:0:0:0:0:0:0:carpet
+public:1
+
+tile:-10:10:-10:10:-10:10:wall
+fightingstate:1

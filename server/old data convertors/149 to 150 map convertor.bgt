@@ -1,0 +1,49 @@
+void main()
+{
+file fl;
+string[] files=find_files("*.map");
+string[] lines;
+string[] parsed;
+string result;
+string noi = "noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:";
+int fileslength=files.length;
+for(uint i=0; i<fileslength; i++)
+{
+fl.open(files[i],"rb");
+lines=string_split(fl.read(), "\r\n", false);
+fl.close();
+int lineslength=lines.length;
+for(uint j=0; j<lineslength; j++)
+{
+parsed=string_split(lines[j],":",false);
+if(parsed[0]=="src")
+{
+if(parsed.length<9) continue;
+lines[j]="src:"+parsed[1]+":"+parsed[2]+":"+parsed[3]+":"+parsed[4]+":"+parsed[5]+":"+parsed[6]+":"+parsed[7]+":100";
+continue;
+}
+if(parsed[0]=="notrap")
+{
+if(parsed.length<7) continue;
+lines[j]="noitem:"+parsed[1]+":"+parsed[2]+":"+parsed[3]+":"+parsed[4]+":"+parsed[5]+":"+parsed[6]+":วิมค";
+continue;
+}
+if(parsed[0]=="noitem")
+{
+if(parsed.length<2) continue;
+if(string_left(lines[j], noi.size)==noi) continue;
+lines[j]=noi+string_trim_left(lines[j], 7);
+continue;
+}
+}
+result.resize(0);
+for(uint j=0; j<lineslength; j++)
+{
+result+=lines[j]+"\r\n";
+}
+fl.open(files[i],"wb");
+fl.write(result);
+fl.close();
+}
+alert("success","success");
+}

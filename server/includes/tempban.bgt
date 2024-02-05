@@ -1,0 +1,68 @@
+tempban@[] tempbans(0);
+dictionary tempban_list;
+class tempban
+{
+int mins = 0;
+int ms;
+timer tempbantimer;
+string username;
+}
+void tempbanloop()
+{
+for (int i = tempbans.length - 1; i > -1; i--)
+{
+tempban@ temp = tempbans[i];
+if (temp.tempbantimer.elapsed > temp.ms)
+{
+send(0, "notify " + temp.username + "님의 임시 차단이 풀립니다.", 0);
+tempban_list.delete(temp.username);
+tempbans.remove_at(i);
+continue;
+}
+}
+}
+void create_temp_ban(const string& in user, int minutes = 5, double elapsed = 0)
+{
+tempban tb1;
+tb1.username = user;
+tb1.mins = minutes;
+tb1.ms = (minutes * 60000) - elapsed;
+tempbans.insert_last(tb1);
+tempban_list.set(user, @ tb1);
+}
+tempban@ get_tempban_handle(const string& in user)
+{
+if (!tempban_list.exists(user)) return null;
+tempban@ temp;
+tempban_list.get(user, @ temp);
+return temp;
+}
+
+void save_tempbans()
+{
+string final;
+int tempbanslength = tempbans.length;
+for (uint i = 0; i < tempbanslength; i++)
+{
+tempban@ temp = tempbans[i];
+final += temp.username + "=" + temp.mins + "=" + temp.tempbantimer.elapsed + "\r\n";
+}
+file_put_contents("./prefs/tempbans.svr", final, 250);
+}
+
+void load_all_tempbans()
+{
+if (!fl.open("./prefs/tempbans.svr", "rb")) return;
+string tbdata = fl.read();
+fl.close();
+if (tbdata.is_empty()) return;
+string[]@ tbans = string_split(tbdata, "\r\n", false);
+string[]@ parsed;
+int tbanslength = tbans.length;
+for (uint i = 0; i < tbanslength; i++)
+{
+@ parsed = string_split(tbans[i], "=", false);
+if (parsed.length < 3) continue;
+create_temp_ban(parsed[0], string_to_number(parsed[1]), string_to_number(parsed[2]));
+}
+}

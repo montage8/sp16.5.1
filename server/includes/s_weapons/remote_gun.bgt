@@ -1,0 +1,419 @@
+dictionary remguns;
+timeremgun@[] tremguns;
+
+class remgun
+{
+bool kill_admin = false;
+bool can_fire = true;
+bool anti_air = false;
+double x, y, z;
+int dir = random(0, 359), zdir = 0;
+timer dirtimer, checktimer;
+int lifetime = 3660000;
+int oldhealth = 12000;
+int id;
+timer usetimer;
+timer lifetimer;
+int usetime = 1000;
+int max_ammo = 50, current_ammo = 0;
+mapdata@ map;
+string owner;
+int ownerid;
+player@ p;
+string hitn;
+stickybomb@[] stickybombs;
+hittable@ hid;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+void play(const string& in sound)
+{
+int l = map.players.length;
+if (l == 0) return;
+string mess = string_encrypt("play_3ds " + sound + " " + x + " " + y + " " + z, pcps);
+int range = 75 / this.map.pan_step;
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 3);
+}
+}
+
+void command(const string& in cmd, int peer)
+{
+if (p is null)
+{
+@ p = get_pid_handle(peer);
+if (p is null) return;
+if (p.name != owner) return;
+}
+this.p.playsound("remgun_keypress");
+string packet;
+if (cmd == "[cncel]")
+{
+this.p.alert("연결을 해제합니다.");
+this.p.remgunid = -1;
+this.p.playsound("remgun_disconnect");
+return;
+}
+uint ncmd = character_to_ascii(cmd);
+switch (ncmd)
+{
+case ascii_f:
+{
+this.p.temp_invinsible = false;
+if (can_fire)
+{
+can_fire = false;
+packet = "안전 모드로 전환합니다.";
+break;
+}
+can_fire = true;
+packet = "공격 모드로 전환합니다.";
+dirtimer.force(0);
+dir = random(0, 359);
+break;
+}
+break; case ascii_s:
+{
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+this.hid.health = -1;
+this.hid.hitby.resize(0);
+this.p.remgunid = -1;
+spawn_obj(this.x, this.y, this.z, this.map, (anti_air ? "remote_anti-air_gun" : "remote_gun"), 1, false);
+if (this.current_ammo > 0) spawn_obj(this.x, this.y, this.z, this.map, (anti_air ? "_battery" : "_338_magnum_bullet"), this.current_ammo, false);
+if (this.anti_air) play("remgun_airshutdown");
+send(peer, "speak 장비를 정지합니다. 설치했던 자리에 가서 회수하세요.", 0);
+}
+break; case ascii_h:
+{
+packet = "공격모드 전환은 F, 정보를 확인하려면 I, 남은 탄창을 보려면 X, 회수하려면 S를 누르세요. 다시 들으려면 H를 누르세요.";
+}
+break; case ascii_i:
+{
+packet = id + "번 remote gun: 체력 " + hid.health + ", " + ms_to_readable_time(lifetime - lifetimer.elapsed) + "간 사용 가능, 위치 " + map.name + ", " + x + ", " + y + ", " + z + ".";
+}
+break; case ascii_x:
+{
+packet = current_ammo + " / " + max_ammo;
+}
+break; default:
+{
+packet = "입력이 바르지 않습니다.";
+}
+}
+if (!packet.is_empty())
+send_serverbox(peer, -1, 1, 1, 1, "remguncommand", packet);
+}
+
+bool firegun()
+{
+if (this.current_ammo <= 0)
+{
+this.can_fire = false;
+return false_t;
+}
+if ((p is null ? true : p.name != this.owner))
+{
+@ p = get_player_handle(owner);
+if (p is null)
+{
+this.can_fire = false;
+return false_t;
+}
+}
+int start_distance = (anti_air ? 1800 : 150);
+int current_distance = (anti_air ? 1801 : 151);
+double tx = -1, ty = -1, tz = -1;
+int robotslength = map.robots.length;
+for (uint x = 0; x < robotslength; x++)
+{
+Robot@ temp = map.robots[x];
+if (temp.health <= 0) continue;
+if (temp.in_smoke) continue;
+if (temp.owner_handle !is null)
+{
+if (are_teamed(temp.owner_handle, this.p)) continue;
+}
+int dist = temp.distancecheck(this.x, this.x, this.z);
+if (dist < (anti_air ? 12 : 6)) continue;
+if (dist >= current_distance) continue;
+if ((anti_air ? (temp.z - this.z) < 9 : temp.defense >= 3000 + ((150 - dist) * 25))) continue;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+current_distance = dist;
+}
+int remgunslength = map.remguns.length;
+for (uint x = 0; x < remgunslength; x++)
+{
+remgun@ temp = map.remguns[x];
+if (temp.hid.health <= 0) continue;
+if (!temp.owner.is_empty())
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+int dist = temp.distancecheck(this.x, this.x, this.z);
+if (dist < (anti_air ? 12 : 6)) continue;
+if (dist >= current_distance) continue;
+if ((anti_air ? (temp.z - this.z) < 9 : temp.hid.defense >= 3000 + ((150 - dist) * 25))) continue;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+current_distance = dist;
+}
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.health <= 0) continue;
+if (temp.in_smoke) continue;
+if (are_teamed(owner, temp.owner)) continue;
+int dist = temp.distancecheck(this.x, this.x, this.z);
+if (dist < (anti_air ? 12 : 6)) continue;
+if (dist >= current_distance) continue;
+if ((anti_air ? (temp.z - this.z) < 9 : temp.defense >= 3000 + ((150 - dist) * 25))) continue;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+current_distance = dist;
+}
+if (!anti_air)
+{
+int playerslength = map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = map.players[i];
+if (temp.health <= 0) continue;
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+if (temp.frequency) continue;
+if (temp.in_smoke) continue;
+if (are_teamed(p, temp)) continue;
+int dist = temp.distancecheck(this.x, this.x, this.z);
+if (dist < 6) continue;
+if (dist >= current_distance) continue;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+current_distance = dist;
+}
+int smokeslength = map.smoke_grenades.length;
+for (uint i = 0; i < smokeslength; i++)
+{
+smoke_grenade@ temp = map.smoke_grenades[i];
+int dist = temp.distancecheck(this.x, this.x, this.z);
+if (dist < 6) continue;
+if (dist >= current_distance) continue;
+if (are_teamed(owner, temp.owner)) continue;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+current_distance = dist;
+}
+}
+if (current_distance > start_distance)
+{
+dirtimer.force(0);
+dir = random(0, 359);
+return false_t;
+}
+int time = dirtimer.elapsed / 20;
+dirtimer.force(0);
+if (time > 0)
+{
+double dl = get_2d_distance(tx, ty, this.x, this.y);
+double rz = tz - this.z;
+int zd = round(calculate_x_y_angle(0, 0, rz, dl, 0), 0);
+zd = (zd > 180 ? zd - 360 : zd);
+if (!anti_air) zd = (zd > 70 ? 70 : zd < -50 ? -50 : zd);
+int zlength = abs(zd - zdir);
+if (zlength > 0)
+{
+if (zlength <= time)
+{
+zdir = zd;
+time -= zlength;
+}
+else
+{
+zdir = (zdir < zd ? zdir + time : zdir - time);
+time = 0;
+}
+}
+}
+if (time > 0)
+{
+int nf = round(calculate_x_y_angle(this.x, this.y, tx, ty, this.dir), 0);
+int amount = get_rotate_amount(nf, 0);
+if (amount != 0) dir = (abs(amount) <= time ? (amount < 0 ? turnright(dir, abs(amount)) : turnleft(dir, amount)) : (amount < 0 ? turnright(dir, time) : turnleft(dir, time)));
+}
+double old_facing = this.p.facing;
+double old_zfacing = this.p.zfacing;
+this.p.facing = dir;
+this.p.zfacing = zdir;
+spawn_weapon(this.x, this.y, this.z, this.p.facing, (anti_air ? "remgun_air" : "remgun"), this.map, this.p, empty, 2);
+this.p.facing = old_facing;
+this.p.zfacing = old_zfacing;
+current_ammo--;
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+return true_t;
+}
+}
+
+void remgunloop(mapdata@ map)
+{
+for (int j = map.remguns.length - 1; j > -1; j--)
+{
+remgun@ this = map.remguns[j];
+if (this.checktimer.elapsed > 250)
+{
+this.checktimer.force(0);
+if (this.p is null) @ this.p = get_player_handle(this.owner);
+else
+{
+if (this.p.disconnected) @ this.p = null;
+}
+}
+if (this.lifetimer.elapsed > this.lifetime)
+{
+this.hid.health = -1;
+this.hid.hitby = "internal:rg:expire";
+}
+if (this.can_fire)
+{
+if (this.usetimer.elapsed >= 10000)
+{
+this.usetimer.force((this.anti_air ? 8600 : 9000));
+this.firegun();
+}
+}
+if (this.oldhealth <= this.hid.health) continue;
+this.oldhealth = this.hid.health;
+if (this.hid.hitby != "internal:rg:expire" and !this.stickybombs.is_empty()) stickybombloop(this.stickybombs);
+if (this.oldhealth > 0)
+{
+this.play("h_ext" + random(1, 3));
+continue;
+}
+if (!this.hid.hitby.is_empty())
+{
+this.play("remgun_death");
+if (!this.kill_admin) send(0, "playerdeath " + destmsg(this.owner + "의 remote gun " + this.id, this.hid.hitby, get_zone_at(this.x, this.y, this.z, this.map)), 0);
+}
+if (this.p !is null) this.p.sendsound("remgun_disconnect");
+remguns.delete(this.id);
+map.remguns.remove_at(j);
+}
+}
+
+remgun@ get_remgun_handle(const string& in id)
+{
+if (!remguns.exists(id)) return null;
+remgun@ temp;
+remguns.get(id, @ temp);
+return temp;
+}
+
+void placeremgun(double x, double y, double z, mapdata@ map, const string& in owner, int ammo = 0, bool anti_air = false)
+{
+int tid;
+do
+{
+tid = (100000000 * random(0, 19)) + (10000 * random(0, 9999)) + random(0, 9999);
+}
+while (remguns.exists(tid));
+remgun r1;
+r1.id = tid;
+r1.x = x;
+r1.y = y;
+r1.z = z;
+@ r1.map = map;
+r1.owner = owner;
+r1.ownerid = string_to_hash(owner);
+@ r1.p = get_player_handle(owner);
+r1.current_ammo = ammo;
+r1.anti_air = anti_air;
+r1.usetimer.force(10000);
+if (anti_air)
+{
+r1.hitn = owner + "의 remote_anti-air_gun";
+@ r1.hid = spawn_hobj(x, y, z, map, 15000, 86400000, empty, empty, "remote_anti-air_gun");
+r1.hid.defense = 2000;
+r1.max_ammo = 50;
+}
+else
+{
+r1.hitn = owner + "의 remote_gun";
+@ r1.hid = spawn_hobj(x, y, z, map, 12000, 86400000, empty, empty, "remote_gun");
+r1.hid.defense = 1000;
+r1.max_ammo = 100;
+}
+map.remguns.insert_last(r1);
+remguns.set(tid, @ r1);
+}
+
+bool& remgun_at(int x, int y, int z, mapdata@ map)
+{
+int remgunslength = map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+remgun@ temp = map.remguns[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return true_t;
+}
+int tremgunslength = tremguns.length;
+for (uint i = 0; i < tremgunslength; i++)
+{
+timeremgun@ temp = tremguns[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+if (temp.map !is map) continue;
+return true_t;
+}
+return false_t;
+}
+
+class timeremgun
+{
+int x, y, z;
+mapdata@ map;
+string owner;
+timer placetimer;
+bool anti_air = false;
+int ammo = 0;
+}
+
+void tremgunloop()
+{
+for (int i = tremguns.length - 1; i > -1; i--)
+{
+if (tremguns[i].placetimer.elapsed >= 6343)
+{
+timeremgun@ temp = tremguns[i];
+placeremgun(temp.x, temp.y, temp.z, temp.map, temp.owner, temp.ammo, temp.anti_air);
+tremguns.remove_at(i);
+}
+}
+}
+
+void placetimeremgun(int x, int y, int z, mapdata@ map, const string& in owner, int ammo = 0, bool anti_air = false)
+{
+timeremgun t1;
+t1.x = x;
+t1.y = y;
+t1.z = z;
+@ t1.map = map;
+t1.owner = owner;
+t1.ammo = ammo;
+t1.anti_air = anti_air;
+play("remgun_place", x, y, z, map);
+tremguns.insert_last(t1);
+}

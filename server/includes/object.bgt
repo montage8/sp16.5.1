@@ -1,0 +1,163 @@
+class obj
+{
+int x;
+int y;
+int z;
+string name;
+mapdata@ map;
+int beeptime = 600;
+timer beeptimer, timeouttimer;
+int amount;
+int timeouttime = 120000;
+bool dropped = false, protected = false;
+bool breaking = false;
+mapispawn@ mapi;
+string beep_sound = "obj";
+string get_sound = "objget";
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+void break_now()
+{
+breaking = true;
+int l = map.players.length;
+if (l == 0) return;
+string mess = string_encrypt("play_3ds obj_break" + random(1, 3) + " " + x + " " + y + " " + z, pcps);
+int range = 75 / this.map.pan_step;
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+}
+void objloop(mapdata@ map)
+{
+for (int i = map.objs.length - 1; i > -1; i--)
+{
+obj@ this = map.objs[i];
+if (this.breaking)
+{
+if (this.mapi !is null) this.mapi.curobjs--;
+map.objs.remove_at(i);
+continue;
+}
+if (this.timeouttimer.elapsed >= this.timeouttime)
+{
+this.breaking = true;
+continue;
+}
+if (this.beeptimer.elapsed >= this.beeptime)
+{
+this.beeptimer.force(0);
+play(this.beep_sound, this.x, this.y, this.z, map, null, -1, true);
+}
+}
+}
+obj@ spawn_obj(int x, int y, int z, mapdata@ map, const string& in name, int amount = 1, bool dropped = false, int timeouttime = 120000, bool protected = false)
+{
+obj itemp;
+@ itemp.map = map;
+itemp.x = x;
+itemp.y = y;
+itemp.z = z;
+if (itemp.z < map.min.z) itemp.z = map.min.z;
+itemp.name = name;
+itemp.amount = amount;
+itemp.dropped = dropped;
+itemp.protected = protected;
+itemp.timeouttime = timeouttime;
+if (dropped) itemp.timeouttime >>= 1;
+if (obj_data_list.exists(name))
+{
+obj_data@ o;
+if (obj_data_list.get(name, @ o))
+{
+itemp.beeptime = o.beeptime;
+itemp.beep_sound = o.beep_sound;
+itemp.get_sound = o.get_sound;
+}
+}
+objspawns++;
+map.objs.insert_last(itemp);
+return @ itemp;
+}
+void spawn_rand_obj(int minx, int maxx, int miny, int maxy, int minz, int maxz, mapdata@ map, string[]@ choices, int timeouttime = 120000, mapispawn@ mapi = null)
+{
+int x = random(minx, maxx);
+int y = random(miny, maxy);
+int z = random(minz, maxz);
+string name = choices[random(0, choices.length - 1)];
+if (mapi !is null)
+{
+if (mapi.limit_all)
+{
+if (mapi.get_limit_all(name) >= mapi.limit)
+{
+mapi.mapispawntimer.force(mapi.mapispawntime);
+return;
+}
+}
+}
+obj@ ite = spawn_obj(x, y, z, map, name, 1, false, timeouttime);
+if (mapi !is null)
+{
+@ ite.mapi = mapi;
+ite.mapi.curobjs++;
+}
+}
+void move_all_objs_to(int x, int y, int z, mapdata@ map)
+{
+int objslength = map.objs.length;
+for (uint i = 0; i < objslength; i++)
+{
+obj@ temp = map.objs[i];
+temp.x = x;
+temp.y = y;
+temp.z = z;
+}
+}
+obj@ get_nearest_item_at(int x, int y, int z, mapdata@ map, const string& in type)
+{
+int current_distance = -1;
+obj@ ot;
+int objslength = map.objs.length;
+for (uint i = 0; i < objslength; i++)
+{
+obj@ temp = map.objs[i];
+if (!type.is_empty())
+{
+if (temp.name != type) continue;
+}
+int dist = temp.distancecheck(x, y, z);
+if (current_distance > -1)
+{
+if (dist >= current_distance) continue;
+}
+current_distance = dist;
+@ ot = temp;
+}
+return ot;
+}
+int kill_objs(const string &in name = empty)
+{
+uint count = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int killobjs = map.objs.length;
+count += killobjs;
+for (uint i = 0; i < killobjs; i++)
+{
+if (!name.is_empty())
+{
+if (map.objs[i].name != name) continue;
+}
+map.objs[i].break_now();
+}
+}
+return count;
+}

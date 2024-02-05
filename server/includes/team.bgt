@@ -1,0 +1,201 @@
+team@[] teams(0);
+dictionary team_list;
+class team
+{
+dictionary members;
+player@[] online;
+string teamname;
+int maxmembers = 5;
+int teamkills = 0;
+int points = 10000;
+timer pointstimer;
+string teamleader;
+string password;
+savedata@ tempsd;
+const string& list_members()
+{
+ref_string = members.size + "명의 조직원이 있으며, 현재 " + online.length + "명이 온라인입니다. ";
+string[]@ temp = members.keys;
+int memberslength = members.size;
+for (uint i = 0; i < memberslength; i++)
+{
+ref_string += temp[i] + (player_list.exists(temp[i]) ? "(접속중)" : empty) + ", ";
+}
+return ref_string;
+}
+bool& remove_member(const string& in name, bool completely = true, bool message = true)
+{
+if (!members.exists(name)) return false_t;
+if (message)
+{
+transmit(name + "님이 조직에서 쫓겨납니다.");
+sendsound("teamremove");
+}
+player@ pl = get_player_handle(name);
+if (pl !is null)
+{
+int ph = this.online.find_by_reference(pl);
+if (ph > -1) this.online.remove_at(ph);
+if (completely) @ pl.gang = null;
+pl.save();
+}
+if (completely)
+{
+members.delete(name);
+this.team_save();
+}
+return true_t;
+}
+bool& leave(player@ temp)
+{
+if (!members.exists(temp.name)) return false_t;
+int ph = this.online.find_by_reference(temp);
+if (ph > -1) this.online.remove_at(ph);
+@ temp.gang = null;
+members.delete(temp.name);
+temp.save();
+transmit(temp.name + "님이 조직을 탈퇴합니다.");
+sendsound("teamleave");
+return true_t;
+}
+void team_save()
+{
+tempsd.add("우두머리", teamleader);
+tempsd.add("이름", teamname);
+tempsd.add("점수", points);
+tempsd.add("최대인원", maxmembers);
+tempsd.add("조직원", members, true);
+tempsd.add("암호", password);
+tempsd.add("팀킬", teamkills);
+tempsd.save();
+}
+void transmit(const string& in t, bool chat = false, int channel = 2)
+{
+int l = online.length;
+if (l == 0) return;
+string mess = string_encrypt(t, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ pl = online[i];
+if (chat) pl.sendsound("teammessage");
+n.send_reliable(pl.peer_id, mess, channel);
+}
+}
+void sendsound(const string& in snd)
+{
+string mess = string_encrypt("play_s " + snd, pcps);
+int onlinelength = online.length;
+for (uint i = 0; i < onlinelength; i++)
+{
+n.send_reliable(online[i].peer_id, mess, 0);
+}
+}
+void add_member(player@ temp)
+{
+@ temp.gang = this;
+members.set(temp.name, 0);
+online.insert_last(temp);
+temp.save();
+sendsound("teamadd");
+transmit(temp.name + "님이 조직에 들어옵니다.");
+temp.alert(teamname + " 조직에 들어왔습니다.");
+temp.sendsound("teamwelcome");
+player@ pl = get_player_handle(this.teamleader);
+if (pl !is null) pl.add_achievement("첫번째 조직원", "1 street_gang_chief_pack", true);
+this.team_save();
+}
+void destruct(bool message = true)
+{
+if (message)
+{
+sendsound("teamkicked");
+transmit("조직이 해체됩니다.");
+}
+int onlinelength = online.length;
+for (uint i = 0; i < onlinelength; i++)
+{
+player@ temp = online[i];
+@ temp.gang = null;
+temp.save();
+}
+members.delete_all();
+}
+}
+void teamloop()
+{
+for (int i = teams.length - 1; i > -1; i--)
+{
+team@ this = teams[i];
+if (this.pointstimer.elapsed > 60000)
+{
+this.pointstimer.force(0);
+if (!player_list.exists(this.teamleader)) this.points--;
+}
+if (this.points <= 0)
+{
+this.transmit("점수가 부족하여 조직을 더 이상 유지할 수 없습니다.");
+send(0, this.teamname + " 조직의 점수가 모두 소진되었습니다.", 2);
+this.destruct(false);
+}
+if (!this.members.is_empty()) continue;
+file_delete("./teams/" + this.teamname + ".team");
+team_list.delete(this.teamname);
+teams.remove_at(i);
+}
+}
+int is_in_team(const string& in n)
+{
+int teamslength = teams.length;
+for (uint t = 0; t < teamslength; t++)
+{
+if (teams[t].members.exists(n)) return t;
+}
+return -1;
+}
+team@ create_team(const string& in t, const string& in tl)
+{
+team t1;
+t1.teamname = t;
+t1.teamleader = tl;
+t1.password = randomstring(4);
+t1.members.set(tl, 0);
+savedata ts;
+ts.fn = "./teams/" + t + ".team";
+ts.key = "ftM38=j7J_$vq'r9";
+@ t1.tempsd = ts;
+t1.team_save();
+teams.insert_last(t1);
+team_list.set(t, @ t1);
+return t1;
+}
+team@ get_team_handle(const string& in name)
+{
+if (!team_list.exists(name)) return null;
+team@ temp;
+team_list.get(name, @ temp);
+return temp;
+}
+
+void load_team(const string& in t)
+{
+savedata tsd;
+tsd.fn = "./teams/" + t + ".team";
+tsd.key = "ftM38=j7J_$vq'r9";
+tsd.load();
+team@ temp = create_team(t, tsd.read("우두머리"));
+@ temp.tempsd = tsd;
+if (tsd.d.exists("암호")) temp.password = tsd.read("암호");
+if (tsd.d.exists("점수")) temp.points = tsd.readn("점수");
+if (tsd.d.exists("최대인원")) temp.maxmembers = tsd.readn("최대인원");
+if (tsd.d.exists("팀킬")) temp.teamkills = tsd.readn("팀킬");
+if (tsd.d.exists("조직원")) temp.members = tsd.readd("조직원", true);
+}
+void load_all_teams()
+{
+string[]@ teamfiles = find_files("./teams/*.team");
+int teamfileslength = teamfiles.length;
+for (uint i = 0; i < teamfileslength; i++)
+{
+load_team(string_trim_right(teamfiles[i], 5));
+}
+}

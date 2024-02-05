@@ -1,0 +1,72 @@
+class sound_grenade
+{
+string owner;
+timer explodetimer;
+int loop = 0;
+timer looptimer;
+mapdata@ map;
+int x, y, z;
+} // class.sound_grenade.
+
+void sound_grenadeloop(mapdata@ map)
+{
+int robotslength = map.robots.length;
+int remgunslength = map.remguns.length;
+int objslength = map.objs.length;
+for (int i = map.sound_grenades.length - 1; i > -1; i--)
+{
+sound_grenade@ this = map.sound_grenades[i];
+if (this.explodetimer.elapsed >= 1000)
+{
+if (this.loop == 0)
+{
+play("sound_grenadeexplode", this.x, this.y, this.z, this.map);
+play("soundgrenade", this.x, this.y, this.z, this.map);
+play_dist("soundgrenadedist", this.x, this.y, this.z, this.map, 0.04);
+this.loop = 1;
+}
+}
+if (this.loop == 0) continue;
+if (this.looptimer.elapsed <= 350) continue;
+this.looptimer.force(0);
+this.loop++;
+for (uint i2 = 0; i2 < robotslength; i2++)
+{
+Robot@ temp = map.robots[i2];
+if (temp.health <= 0) continue;
+if (temp.resist_sound) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 35) continue;
+temp.next_fleetime = 500;
+temp.flee = random(90, 270);
+temp.fleetimer.force(0);
+}
+for (uint i2 = 0; i2 < objslength; i2++)
+{
+obj@ temp = map.objs[i2];
+if (temp.breaking) continue;
+if (temp.protected) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 35) continue;
+temp.break_now();
+}
+for (uint i2 = 0; i2 < remgunslength; i2++)
+{
+remgun@ temp = map.remguns[i2];
+if (temp.hid.health <= 0) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 35) continue;
+temp.can_fire = false;
+}
+if (this.loop < 35) continue;
+map.sound_grenades.remove_at(i);
+}
+}
+void placesound_grenade(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+sound_grenade bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+play("soundgrenadeuse", x, y, z, map);
+map.sound_grenades.insert_last(bomb1);
+}

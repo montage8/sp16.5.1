@@ -1,0 +1,4293 @@
+void order_func_acount(player@ this, string message, string[]@ parsed)
+{
+log("chan3", (this is null ? n.get_peer_address(e.peer_id) + "에서 " : this.name + "님이") + "보냄: " + message);
+switch (string_to_hash(parsed[0]))
+{
+case order_newchar:
+{
+if (parsed.length < 5) send(e.peer_id, "파라미터가 잘못되었습니다.", 0);
+else create_char(parsed[1], parsed[2], parsed[3], e.peer_id, parsed[4]);
+}
+break; case order_login:
+{
+if (parsed.length < 5) return;
+login(parsed[1], parsed[2], parsed[3], e.peer_id, parsed[4]);
+}
+break; case order_newplayer:
+{
+if (parsed.length < 4) return;
+if (player_list.exists(parsed[1])) return;
+spawn_player(parsed[1], e.peer_id, parsed[2], string_replace(parsed[3], "[spce]", " ", true), n.get_peer_address(e.peer_id), string_trim_left(message, (parsed[1].size + parsed[2].size + parsed[3].size + 13)));
+}
+break; case order_compinfo:
+{
+if (parsed.length < 2) return;
+if (this is null) return;
+string comptext = this.name + " (" + string_trim_left(message, 9) + "), IP " + n.get_peer_address(e.peer_id) + ", 컴퓨터 ID " + this.compid + "\r\n";
+this.sf.add("정보", "최근 접속: " + get_date(true, false) + ", " + get_time(true, false) + "\r\n컴퓨터 정보:\r\n" + comptext + "\r\not위치:\r\n");
+this.sf.save();
+fl.open("./compchars.log", "rb");
+string orgtext = fl.read();
+fl.close();
+if (string_contains(orgtext, comptext, 1) < 0)
+{
+fl.open("./compchars.log", "ab");
+fl.write(comptext);
+fl.close();
+}
+this.ctext = comptext;
+}
+break; case order_resetpassword:
+{
+if (parsed.length < 4) return;
+if (is_banned(parsed[1], true) > 0 or is_banned(string_base64_encode(n.get_peer_address(e.peer_id)), false) > 0)
+{
+send(e.peer_id, "해당 계정은 차단되어 있습니다.", 6);
+return;
+}
+string emltemp = get_char_val(parsed[1], "이메일");
+if (emltemp.is_empty())
+{
+send(e.peer_id, "이메일 데이터가 없습니다. 개발자에게 문의 바랍니다.", 6);
+return;
+}
+if (emltemp != parsed[3])
+{
+send(e.peer_id, "이메일 주소가 바르지 않습니다.", 6);
+return;
+}
+send(e.peer_id, "resetting " + parsed[1], 0);
+passresets.set(parsed[1], 0);
+}
+break; case order_newpassword:
+{
+if (parsed.length < 3) return;
+bool s = set_char_val(parsed[1], "암호", string_hash(parsed[2], 2, false));
+send(e.peer_id, s ? "성공: 암호가 변경되었습니다." : "알 수 없는 오류로 인해 암호를 변경할 수 없습니다. 개발자에게 문의 바랍니다.", 6);
+passresets.delete(parsed[1]);
+}
+break; case order_close:
+{
+if (this is null) return;
+if (this.cheatercheck() or this.cheater == 1)
+{
+this.alert("재행동시간이 15초가 되지 않아 서버를 떠날 수 없습니다.");
+this.sendpacket("stopexit");
+return;
+}
+this.alert("안녕히 가십시오!");
+log("system_message", this.name + "님의 접속이 해제되었습니다.");
+remove_player(this.name);
+}
+break; case order_changeeml:
+{
+if (parsed.length < 3) return;
+send(e.peer_id, (set_char_val(parsed[1], "이메일", parsed[2]) ? "변경되었습니다." : "nochar"), 0);
+}
+break; case order_motd:
+{
+send(e.peer_id, "새소식: " + oldmotd, 2);
+}
+break; case order_ping:
+{
+send(e.peer_id, "pong", 0);
+}
+break; case order_uptime:
+{
+send(e.peer_id, ms_to_readable_time(uptimer.elapsed) + "전에 서버 열림", 0);
+}
+break; case order_serverstats:
+{
+string received = convert_size(n.bytes_received);
+string sent = convert_size(n.bytes_sent);
+string totaldata = convert_size(n.bytes_sent + n.bytes_received);
+int peers = n.connected_peers;
+send(e.peer_id, "서버 버전: " + version + ", 연결된 클라이언트 수: " + peers + ", 받은 패킷: " + received + ", 보낸 패킷: " + sent + ", 합계: " + totaldata + ", 최대 동시 접속자: " + peak + ", 달성일: " + peakreached + ", 총 연결 횟수: " + connections + ", 총 연결 해제 횟수: " + disconnections + ".", 2);
+}
+break; case order_lchannel:
+{
+sm.intro = "언어 선택";
+sm.initial_packet = "lchannelset";
+string[]@ lc = string_split(file_get_contents("./prefs/language_channels.svr"), "\r\n", false);
+int lclength = lc.length;
+for (uint i = 0; i < lclength; i++)
+{
+sm.add(lc[i]);
+}
+sm.send(e.peer_id);
+sm.reset();
+}
+break;
+}
+}
+
+void order_func_action(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+log("chan0", this.name + "님이 보냄: " + message);
+switch (string_to_hash(parsed[0]))
+{
+case order_turn:
+{
+if (parsed.length < 2) return;
+int new_facing = string_to_number(parsed[1]);
+int amount = abs(get_rotate_amount(this.facing, new_facing));
+double energy = amount * 0.1;
+if (this.weapon !is null) energy *= this.weapon.rotate_energy;
+this.energy -= energy;
+this.facing = new_facing;
+}
+break; case order_move_to:
+{
+if (parsed.length < 4) return;
+if (this.invinsible) return;
+if (!this.hidden)
+{
+if (this.stunned) return;
+if (this.warping) return;
+this.energy -= 4 * this.energy_factor;
+}
+// Will need more anti cheat codes.
+this.x = string_to_number(parsed[1]);
+this.y = string_to_number(parsed[2]);
+this.z = string_to_number(parsed[3]);
+this.moveact(true, (parsed.length > 4 ? parsed[4] : empty));
+}
+break; case order_move_quietly:
+{
+if (parsed.length < 4) return;
+if (this.invinsible) return;
+if (!this.hidden)
+{
+if (this.stunned) return;
+if (this.warping) return;
+}
+// Will need more anti cheat codes.
+this.x = string_to_number(parsed[1]);
+this.y = string_to_number(parsed[2]);
+this.z = string_to_number(parsed[3]);
+this.moveact(false, (parsed.length > 4 ? parsed[4] : empty));
+}
+break; case order_zmove:
+{
+if (parsed.length < 2) return;
+if (!this.hidden)
+{
+if (this.warping) return;
+this.energy -= 6 * this.energy_factor;
+}
+// Will need more anti cheat codes.
+int z2 = string_to_number(parsed[1]);
+int temp_z = 0;
+if (z2 != 0) temp_z = this.z + z2;
+if (this.z == temp_z) return;
+this.z = temp_z;
+this.airwarntimer.force(0);
+this.airlifetimer.force(0);
+this.underwater = false;
+this.objcheck();
+}
+break; case order_firestop:
+{
+this.shot_count = 0;
+if (this.weapongathering)
+{
+this.gathering_stop(true, false);
+return;
+}
+this.fire_stop();
+}
+break; case order_fire:
+{
+if (this.firing) this.fire_stop();
+if (this.weapongathering) return;
+if (this.newb == 1)
+{
+this.alert("입문자는 무기 사용이 불가능합니다.");
+return;
+}
+if (this.hidden) return;
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.overheat_level >= 100.0) return;
+if (this.working()) return;
+if (this.invinsibility_starting)
+{
+send(0, this.name + "님의 어리석음이 결국 신의 노여움을 사고 말았습니다.", 2);
+this.stun(30000, true, true, 0, true);
+this.invinsibility_starting = false;
+return;
+}
+if (this.map.fighting == 0)
+{
+this.alert("싸움이 금지된 맵입니다.");
+return;
+}
+if (this.weapon is null) return;
+if (is_no_item(this.rx, this.ry, this.z, this.map, this.weapon.type))
+{
+this.alert("이곳에서는 사용할 수 없습니다.");
+return;
+}
+if (this.reloading > 0)
+{
+this.alert("그럴 겨를이 없습니다.");
+return;
+}
+if (!this.weapon.require_ammo.is_empty())
+{
+if ((this.weapon.max_ammo == 0 ? !this.inventory.exists(this.weapon.require_ammo) : this.get_ammo_count(this.weapon_group) <= 0))
+{
+this.playsound(this.weapon.empty_sound);
+return;
+}
+}
+this.temp_invinsible = false;
+this.shot_count = 0;
+if (this.weapon.gathering_max > 0)
+{
+if (this.firetimer.elapsed < firetime_starter) return;
+this.weapongatheringtimer.force(0);
+this.weapongathering = true;
+@ this.weapongatheringsound = spawn_moving_sound(this.weapon.gathering_sound + (!this.weapon.gathering_sound_stop ? empty : "*0*1"), this.x, this.y, this.z, this.map);
+return;
+}
+this.gathering_stop();
+this.firing = true;
+}
+break; case order_sitstand:
+{
+this.sitting ^= 1;
+if (this.sitting == 1)
+{
+spawn_bodyfall(this.x, this.y, this.z, this.map, 500, this);
+}
+else
+{
+this.playsound("stand");
+spawn_timepacket(this.peer_id, "sitstop", 0, 1000);
+}
+}
+break; case order_move_door:
+{
+if (parsed.length < 4) return;
+if (!this.dmoving) return;
+this.x = string_to_number(parsed[1]);
+this.y = string_to_number(parsed[2]);
+this.z = string_to_number(parsed[3]);
+this.sendpacket("move_door");
+if (this.parachutist)
+{
+this.parachutist = false;
+if (this.parachutesound !is null) @ this.parachutesound = this.parachutesound.destroy();
+}
+}
+break; case order_reload:
+{
+if (this.stunned) return;
+if (this.firing) return;
+if (this.weapongathering) return;
+if (this.overheat_level >= 100.0) return;
+if (this.reloading > 0) return;
+if (this.map.is_vehicle)
+{
+int vi = this.map.vhc.find_interior(this.rx, this.ry, this.z);
+if (vi > -1)
+{
+vehicle_interior@ temp = this.map.vhc.interiors[vi];
+if (temp.type == INTERIOR_WEAPON)
+{
+if (this.map.vhc.started)
+{
+this.alert("안전한 재보급을 위해 차량의 시동을 꺼야 합니다.");
+return;
+}
+if (temp.max_ammo < 1)
+{
+this.alert("재보급할 필요 없는 무기입니다.");
+return;
+}
+send_serverbox(this.peer_id, 1, -1, 0, -1, "rearm", temp.require_ammo + " 몇 발을 장전할까요?");
+return;
+}
+}
+}
+if (this.weapon is null) return;
+if (this.weapon.max_ammo < 1)
+{
+this.alert("재장전할 필요 없는 무기입니다.");
+return;
+}
+int current = this.get_ammo_count(this.weapon_group);
+if (current >= this.weapon.max_ammo)
+{
+this.alert("이미 가득 찼습니다.");
+return;
+}
+if (this.firetimer.elapsed < firetime_starter)
+{
+if (this.weapon !is null and this.weapon.type != this.last_weapon)
+{
+this.alert("그럴 겨를이 없습니다.");
+return;
+}
+}
+int amount = 0;
+if (!this.weapon.require_ammo.is_empty())
+{
+if (is_no_item(this.rx, this.ry, this.z, this.map, this.weapon.require_ammo)) return;
+amount = this.get_item_count(this.weapon.require_ammo);
+if (amount <= 0)
+{
+this.alert("재장전할 보급품이 없습니다.");
+return;
+}
+}
+bool tac = (this.weapon.tactical_reloadtime > 0 and current > 0);
+this.reloading = (tac ? 2 : 1);
+int loadable = this.weapon.max_ammo - current;
+if (tac and (amount == 0 or amount > loadable)) loadable++;
+if (amount > 0 and amount < loadable)
+{
+this.ammo_give(this.weapon_group, amount);
+this.ammo_set(this.weapon.require_ammo, amount);
+this.give(this.weapon.require_ammo, -amount);
+}
+else
+{
+this.ammo_give(this.weapon_group, loadable);
+if (amount > 0)
+{
+this.ammo_set(this.weapon.require_ammo, loadable);
+this.give(this.weapon.require_ammo, -loadable);
+}
+}
+if (this.weapon.wfl !is null)
+{
+if (this.weapon.wfl(this, current, amount)) return;
+}
+this.playsound(tac ? this.weapon.tactical_reload_sound : this.weapon.reload_sound);
+this.firetimer.force(firetime_starter - (tac ? this.weapon.tactical_reloadtime : this.weapon.reloadtime));
+}
+break; case order_unload:
+{
+if (this.stunned) return;
+if (this.firing) return;
+if (this.reloading > 0) return;
+if (this.map.is_vehicle)
+{
+int vi = this.map.vhc.find_interior(this.rx, this.ry, this.z);
+if (vi > -1)
+{
+if (this.map.vhc.started)
+{
+this.alert("안전한 재보급을 위해 시동을 꺼야 합니다.");
+return;
+}
+vehicle_interior@ temp = this.map.vhc.interiors[vi];
+if (temp.max_ammo < 1)
+{
+this.alert("재보급할 필요 없는 무기입니다.");
+return;
+}
+if (temp.current_ammo < 1) return;
+this.give(temp.require_ammo, temp.current_ammo);
+temp.current_ammo = 0;
+this.playsound("give");
+this.alert("재보급합니다.");
+return;
+}
+}
+this.unload();
+}
+break; case order_unstunme:
+{
+if (!this.stunned) return;
+this.unstuntrys += random(0, 3);
+this.playsound("unstun_try");
+}
+break; case order_bodyfall:
+{
+spawn_bodyfall(this.x, this.y, this.z, this.map, 0, this);
+}
+break; case order_zfacing:
+{
+if (parsed.length < 2) return;
+int result = string_to_number(parsed[1]);
+if (result > 90 or result < -90)
+{
+this.alert("Z 각도가 잘못되었습니다.");
+return;
+}
+double amount = 0.1 * abs(result - this.zfacing);
+this.energy -= (this.weapon !is null ? this.weapon.rotate_energy : 1) * amount;
+this.zfacing = result;
+}
+break; case order_enter:
+{
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.workingtype != pc_stop) return;
+if (this.map.name == "대기실")
+{
+if (this.deadtimer.elapsed >= 5000)
+{
+this.respawn();
+return;
+}
+}
+else if (this.map.name == "메인")
+{
+if (this.rx == 110 and this.ry == 290 and this.z == 200)
+{
+minilocker@ l = get_locker_handle(this.name);
+if (l is null)
+send_serverbox(this.peer_id, 0, -1, 1, 1, "newlocker", "사설 금고를 30,000 coin에 팔고 있습니다. 구입하려면 Y를 누르세요.");
+else
+send_serverbox(this.peer_id, 0, -1, 1, 1, "newsecboost", "사설 금고의 하드웨어 보안을 강화하는 키트를 10,000원에 팔고 있습니다. 구입하려면 Y를 누르세요.");
+return;
+}
+if (this.rx == giftx and this.ry == gifty and this.z == giftz)
+{
+giftx = random(0, 500);
+gifty = random(0, 500);
+giftz = random(0, 5);
+givegift(this);
+return;
+}
+}
+else if (this.map is minigame_room)
+{
+minigame@ m = joined_minigame(e.peer_id);
+if (m is null)
+{
+send_minigame_mainmenu();
+}
+else
+{
+if (m.mode == M_WAIT) m.send_sidemenu(e.peer_id);
+else
+{
+int j = m.find_joinplayers(e.peer_id);
+if (j < 0) m.send_sidemenu(e.peer_id);
+else
+{
+switch (m.type)
+{
+case M_Pipper:
+m.pipper_send_hand(j);
+break;
+default:
+break;
+}
+}
+}
+}
+return;
+}
+else if (this.map.name == "필멸의산")
+{
+if (this.rx == 500 and this.ry == 500 and this.z == 480)
+{
+this.go_to("필멸의산", 450, 0, 450);
+this.give("_ancient_street_armor", 1);
+this.checkpoints.set("필멸의산", vector(450, 0, 450));
+this.sendsound("checkpoint");
+this.alert("포탈을 통과하던 중 바닥에 떨어진 갑옷을 발견하여 황급히 줍습니다.");
+return;
+}
+}
+else if (this.map.name == "히아신스")
+{
+if (this.rx != 11) {}
+else if (this.ry != 137) {}
+else if (this.z != -37) {}
+else
+{
+this.go_to("히아신스", 11, 135, -37);
+this.give("door_card_1", 1);
+return;
+}
+}
+else if (this.map.name == "kt9020")
+{
+if (this.rx != 24000) {}
+else if (this.ry != 24000) {}
+else if (this.z != 0) {}
+else
+{
+send_serverbox(this.peer_id,0,1,0,1,"spp1","수고하셨습니다. 이제 여러분은 이 문을 통과하시면 임무 완수와 함께 보상이 주어질 것입니다. 그런데 이 문은 그냥 열리지는 않는 듯보이는군요. 표지판에 적힌 내용을 읽어드리겠습니다. 내용은 다음과 같습니다. 너는 제 1 모험존에서 종이 하나를 주웠을 것이다. 그곳은 김포국제공항이라고 불리기도 하는데 이 종이에 적힌 변수는 여러가지 컨트롤을 하는데 이는 메인메뉴 음악이다. 설정값은 0과 1로 바꿀 수 있다. 0이 되어있다면 이 변수에 컨트롤 시스템은 꺼져있는 것일까? 아니면 1이 되야 꺼져있는 것일까. 만약 꺼져있다고 생각이 든다면 o를, 그렇지 않는다면 x키를 누를 수 있다. 과연 종이에 써져있는 대로 한다면 무엇일까?");
+}
+if (this.rx != 3081) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+item_descriptions.delete_all();
+load_item_descriptions(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 아이템 설명을 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3080) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+kill_robots(true);
+robottemps.delete_all();
+load_robots(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 로봇을 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3079) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+splash_list.delete_all();
+load_splashs(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3078) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+weapon_list.delete_all();
+load_weapons(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3077) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+snackitems.delete_all();
+load_snacks(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 먹거리를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3056) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+send(0, "downloader2 ", 0);
+this.playsound("button8_open");
+}
+if (this.rx != 3052) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"newmotd","새로운 소식 내용을 입력하십시오. ");
+}
+if (this.rx != 3053) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"addmotd","기존에 소식에 이어 덧붙일 내용을 입력하십시오. ");
+}
+if (this.rx != 3065) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+kill_robots();
+send(0, "notify 모든 로봇을 파괴합니다.", 0);
+}
+if (this.rx != 3076) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int fireslength = map.fires.length;
+for (uint i = 0; i < fireslength; i++)
+{
+map.fires[i].lifetimer.force(2000000000);
+}
+}
+send(0, "notify 서버실에서 화재 진압 명령이 떨어져, 모든 화재가 진압되었습니다.", 0);
+}
+
+if (this.rx != 3082) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+reset_market_system();
+load_market_system();
+this.alert("세이프존 데이터를 새로 불러왔습니다.");
+}
+
+if (this.rx != 3061) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+send_serverbox(this.peer_id,0,1,0,10000,"lg","보내실 내용을 입력하십시오.");
+}
+if (this.rx != 3062) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10,"reb","재부팅 방지를 위해 아무키나 누르고 엔터를 치십시오.");
+}
+if (this.rx != 3060) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"noti","공지하실 내용을 입력하십시오. 10000글자 이상은 입력할 수 없습니다.");
+}
+if (this.rx != 3057) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+if (parsed.length == 1)
+{
+this.alert("정보 수집 중");
+this.fpstimer.force(0);
+this.fps++;
+return;
+}
+if (this.rank < 4) return;
+int speedvalue = string_to_number(parsed[1]);
+if (speedvalue < 1) return;
+maintime = speedvalue;
+this.alert("서버 루프 속도를 " + speedvalue + "단계로 바꿉니다.");
+}
+
+if (this.rx != 3055) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+this.sendpacket("download 0");
+}
+if (this.rx != 3050) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+if (can_upload_files == 0)
+{
+this.alert("파일 업로드 토글이 꺼져 있습니다.");
+return;
+}
+this.sendpacket("upload 1");
+}
+
+}
+else if (this.map.name == "demon's_world")
+{
+if (this.rx != 10) {}
+else if (this.ry != 0) {}
+else if (this.z != -50) {}
+else
+{
+send_serverbox(this.peer_id,0,1,0,10,"dms1","게임을 시작하려면 먼저 비밀번호가 필요합니다. 비밀번호를 입력하세요. ");
+}
+if (this.rx != 100) {}
+else if (this.ry != 100) {}
+else if (this.z != 155) {}
+else
+{
+this.add_achievement("끝없는 낭떨어지의 함정", "1 pro_mac", true);
+}
+}
+
+
+else if (this.map.name == "세이프존")
+{
+if (this.rx != 24000) {}
+else if (this.ry != 24000) {}
+else if (this.z != 0) {}
+else
+{
+send_serverbox(this.peer_id,0,1,0,1,"spp1","수고하셨습니다. 이제 여러분은 이 문을 통과하시면 임무 완수와 함께 보상이 주어질 것입니다. 그런데 이 문은 그냥 열리지는 않는 듯보이는군요. 표지판에 적힌 내용을 읽어드리겠습니다. 내용은 다음과 같습니다. 너는 제 1 모험존에서 종이 하나를 주웠을 것이다. 그곳은 김포국제공항이라고 불리기도 하는데 이 종이에 적힌 변수는 여러가지 컨트롤을 하는데 이는 메인메뉴 음악이다. 설정값은 0과 1로 바꿀 수 있다. 0이 되어있다면 이 변수에 컨트롤 시스템은 꺼져있는 것일까? 아니면 1이 되야 꺼져있는 것일까. 만약 꺼져있다고 생각이 든다면 o를, 그렇지 않는다면 x키를 누를 수 있다. 과연 종이에 써져있는 대로 한다면 무엇일까?");
+}
+if (this.rx != 3015) {}
+else if (this.ry != 3015) {}
+else if (this.z != 110) {}
+else
+{
+if (savetimer.elapsed >= 300000)
+{
+savetimer.force(0);
+send(0, "play_s sp_motor", 0);
+}
+}
+if (this.rx != 3081) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+item_descriptions.delete_all();
+load_item_descriptions(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 아이템 설명을 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3080) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+kill_robots(true);
+robottemps.delete_all();
+load_robots(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 로봇을 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3079) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+splash_list.delete_all();
+load_splashs(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3078) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+weapon_list.delete_all();
+load_weapons(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3077) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+snackitems.delete_all();
+load_snacks(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 먹거리를 새로 불러왔습니다.", 0);
+}
+if (this.rx != 3056) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+send(0, "downloader2 ", 0);
+this.playsound("button8_open");
+}
+if (this.rx != 3052) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"newmotd","새로운 소식 내용을 입력하십시오. ");
+}
+if (this.rx != 3053) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"addmotd","기존에 소식에 이어 덧붙일 내용을 입력하십시오. ");
+}
+if (this.rx != 3065) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+kill_robots();
+send(0, "notify 모든 로봇을 파괴합니다.", 0);
+}
+if (this.rx != 3076) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int fireslength = map.fires.length;
+for (uint i = 0; i < fireslength; i++)
+{
+map.fires[i].lifetimer.force(2000000000);
+}
+}
+send(0, "notify 서버실에서 화재 진압 명령이 떨어져, 모든 화재가 진압되었습니다.", 0);
+}
+
+if (this.rx != 3082) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+reset_market_system();
+load_market_system();
+this.alert("세이프존 데이터를 새로 불러왔습니다.");
+}
+
+if (this.rx != 3061) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+send_serverbox(this.peer_id,0,1,0,10000,"lg","보내실 내용을 입력하십시오.");
+}
+if (this.rx != 3062) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10,"reb","재부팅 방지를 위해 아무키나 누르고 엔터를 치십시오.");
+}
+if (this.rx != 3060) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+send_serverbox(this.peer_id,0,1,0,10000,"noti","공지하실 내용을 입력하십시오. 10000글자 이상은 입력할 수 없습니다.");
+}
+if (this.rx != 3057) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+if (parsed.length == 1)
+{
+this.alert("정보 수집 중");
+this.fpstimer.force(0);
+this.fps++;
+return;
+}
+if (this.rank < 4) return;
+int speedvalue = string_to_number(parsed[1]);
+if (speedvalue < 1) return;
+maintime = speedvalue;
+this.alert("서버 루프 속도를 " + speedvalue + "단계로 바꿉니다.");
+}
+
+if (this.rx != 3055) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+this.sendpacket("download 0");
+}
+if (this.rx != 3050) {}
+else if (this.ry != 3001) {}
+else if (this.z != 110) {}
+else
+{
+this.playsound("button8_open");
+if (can_upload_files == 0)
+{
+this.alert("파일 업로드 토글이 꺼져 있습니다.");
+return;
+}
+this.sendpacket("upload 1");
+}
+
+
+if (this.rx != 85) {}
+else if (this.ry != 25) {}
+else if (this.z != 40) {}
+else
+{
+minilocker@ l = get_locker_handle(this.name);
+if (l is null)
+send_serverbox(this.peer_id, 0, -1, 1, 1, "newlocker", "사설 금고를 30,000 coin에 팔고 있습니다. 구입하려면 Y를 누르세요.");
+else
+send_serverbox(this.peer_id, 0, -1, 1, 1, "newsecboost", "사설 금고의 하드웨어 보안을 강화하는 키트를 1000000원에 팔고 있습니다. 구입하려면 Y를 누르세요.");
+return;
+}
+if (this.rx != 0) {}
+else if (this.ry != 10) {}
+else if (this.z != -50) {}
+else
+{
+if (this.newb <= 0)
+{
+this.alert("죄송합니다. 당신은 이미 입문자를 졸업했기 때문에 출입이 불가능합니다.");
+return;
+}
+this.go_to("입문", 50, 50, 0);
+return;
+}
+minilocker@ lock = get_locker_at(this.rx, this.ry, this.z, this.map, false);
+if (lock !is null)
+{
+if (!this.no_save) send_serverbox(this.peer_id, 2, 4, 1, 12, "lockcode", "암호를 입력하세요.");
+return;
+}
+}
+if (this.map.is_vehicle)
+{
+int vi = this.map.vhc.find_interior(this.rx, this.ry, this.z);
+if (vi > -1)
+{
+vehicle_interior@ temp = this.map.vhc.interiors[vi];
+switch (temp.type)
+{
+case INTERIOR_STEERING:
+{
+this.map.vhc.command("gethandle", this);
+}
+break;
+case INTERIOR_DOOR:
+{
+this.map.vhc.command("escape", this);
+}
+break;
+case INTERIOR_WEAPON:
+{
+this.map.vhc.command("fireweapon " + vi, this);
+}
+break;
+case INTERIOR_LOCKER:
+{
+minilocker@ l = this.map.vhc.locker;
+l.lockplay("dooropen");
+l.send(this.peer_id);
+}
+break;
+default:
+break;
+}
+}
+}
+vending_machine@ v = find_vending_machine(this.rx, this.ry, this.z, this.map);
+if (v !is null)
+{
+send_serverbox(e.peer_id, 1, -1, 1, 1, "vendingpress", "품목을 보려면 스페이스, 자판기에 넣은 coin을 보려면 C, 넣은 coin을 회수하려면 R을 누르세요.");
+return;
+}
+store@ si = find_store(this.rx, this.ry, this.z, this.map);
+if (si !is null)
+{
+si.send(this);
+return;
+}
+onlinequiz@ qq = find_quiz(this.rx, this.ry, this.z, this.map);
+if (qq !is null)
+{
+quiz_examine(this, qq);
+return;
+}
+int aamount = this.get_item_count("_338_magnum_bullet");
+int aamount2 = this.get_item_count("_battery");
+if (aamount > 0 or aamount2 > 0)
+{
+int remgunslength = this.map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+remgun@ temp = this.map.remguns[i];
+if (temp.current_ammo >= temp.max_ammo) continue;
+if (temp.x != this.rx) continue;
+if (temp.y != this.ry) continue;
+if (temp.z != this.z) continue;
+int ramount = (temp.anti_air ? aamount2 : aamount);
+if (ramount <= 0) continue;
+string bu = (temp.anti_air ? "_battery" : "_338_magnum_bullet");
+if ((temp.max_ammo - temp.current_ammo) > ramount)
+{
+temp.current_ammo += ramount;
+this.give(bu, -ramount);
+}
+else
+{
+this.give(bu, -abs(temp.max_ammo - temp.current_ammo));
+temp.current_ammo = temp.max_ammo;
+}
+this.playsound(temp.anti_air ? "remgun_airreload" : "remgunreload" + random(1, 3));
+temp.usetimer.force(6800);
+this.stun(temp.anti_air ? 2750 : 1000, false, false);
+break;
+}
+}
+}
+break; case order_invrequest:
+{
+if (this.inventory.is_empty())
+{
+this.alert("아무것도 가지고 있지 않습니다.");
+return;
+}
+this.sendpacket("invstring " + string_base64_encode(serialize(this.inventory)));
+}
+break; case order_iamdmoving:
+{
+if (this.dmoving) return;
+if (parsed.length > 1)
+{
+string limit = string_trim_left(message, 11);
+if (!limit.is_empty())
+{
+if (!this.is_available(string_split(limit, "*", true))) return;
+}
+}
+this.dmoving = true;
+this.sendpacket("startdmove");
+}
+break; case order_iamnotdmoving:
+{
+if (parsed.length < 2) return;
+if (this.dmoving)
+{
+this.dmoving = false;
+this.moveact(true, parsed[1]);
+}
+}
+break; case order_fallstop:
+{
+if (parsed.length > 2) this.moveact(true, parsed[2], string_to_number(parsed[1]));
+}
+break; case order_checkpointset:
+{
+if (parsed.length < 4) return;
+string name = this.map.name;
+if (this.map.is_vehicle) name = this.map.vhc.map.name;
+this.checkpoints.set(name, vector(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3])));
+}
+break;
+}
+}
+
+void order_func_info(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+log("chan5", this.name + "님이 보냄: " + message);
+if (parsed[0].size > 20) return;
+switch (string_to_hash(parsed[0]))
+{
+case order_getamount:
+{
+if (parsed.length < 2) return;
+this.alert(this.get_item_count(parsed[1]));
+}
+break; case order_newmotd:
+{
+if (parsed.length < 2) return;
+string adr=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("등록을 취소합니다.");
+return;
+}
+
+
+if (parsed.length < 2) return;
+{
+oldmotd = string_trim_left(message, (parsed[0].size + 1));
+log("adminlog", this.name + "님의 새소식 덮어쓰기: " + oldmotd);
+fl.open("prefs/motd.svr", "wb");
+fl.write(oldmotd);
+fl.close();
+send(0, "play_s newmotd", 0);
+send(0, "새소식: " + oldmotd, 2);
+}
+}
+
+break; case order_addmotd:
+{
+if (parsed.length < 2) return;
+string adr=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("등록을 취소합니다.");
+return;
+}
+
+
+{
+string newmotd = string_trim_left(message, (parsed[0].size + 1));
+oldmotd += newmotd;
+fl.open("prefs/motd.svr", "wb");
+fl.write(oldmotd);
+fl.close();
+log("adminlog", this.name + "님의 새소식 추가: " + newmotd);
+send(0, "play_s newmotd", 0);
+send(0, "새소식 추가: " + newmotd, 2);
+}
+}
+break; case order_reb:
+{
+if (parsed.length < 2) return;
+string adr=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("재부팅이 취소됬습니다.");
+return;
+}
+
+send(0, "play_s newmotd", 0);
+send(0, this.name + "님이 서버실에서 재부팅 버튼을 눌렀습니다. 잠시 후 접속이 끊깁니다.", 2); 
+
+save_all();
+wait(200);
+send(0, "serverboot", 0);
+wait(200);
+run(get_script_path(), empty, false, false);
+exit();
+}
+
+
+break; case order_spp1:
+{
+if(parsed.length<2) return;
+{
+string spp1=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("당신은 문 열기를 포기합니다.");
+return;
+}
+
+if(spp1=="o")
+{
+this.playsound("logo9");
+this.sendpacket("문이 열립니다", 1);
+this.add_achievement("sp 일번 프로젝트 무사히 완료하다", "2 pack_of_1000_250pound_aerial_bomb", true);
+this.go_to("kt9020", 30000,30000,0);
+}
+else
+{
+this.sendpacket("잘못누르셨네요.", 0);
+this.go_to("kt9020", 10000,10000,10000);
+}
+
+
+}
+}
+
+
+
+
+break; case order_lg:
+{
+if (parsed.length < 2) return;
+string adr=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("공지를 취소합니다.");
+return;
+}
+
+send(0, "dlg " + string_trim_left(message, (parsed[0].size + 1)), 0);
+
+}
+
+
+break; case order_noti:
+{
+if (parsed.length < 2) return;
+string adr=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("공지를 취소합니다.");
+return;
+}
+
+if (parsed.length < 2) return;
+if (message.size > (parsed[0].size + 10001))
+{
+this.alert("메시지는 10000자를 넘을 수 없습니다.");
+return;
+}
+send(0, "notify " + string_trim_left(message, (parsed[0].size + 1)), 0);
+}
+
+
+
+break; case order_dms1:
+{
+if(parsed.length<2) return;
+{
+string dms=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소했습니다.");
+return;
+}
+
+if(dms=="20220803")
+{
+this.playsound("achievement");
+this.go_to("demon's_world", 0,0,-15);
+}
+}
+this.sendpacket("틀렸습니다.", 0);
+
+
+}
+
+
+
+break; case order_server:
+{
+if(parsed.length<2) return;
+{
+string server=parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소했습니다.");
+return;
+}
+
+if(server=="mainbode")
+{
+this.sendpacket("문이 열렸습니다", 1);
+this.go_to("kt9020", 3033,3001,110);
+}
+}
+this.sendpacket("비밀번호가 일치하지 않습니다.", 0);
+
+
+}
+
+
+
+
+
+break; case order_voice:
+{
+if (this.map.fighting == 1)
+{
+this.alert("전장에서는 사용 불가능합니다.");
+return;
+}
+send_serverbox(this.peer_id, 0, -1, 1, 1, "voiceset", "사용할 음성 번호를 입력하세요. 1에서 7까지 사용 가능합니다.");
+}
+break; case order_checksight:
+{
+if (parsed.length < 2) return;
+this.checksight(string_to_number(parsed[1]));
+}
+break; case order_whatnear:
+{
+if (this.invinsible) return;
+string list = (this.map.is_vehicle ? "미사일:1[]원격 조종 포탑:2[]원격 조종 폭탄:3[]연막탄:7" : "원격 조종 포탑:2[]원격 조종 폭탄:3[]사설 금고:4[]자판기:5[]아이템:6[]연막탄:7");
+send_menu(this.peer_id, "카테고리 선택", "nearselect", list);
+}
+break; case order_vehicleinfo:
+{
+vehicle@ v = this.get_vehicle();
+if (v is null)
+{
+int ret = 0;
+int vslength = this.map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = this.map.vs[i];
+double get_range = this.distancecheck(temp.x, temp.y, temp.z);
+if (get_range > 10) continue;
+if (this.name != temp.owner)
+{
+player@ too = get_player_handle(temp.owner);
+if (too is null) continue;
+if (!too.trust.exists(this.name))
+{
+if (!are_teamed(too, this)) continue;
+}
+}
+sm.add(temp.owner + "님의 " + temp.type + ", " + (temp.speed > 0 ? "이동중, " : empty) + (temp.inside is null ? "1인용 탈것, " : "정원 " + temp.get_passengers() + " / " + temp.maxpassengers + ", ") + (temp.z > this.z ? "위에 " : temp.z < this.z ? "아래에 " : empty) + calculate_x_y_string(calculate_x_y_angle(this.x, this.y, temp.x, temp.y, this.facing)) + " 방향으로 " + get_range + "칸 떨어짐. ", temp.id);
+ret++;
+}
+if (ret == 0)
+{
+this.alert("주변엔 아무것도 없습니다.");
+sm.reset();
+return;
+}
+sm.add("회수", "recall");
+sm.intro = ret + "대의 차량이 보입니다.";
+sm.initial_packet = "ridevehicle";
+sm.send(this.peer_id);
+sm.reset();
+return;
+}
+sm.add("체력 " + v.health + " / " + v.maxhealth);
+sm.add("배터리 " + v.fuel + "%");
+if (v.hitby != "없음") sm.add(string_replace(v.hitby, ":", ", ", true) + "로부터 공격받음");
+if (v.inside !is null) sm.add("정원 " + v.get_passengers() + " / " + v.maxpassengers);
+if (v.started) sm.add("초당 " + round(v.speed, 2) + "칸 이동중, RPM " + round(v.pitch * v.vfuelpitch * 60, 2));
+sm.add(v.facing + "도 방향" + (v.flying ? ", 기수 " + v.nose + "도 " : v.nosechange > 0 ? ", 올라가는 중" : v.nosechange < 0 ? ", 내려가는 중" : empty));
+sm.initial_packet = "copy";
+sm.intro = v.type + "의 차량 상태";
+sm.send(this.peer_id);
+sm.reset();
+}
+break; case order_weaponmode:
+{
+if (this.main_weapon is null) return;
+if (this.reloading > 0) return;
+int list = 0, list2 = 1;
+if (this.weapon !is this.main_weapon)
+{
+sm.add(this.main_weapon.description, this.main_weapon.type);
+list++;
+}
+string[]@ keys = this.main_weapon.add_ons.keys;
+int keyslength = keys.length;
+for (uint i = 0; i < keyslength; i++)
+{
+weapon_data@ temp = get_weapon_handle(keys[i]);
+if (temp is null) continue;
+list2++;
+if (temp is this.weapon) continue;
+if (!temp.requirements.is_empty())
+{
+bool no_item = false;
+int rlength = temp.requirements.length;
+for (uint j = 0; j < rlength; j++)
+{
+if (this.inventory.exists(temp.requirements[j])) continue;
+no_item = true;
+}
+if (no_item) continue;
+}
+sm.add(temp.description, temp.type);
+list++;
+}
+if (list < 1)
+{
+this.alert(list2 <= 1 ? "모드를 변경할 수 없는 무기입니다." : "현재 " + list2 + "개의 모드 중 기본 모드만을 사용할 수 있습니다.");
+sm.reset();
+return;
+}
+sm.initial_packet = "draw";
+sm.intro = "전체 " + (this.main_weapon.add_ons.size + 1) + "개 모드 중 " + (list + 1) + "개 사용 가능. 모드 선택.";
+sm.send(this.peer_id);
+sm.reset();
+}
+break; case order_trackmenu:
+{
+if (this.invinsible) return;
+if (this.map.no_tracking == 1) return;
+string sendmess;
+vehicle@ vh;
+mapdata@ map = this.map;
+double range = 75 / this.weaponsight;
+if (this.map.is_vehicle)
+{
+@ vh = this.map.vhc;
+@ map = vh.map;
+range = vh.sight_range;
+}
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.health <= 0) continue;
+if (temp is vh) continue;
+if (temp.p is this) continue;
+sendmess += temp.owner + "님의_" + temp.type + " v" + temp.id + " " + (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z)) + "[]";
+}
+int playerslength = map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = map.players[i];
+if (temp.health <= 0) continue;
+if (temp is this) continue;
+if (temp.hidden) continue;
+if (temp.invisible) continue;
+if (temp.invinsible) continue;
+if (temp.ride !is null) continue;
+sendmess += temp.name + " p" + temp.name + " " + (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z)) + "[]";
+}
+int robotslength = map.robots.length;
+for (uint i = 0; i < robotslength; i++)
+{
+Robot@ temp = map.robots[i];
+if (temp.health <= 0) continue;
+if (!temp.trackable) continue;
+sendmess += temp.name + (temp.map.fighting == 0 ? "_팀_" + temp.group + "," : empty) + "_체력_" + temp.health + " r" + temp.id + " " + (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z)) + "[]";
+}
+this.sendpacket("trackset " + sendmess);
+}
+break; case order_trackinfo:
+{
+if (this.tracking_type == 0)
+{
+this.alert("누구도 추적하고 있지 않습니다.");
+return;
+}
+this.trackinfo(true);
+}
+break; case order_ammocheck:
+{
+if (this.map.is_vehicle)
+{
+int vi = this.map.vhc.find_interior(this.rx, this.ry, this.z);
+if (vi > -1)
+{
+vehicle_interior@ temp = this.map.vhc.interiors[vi];
+if (temp.type == INTERIOR_WEAPON)
+{
+if (temp.max_ammo < 1)
+{
+this.alert("보급이 필요 없는 무기입니다.");
+return;
+}
+this.alert(temp.require_ammo + "  " + temp.current_ammo + " / " + temp.max_ammo);
+return;
+}
+}
+}
+player@ t = (this.following is null ? this : this.following);
+if (t.weapon is null)
+{
+this.alert("무장한 것이 없습니다.");
+return;
+}
+if (t.main_weapon is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (t.weapon.require_ammo.is_empty())
+{
+this.alert("무기 " +  t.main_weapon.type + ", 모드 " + t.weapon.description + ", 재장전할 필요 없습니다.");
+return;
+}
+if (t.weapon.max_ammo == 0)
+{
+this.alert((t is this ? this.weapon.require_ammo + " " + this.get_item_count(this.weapon.require_ammo) + "개 남음, " : empty) + "무기 " + t.main_weapon.type + ", 모드 " + t.weapon.description + ", 재장전할 필요 없습니다.");
+return;
+}
+int loadedammo = t.get_ammo_count(t.weapon_group);
+int currentammo = t.get_item_count(t.weapon.require_ammo);
+this.alert(loadedammo + " / " + t.weapon.max_ammo + " 장전됨, 무기 " + t.main_weapon.type + ", 모드 " + t.weapon.description + ", " + t.weapon.require_ammo + (t is this ? " " + currentammo + "개 보유 중." : "필요"));
+}
+break; case order_healthcheck:
+{
+player@ temp = (this.following is null ? this : this.following);
+this.alert("체력 " + temp.health + ", 실드 내구도 " + temp.shieldshots + ", 상대 방어력 " + round(temp.hurtlevel * 100, 0) + "%");
+}
+break; case order_overheatcheck:
+{
+this.alert("무기 과열율 " + (this.following is null ? this.overheat_level : this.following.overheat_level) + "%");
+}
+break; case order_equipinfo:
+{
+if (this.following !is null)
+{
+this.alert(this.following.wear_text.is_empty() ? "아무것도 착용하고 있지 않습니다." : "장비, " + dictionary_to_text(this.following.wear_text, ", ", false));
+return;
+}
+if (this.wear.is_empty())
+{
+this.alert("아무것도 착용하고 있지 않습니다.");
+return;
+}
+string[]@ wearlist = this.wear.keys;
+int wearlistlength = wearlist.length;
+for (uint i = 0; i < wearlistlength; i++)
+{
+equipment@ eq;
+if (!this.wear.get(wearlist[i], @ eq)) continue;
+sm.add(eq.region + ", " + eq.name, eq.region);
+}
+sm.initial_packet = "equip";
+sm.intro = "착용 중인 장비";
+sm.send(this.peer_id);
+sm.reset();
+}
+break; case order_foodcheck:
+{
+this.alert("기력 " + (this.following is null ? round(this.energy, 0) : round(this.following.energy, 0)));
+}
+break; case order_myinfo:
+{
+player@ temp = this;
+if (parsed.length > 1)
+{
+@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("접속 중이 아닙니다.");
+return;
+}
+}
+sm.initial_packet = "copy";
+sm.intro = temp.name + "님의 캐릭터 정보. 닫으려면 Escape 키를 누르세요.";
+if (temp.trust.exists(this.name)) sm.add("위치, " + temp.map.name + ", " + temp.x + " " + temp.y + " " + temp.z);
+if (!temp.wear_text.is_empty()) sm.add("장비, " + dictionary_to_text(temp.wear_text, ", ", false));
+sm.add("킬, " + temp.kills);
+sm.add("데스, " + temp.deaths);
+sm.add("레이팅, " + temp.rating);
+sm.add("서바이벌 레이팅, " + temp.sv_rating);
+sm.add("피퍼 레이팅, " + temp.pipper_rating);
+sm.add("경험치, " + temp.exp);
+sm.add("플레이시간, " + ms_to_readable_time(temp.playtimer.elapsed));
+sm.add("완수한 임무 수, " + temp.a.size + "개.");
+sm.add("무기 도감, " + temp.weapon_count.size + "개.");
+if (temp.hitby != "없음") sm.add(string_replace(temp.hitby, ":", ", ", true) + "로부터 공격받음.");
+if (temp.gang !is null)
+{
+sm.add("소속, " + temp.gang.teamname);
+sm.add("조직 킬, " + temp.gang.teamkills);
+sm.add("조직 점수, " + temp.gang.points);
+}
+if (!temp.title.is_empty()) sm.add("타이틀, " + temp.title);
+sm.add("닉네임, " + temp.name);
+sm.add("보낸 채팅 수, " + temp.chats);
+sm.add("사용 언어, " + temp.langchan);
+if (temp is this)
+{
+sm.add("접속 IP, " + n.get_peer_address(temp.peer_id));
+sm.add("접속 컴퓨터 ID, " + temp.compid);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+break; case order_air:
+{
+int air = (this.following is null ? this.air : this.following.air);
+this.alert("여유분 산소 " + air + ", 약 " + ms_to_readable_time(air * 3500) + "동안 사용할 수 있을 것입니다.");
+}
+break; case order_whoonline:
+{
+string mess;
+int plnum = 0;
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+if (temp.hidden)
+{
+if (this.rank < 1) continue;
+mess += "관리자 " + temp.name + "~~" + temp.name + "[]";
+plnum++;
+continue;
+}
+if (temp.gang !is null) mess += temp.gang.teamname + " ";
+mess += temp.title + " " + temp.name + "~~" + temp.name + "[]";
+plnum++;
+}
+if (plnum < 2)
+{
+this.alert("혼자 접속하고 계시네요.");
+return;
+}
+this.sendpacket("playermenu " + mess);
+}
+break;
+}
+}
+
+
+void order_func_ui(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+log("chan4", this.name + "님이 보냄: " + message);
+switch (string_to_hash(parsed[0]))
+{
+case order_copy:
+{
+string text = string_trim_left(message, 5);
+if (text.is_empty() or text == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+this.alert("클립보드로 복사되었습니다.");
+this.sendpacket("clip " + text);
+}
+break; case order_viewranking:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+string vx = parsed[1];
+string s;
+if (rank_data.exists(vx)) rank_data.get(vx, s);
+else
+{
+string[]@ chars = find_files("./chars/*.usr");
+string tempchar;
+int charlength = chars.length;
+for (uint i = 0; i < charlength; i++)
+{
+tempchar = string_trim_right(chars[i], 4);
+int result = string_to_number(get_char_val(tempchar, vx, true));
+if (result == 0) continue;
+s += tempchar + ":" + result + "[]";
+}
+rank_data.set(vx, s);
+}
+if (s.is_empty())
+{
+this.alert("아직 순위에 등록된 사람이 없습니다.");
+return;
+}
+this.sendpacket("ranking " + vx + " " + s);
+}
+break; case order_teamcreate:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (string_contains(parsed[1], "[SPCE]", 1) > -1)
+{
+this.alert("조직 이름에 빈 칸을 넣을 수는 없습니다.");
+return;
+}
+if (string_contains(parsed[1], ".", 1) > -1)
+{
+this.alert("그 이름은 서버에서 금지하고 있습니다.");
+return;
+}
+if (filterchar(parsed[1]))
+{
+this.alert("그 이름은 서버에서 금지하고 있습니다.");
+return;
+}
+if (this.gang !is null)
+{
+this.alert("조직 안에서 또 조직을 만든다고요? 조직을 먼저 탈퇴하세요.");
+return;
+}
+if (team_list.exists(parsed[1]))
+{
+this.alert("이미 존재하는 조직입니다.");
+return;
+}
+this.playsound("confirmation");
+team@ new = create_team(parsed[1], this.name);
+@ this.gang = new;
+new.online.insert_last(this);
+this.save();
+this.alert("조직을 창설했습니다. 초기 암호: " + new.password, true);
+this.sendsound("teamcreate");
+}
+break; case order_voiceset:
+{
+if (parsed.length < 2) return;
+if (this.map.fighting == 1) return;
+int num = string_to_number(parsed[1]);
+if (num <= 0 or num >= 8)
+{
+this.alert("입력이 바르지 않습니다.");
+return;
+}
+this.voice = num;
+this.sendsound("hit" + this.voice + random(1, 5));
+this.alert("완료");
+}
+break; case order_track:
+{
+if (parsed.length < 2) return;
+string answer = parsed[1];
+if (answer.size < 2) return;
+if (answer == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+string target = string_trim_left(answer, 1);
+int type = character_to_ascii(answer[0]);
+switch (type)
+{
+case ascii_p:
+{
+player@ temp = get_player_handle(target);
+if (temp is null)
+{
+this.alert("사거리를 벗어났습니다.");
+return;
+}
+if (temp is this)
+{
+this.alert("분수에 맞는 행동을 해야 합니다!");
+return;
+}
+if (this.get_smoke())
+{
+this.alert("연기 때문에 추적기 화면이 잘 보이지 않습니다.");
+return;
+}
+this.tracking_target.set("target", @ temp);
+this.tracking_type = ascii_p;
+this.alert("경로 안내를 시작합니다.");
+}
+break;
+case ascii_v:
+{
+vehicle@ temp = get_vehicle_handle(target);
+if (temp is null)
+{
+this.alert("사거리를 벗어났습니다.");
+return;
+}
+if (this.map.is_vehicle)
+{
+if (temp is this.map.vhc)
+{
+this.alert("당신의 공은 이미 하늘의 이치를 넘어섰습니다.");
+return;
+}
+if (this.map.vhc.in_smoke)
+{
+this.alert("연기 때문에 추적기 화면이 잘 보이지 않습니다.");
+return;
+}
+}
+if (this.in_smoke)
+{
+this.alert("연기 때문에 추적기 화면이 잘 보이지 않습니다.");
+return;
+}
+this.tracking_target.set("target", @ temp);
+this.tracking_type = ascii_v;
+this.alert("경로 안내를 시작합니다.");
+}
+break;
+case ascii_r:
+{
+Robot@ temp = get_spawned_robot_handle(target);
+if (temp is null)
+{
+this.alert("사거리를 벗어났습니다.");
+return;
+}
+if (this.get_smoke())
+{
+this.alert("연기 때문에 추적기 화면이 잘 보이지 않습니다.");
+return;
+}
+this.tracking_target.set("target", @ temp);
+this.tracking_type = ascii_r;
+this.alert("경로 안내를 시작합니다.");
+}
+break;
+case ascii_m:
+{
+string[]@ xyz = string_split(target, ":", false);
+if (xyz.length < 3)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+this.trackx = string_to_number(xyz[0]);
+this.tracky = string_to_number(xyz[1]);
+this.trackz = string_to_number(xyz[2]);
+this.tracking_type = ascii_m;
+this.alert("경로 안내를 시작합니다.");
+}
+break;
+case ascii_s:
+{
+this.tracking_target.delete_all();
+this.tracking_type = 0;
+this.alert("경로 안내를 종료합니다.");
+}
+break;
+default:
+break;
+}
+}
+break; case order_sight:
+{
+if (parsed.length < 2) return;
+string selection = parsed[1];
+if (selection == "back" or selection.size < 3)
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (selection == "stop")
+{
+@ this.sightplayer = null;
+@ this.sightvehicle = null;
+this.alert("이제 아무도 주시하지 않습니다.");
+return;
+}
+int index = character_to_ascii(selection);
+switch (index)
+{
+case ascii_p:
+{
+player@ temp = get_player_handle(string_trim_left(selection, 2));
+if (temp !is null)
+{
+@ this.sightplayer = temp;
+@ this.sightvehicle = null;
+}
+}
+break; case ascii_v:
+{
+vehicle@ temp = get_vehicle_handle(string_trim_left(selection, 2));
+if (temp !is null)
+{
+@ this.sightvehicle = temp;
+@ this.sightplayer = null;
+}
+}
+break; default:
+return;
+}
+this.checksight(2);
+}
+break; case order_rearm:
+{
+if (parsed.length < 2) return;
+if (!this.map.is_vehicle) return;
+string answer = parsed[1];
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.map.vhc.started)
+{
+this.alert("안전한 재보급을 위해 차량의 시동을 꺼야 합니다.");
+return;
+}
+int vi = this.map.vhc.find_interior(this.rx, this.ry, this.z);
+if (vi < 0) return;
+vehicle_interior@ temp = this.map.vhc.interiors[vi];
+if (temp.max_ammo < 1)
+{
+this.alert("재보급할 필요 없는 무기입니다.");
+return;
+}
+int posible = temp.max_ammo - temp.current_ammo;
+if (posible < 1)
+{
+this.alert("그 무기의 탄약은 이미 충분합니다.");
+return;
+}
+int having = this.get_item_count(temp.require_ammo);
+int amount = having;
+if (answer != "a") amount = string_to_number(answer);
+if (amount <= 0)
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (amount > posible) amount = posible;
+if (having < amount)
+{
+this.alert(temp.require_ammo + " " + amount + "개는 당신에게 없습니다. 당신은 " + having + "개를 가지고 있습니다.", true);
+return;
+}
+this.give(temp.require_ammo, -amount);
+temp.current_ammo += amount;
+this.playsound("give");
+this.alert("무기를 재보급합니다.");
+}
+break; case order_betaclient:
+{
+if (this.rank < 1 and !this.hidden)
+{
+this.betatester = true;
+send(0, this.name + "님은 베타 테스터입니다.", 2);
+}
+}
+break; case order_cmmode:
+{
+if (parsed.length < 2) return;
+string answer = parsed[1];
+if (answer == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.inventory.is_empty())
+{
+this.alert("가진 게 아무것도 없습니다.");
+return;
+}
+this.cmmode = (answer == "yes" ? 2 : 1);
+if (this.cmmode == 2 and this.map.fighting == 0)
+{
+this.alert("뭘 하려는 거죠?");
+return;
+}
+int itemslength = this.itemnames.length;
+string menuitems;
+string itemname;
+for (uint i = 0; i < itemslength; i++)
+{
+itemname = this.itemnames[i];
+if (this.cmmode == 2)
+{
+if (!carrierdict.exists(itemname)) continue;
+}
+int a;
+this.inventory.get(itemname, a);
+menuitems += itemname + " " + a + "개:" + itemname + "[]";
+}
+if (menuitems.is_empty())
+{
+this.alert("현재는 사용 가능한 아이템이 없습니다.");
+return;
+}
+send_menu(this.peer_id, "무엇을 실어 나를까요?", "cmstart", menuitems);
+}
+break; case order_cmstart:
+{
+if (parsed.length < 2) return;
+if (this.cmmode == 0) return;
+if (this.tracking_type < 1) return;
+if (is_no_item(this.trackx, this.tracky, this.trackz, this.map, "carrier_missile")) return;
+string selection = parsed[1];
+if (selection == "back" or selection.is_empty() or selection == " " or selection == "carrier_missile")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (dontlosedict.exists(selection))
+{
+this.alert("당신에겐 그럴 재주가 없습니다.");
+return;
+}
+if (this.cmmode == 1)
+{
+this.give("carrier_missile", -1);
+this.give(selection, -1);
+this.playsound("carrier_missile_start");
+spawn_carrier_missile(this.x, this.y, this.z, this.trackx, this.tracky, this.trackz, this.map, this, selection, false);
+return;
+}
+if (this.map.fighting == 0)
+{
+this.alert("전투가 불가능한 맵입니다.");
+return;
+}
+if (is_no_item(this.trackx, this.tracky, this.trackz, this.map, selection))
+{
+this.alert("그곳에서는 존재할 수 없는 아이템입니다.");
+return;
+}
+int amount = 0;
+if (selection == "remote_gun")
+{
+amount = this.get_item_count("_338_magnum_bullet");
+if (amount > 100) amount = 100;
+if (amount <= 0)
+{
+this.alert("장전할 총알이 없습니다. _338_magnum_bullet이 필요합니다.");
+return;
+}
+this.give("_338_magnum_bullet", -amount);
+}
+else if (selection == "remote_anti-air_gun")
+{
+amount = this.get_item_count("_battery");
+if (amount > 50) amount = 50;
+if (amount <= 0)
+{
+this.alert("장착할 배터리가 없습니다.");
+return;
+}
+this.give("_battery", -amount);
+}
+this.playsound("carrier_missileinput");
+this.give("carrier_missile", -1);
+this.give(selection, -1);
+this.temp_invinsible = false;
+this.playsound("carrier_missile_start");
+spawn_carrier_missile(this.x, this.y, this.z, this.trackx, this.tracky, this.trackz, this.map, this, selection, true, amount);
+}
+break; case order_nearselect:
+{
+if (parsed.length < 2) return;
+if (this.invinsible) return;
+string s;
+mapdata@ map = this.map;
+double range = 75 / this.weaponsight;
+if (this.map.is_vehicle)
+{
+@ map = this.map.vhc.map;
+range = this.map.vhc.sight_range;
+}
+int mode = string_to_number(parsed[1]);
+switch (mode)
+{
+case 1:
+{
+int missileslength = map.missiles.length;
+for (uint i = 0; i < missileslength; i++)
+{
+missile@ temp = map.missiles[i];
+int get_range =  (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += temp.owner.name + "님의_missile m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 2:
+{
+int remgunslength = map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+remgun@ temp = map.remguns[i];
+if (temp.hid.health <= 0) continue;
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += temp.owner + "님의_" + (temp.anti_air ? "remote_anti-air_gun" : "remote_gun") + " m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 3:
+{
+int remote_timebombslength = map.remote_timebombs.length;
+for (uint i = 0; i < remote_timebombslength; i++)
+{
+remote_timebomb@ temp = map.remote_timebombs[i];
+if (temp.hid.health <= 0) continue;
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += "remote_timebomb m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 4:
+{
+if (map.name != "세이프존") break;
+int lockerslength = lockers.length;
+for (uint i = 0; i < lockerslength; i++)
+{
+minilocker@ temp = lockers[i];
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += "금고_버전_" + temp.security_boosts + " m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 5:
+{
+int vending_machineslength = map.vending_machines.length;
+for (uint i = 0; i < vending_machineslength; i++)
+{
+vending_machine@ temp = map.vending_machines[i];
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += "자판기__" + string_replace(temp.description, " ", "_", true) + " m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 6:
+{
+int objslength = map.objs.length;
+for (uint i = 0; i < objslength; i++)
+{
+obj@ temp = map.objs[i];
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += "아이템__" + temp.name + " m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break; case 7:
+{
+int smoke_grenadeslength = map.smoke_grenades.length;
+for (uint i = 0; i < smoke_grenadeslength; i++)
+{
+smoke_grenade@ temp = map.smoke_grenades[i];
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range) continue;
+s += "smoke_grenade m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+}
+break;
+}
+if (s.is_empty())
+{
+this.alert("아직은 해당 물체가 보이지 않습니다.");
+return;
+}
+this.sendpacket("trackset " + s);
+}
+break; case order_robotcall:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.map.fighting == 0) return;
+if (this.robotspawntimer.elapsed < robotspawn_origin)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return;
+}
+RobotTemplate@ temp = get_rt_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("그런 로봇은 없습니다.");
+return;
+}
+if (temp.level <= 0)
+{
+this.alert("알 수 없는 강력한 힘이 당신의 행동을 저지합니다.");
+return;
+}
+int level = 0;
+if (this.inventory.exists("master_robot_card"))
+{
+if (!is_no_item(this.trackx, this.tracky, this.trackz, this.map, "master_robot_card")) level = 1;
+}
+if (level == 0)
+{
+if (!this.inventory.exists("robot_card"))
+{
+this.alert("어떻게 로봇 카드 없이 로봇을 부르겠다는 거죠?");
+return;
+}
+this.give("robot_card", -1);
+}
+this.work(pc_robot_spawning);
+this.playsound("robotcall");
+this.robotname = parsed[1];
+this.temp_invinsible = false;
+}
+break; case order_convertcheck:
+{
+if (parsed.length < 2) return;
+int amount = string_to_number(parsed[1]);
+if (parsed[1] == "a") amount = this.get_item_count("coin") / 105000;
+if (amount <= 0 or amount > 20000)
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.get_item_count("coin") < (105000 * amount))
+{
+this.alert("환전할 돈이 부족합니다.");
+return;
+}
+this.give("street_check", amount);
+this.give("coin", -(105000 * amount));
+this.playsound("store_purchase_success");
+}
+break; case order_convertcoin:
+{
+if (parsed.length < 2) return;
+int amount = string_to_number(parsed[1]);
+if (parsed[1] == "a") amount = this.get_item_count("street_check");
+if (amount <= 0 or amount > 20000)
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.get_item_count("street_check") < amount)
+{
+this.alert("환전할 돈이 부족합니다.");
+return;
+}
+this.give("street_check", -amount);
+this.give("coin", (100000 * amount));
+this.playsound("store_purchase_success");
+}
+break; case order_dropnow:
+{
+if (parsed.length < 3) return;
+if (this.rank < 1)
+{
+if (this.invinsible) return;
+}
+if (this.stunned) return;
+if (this.working()) return;
+if (dontlosedict.exists(parsed[1]))
+{
+this.alert("귀속 아이템은 버릴 수 없습니다.");
+return;
+}
+int how = (parsed[2] == "a" ? this.get_item_count(this.dropitem) : string_to_number(parsed[2]));
+if (how <= 0)
+{
+this.alert("입력이 바르지 않습니다.");
+return;
+}
+int amount = this.get_item_count(parsed[1]);
+if (amount < how)
+{
+this.alert("그렇게 많이 가지고 있지 않은 것 같습니다.");
+return;
+}
+this.playsound("objdrop");
+this.give(parsed[1], -how);
+spawn_timeitem(this.x, this.y, this.z, this.map, parsed[1], how, 5000, true);
+}
+break; case order_ridevehicle:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]" or parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (parsed[1] == "recall")
+{
+int recalls = 0;
+int inp = 0, needrepair = 0, inlocker = 0;
+for (int i = this.map.vs.length - 1; i > -1; i--)
+{
+vehicle@ temp = this.map.vs[i];
+int get_range = this.distancecheck(temp.x, temp.y, temp.z);
+if (get_range > 10) continue;
+if (this.name != temp.owner) continue;
+if (temp.health < temp.maxhealth)
+{
+needrepair++;
+continue;
+}
+if (!temp.locker.inventory.is_empty())
+{
+inlocker++;
+continue;
+}
+if ((temp.inside is null ? temp.p !is null : temp.get_passengers() > 0))
+{
+inp++;
+continue;
+}
+recalls++;
+temp.removecheck(true);
+this.give(temp.type, 1, false);
+this.map.vs.remove_at(i);
+}
+if (recalls > 0) this.update_inv();
+this.alert(recalls + "대의 차량을 성공적으로 회수했습니다. " + inp + "대의 차량은 아직 안에 사람이 있고, " + needrepair + "대의 차량은 수리가 되어 있지 않으며, " + inlocker + "대의 차량은 차량 내에 아이템이 수납되어 있어 회수할 수 없었습니다.", true);
+return;
+}
+vehicle@ temp = get_vehicle_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("그 차량은 이제 없는 것 같습니다.");
+return;
+}
+if (temp.map !is this.map) return;
+if (this.distancecheck(temp.x, temp.y, temp.z) > 10) return;
+temp.command("enter", this);
+}
+break; case order_locktake:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (parsed[1] == "invall")
+{
+if (temp.owner != this.name)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "금고 주인만 할 수 있습니다.");
+return;
+}
+if (temp.itemnames.is_empty())
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "비어 있습니다.");
+return;
+}
+int a;
+bool su = false;
+int invarraylength = temp.itemnames.length;
+for (uint i = 0; i < invarraylength; i++)
+{
+if (!temp.inventory.get(temp.itemnames[i], a)) continue;
+su = true;
+this.give(temp.itemnames[i], a, false);
+}
+if (su) this.update_inv();
+temp.delete_all_inv();
+temp.lockplay("takeitem");
+temp.send(this.peer_id);
+return;
+}
+this.shitem = parsed[1];
+send_serverbox(this.peer_id, 1, -1, 0, -1, "locktakenow", this.shitem + " 몇 개를 꺼낼까요?");
+}
+break; case order_locktakenow:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (dontlosedict.exists(this.shitem) and this.name != temp.owner)
+{
+this.alert("남의 금고에서 귀속 아이템을 예치/인출할 수는 없습니다.");
+return;
+}
+int amount;
+if (parsed[1] == "a") amount = temp.get_item_count(this.shitem);
+else
+{
+amount = string_to_number(parsed[1]);
+int has = temp.get_item_count(this.shitem);
+if (has < amount)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", this.shitem + " 개수가 충분하지 않습니다.");
+return;
+}
+}
+if (amount <= 0)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "입력이 바르지 않습니다.");
+return;
+}
+this.give(this.shitem, amount);
+temp.give(this.shitem, -amount);
+this.playsound("locker_takeitem");
+this.alert(this.shitem + " " + amount + "개를 금고에서 꺼냅니다.", true);
+temp.send(this.peer_id);
+}
+break; case order_equip:
+{
+if (parsed.length < 2) return;
+if (this.ride !is null)
+{
+if (this.ride.speed > 0.0)
+{
+this.alert("운전 중에 뭘 하려는 거죠?");
+return;
+}
+}
+string text=parsed[1];
+if (text.is_empty() or text == "back")
+{
+this.alert("창을 닫습니다.");
+return;
+}
+if (!this.wear.exists(text))
+{
+this.alert("그런 장비는 착용 중이 아닙니다.");
+return;
+}
+this.remove_equipments(text, true);
+}
+break; case order_lockgive:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (parsed[1] == "invall")
+{
+if (temp.owner != this.name)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "금고 주인만 할 수 있습니다.");
+return;
+}
+if (this.inventory.is_empty())
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "소지한 아이템이 없습니다.");
+return;
+}
+int a;
+bool su = false;
+int invarraylength = this.itemnames.length;
+for (uint i = 0; i < invarraylength; i++)
+{
+if (this.no_save)
+{
+if (dontlosedict.exists(this.itemnames[i])) continue;
+}
+if (!this.inventory.get(this.itemnames[i], a)) continue;
+su = true;
+temp.give(this.itemnames[i], a, false);
+}
+if (su) temp.update_inv();
+this.delete_all_inv();
+temp.lockplay("storeitem");
+temp.send(this.peer_id);
+return;
+}
+this.shitem = parsed[1];
+send_serverbox(this.peer_id, 1, -1, 0, -1, "lockgivenow", this.shitem + " 몇 개를 맡길까요?");
+}
+break; case order_lockgivenow:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (dontlosedict.exists(this.shitem))
+{
+if (this.no_save)
+{
+this.alert("서바이벌 모드 중에 임무 아이템을 예치/인출할 수는 없습니다.");
+return;
+}
+if (this.name != temp.owner)
+{
+this.alert("남의 금고에서 귀속 아이템을 예치/인출할 수는 없습니다.");
+return;
+}
+}
+int amount;
+if (parsed[1] == "a") amount = this.get_item_count(this.shitem);
+else
+{
+amount = string_to_number(parsed[1]);
+int has = this.get_item_count(this.shitem);
+if (has < amount)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", this.shitem + " 개수가 부족하여 예치할 수 없습니다.");
+return;
+}
+}
+if (amount <= 0)
+{
+send_serverbox(this.peer_id, 0, -1, 1, 1, "lockcommand", "입력이 바르지 않습니다.");
+return;
+}
+this.give(this.shitem, -amount);
+temp.give(this.shitem, amount);
+temp.lockplay("storeitem");
+this.alert(this.shitem + " " + amount + "개를 금고에 맡깁니다.", true);
+temp.send(this.peer_id);
+}
+break; case order_lockcommand:
+{
+if (parsed.length < 2) return;
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+temp.command(string_trim_left(message, 12), this);
+}
+break; case order_lockcode:
+{
+if (parsed.length < 2) return;
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+string pt = parsed[1];
+if (pt.size < 4) return;
+if (pt.size > 12) return;
+if (!string_is_digits(pt))
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (temp.code != string_to_number("0." + pt))
+{
+this.alert("잘못된 암호입니다.");
+this.sendsound("lockererror");
+return;
+}
+temp.lockplay("dooropen");
+temp.send(this.peer_id);
+}
+break; case order_changelockcode:
+{
+if (parsed.length < 2) return;
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+string pt = parsed[1];
+if (pt.size < 4) return;
+if (pt.size > 12) return;
+if (!string_is_digits(pt))
+{
+this.alert("취소되었습니다.");
+return;
+}
+temp.code = string_to_number("0." + pt);
+this.alert("이제 새 암호는 " + pt + " 입니다.", true);
+}
+break; case order_newlocker:
+{
+if (parsed.length < 2) return;
+string a = parsed[1];
+if (a != "y")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.get_item_count("coin") < 30000)
+{
+this.alert("잔액이 부족합니다.");
+return;
+}
+this.alert("감사합니다. 이제 로커룸으로 가서 사설 금고를 설치할 수 있습니다. 로커룸은 세이프존 맵 2층에 있습니다.");
+this.playsound("store_purchase_success");
+this.give("locker_pack", 1);
+this.give("coin", -30000);
+}
+break; case order_newsecboost:
+{
+if (parsed.length < 2) return;
+string a = parsed[1];
+if (a != "y")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (this.get_item_count("coin") < 10000)
+{
+this.alert("잔액이 부족합니다.");
+return;
+}
+this.alert("감사합니다. 이제 사설 금고의 하드웨어 보안을 강화할 수 있습니다.");
+this.playsound("store_purchase_success");
+this.give("locker_security_booster", 1);
+this.give("coin", -10000);
+}
+break; case order_describe:
+{
+if (parsed.length < 2) return;
+this.alert(get_item_description(parsed[1]));
+}
+break; case order_recordrequest:
+{
+this.sendpacket(this.voicechat ? "startrecording" : "refuserecording");
+}
+break; case order_placetbomb:
+{
+if (parsed.length < 2) return;
+if (this.map.fighting == 0) return;
+if (this.mbombtimer.elapsed < 500) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+int seconds = string_to_number(parsed[1]);
+if (seconds < 1)
+{
+this.alert("입력이 바르지 않습니다.");
+return;
+}
+if (seconds > 86400)
+{
+this.alert("폭탄이 썩어 사용할 수 없게 되길 원합니까?");
+return;
+}
+this.temp_invinsible = false;
+this.mbombtimer.force(0);
+int ms = seconds * 1000;
+placetimebomb(this.x, this.y, this.z, this.map, this.name, ms);
+this.give("timebomb", -1);
+}
+break; case order_insertamount:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+vending_machine@ v = find_vending_machine(this.x, this.y, this.z, this.map);
+if (v is null) return;
+int amount = string_to_number(parsed[1]);
+if (this.get_item_count("coin") < amount)
+{
+this.alert("잔액이 부족합니다.");
+return;
+}
+v.vplay("insert");
+v.coins += amount;
+this.give("coin", -amount);
+}
+break; case order_vendingpress:
+{
+if (parsed.length < 2) return;
+string cmd = string_trim_left(message, 13);
+if (cmd == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+vending_machine@ vx = find_vending_machine(this.x, this.y, this.z, this.map);
+if (vx is null) return;
+vx.command(cmd, e.peer_id);
+}
+break; case order_purchase:
+{
+if (parsed.length < 3) return;
+if (this.rank < 1)
+{
+if (this.invinsible) return;
+}
+if (this.stunned) return;
+if (this.working()) return;
+purchase(parsed[1], parsed[2], this);
+}
+break; case order_purchaseconnect:
+{
+if (parsed.length < 2) return;
+store@ temp = get_store_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("취소되었습니다.");
+return;
+}
+temp.send(this);
+}
+break; case order_quizsubmit:
+{
+if (parsed.length < 2)
+{
+this.alert("취소되었습니다.");
+return;
+}
+onlinequiz@ q = find_quiz(this.rx, this.ry, this.z, this.map);
+if (q is null)
+{
+this.alert("취소되었습니다.");
+return;
+}
+quiz_submit(parsed[1], this, q);
+}
+break; case order_rbomb:
+{
+if (parsed.length < 2) return;
+if (this.map.fighting == 0) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+this.temp_invinsible = false;
+place_remote_timebomb(this.x, this.y, this.z, this.map, this.name, string_to_number(parsed[1]));
+this.alert(this.x + " " + this.y + " " + this.z + " 에 원격 폭탄을 설치했습니다. 작동 코드는 " + parsed[1] + " 입니다.");
+this.give("remote_timebomb", -1);
+}
+break; case order_rtdcode:
+{
+if (parsed.length < 2) return;
+if (this.map.fighting == 0) return;
+if (parsed[1] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+int code = string_to_number(parsed[1]);
+int exploded = 0;
+this.temp_invinsible = false;
+this.playsound("remote_timebombcode");
+int remote_timebombslength = this.map.remote_timebombs.length;
+for (uint i = 0; i < remote_timebombslength; i++)
+{
+remote_timebomb@ temp = this.map.remote_timebombs[i];
+if (temp.code == code)
+{
+exploded++;
+temp.bombtimer.force(0);
+temp.d = true;
+play("remote_timebombcharge", temp.x, temp.y, temp.z, temp.map);
+}
+}
+this.alert(exploded + "개의 원격 폭탄이 응답합니다.");
+}
+break; case order_playonmap:
+{
+if (parsed.length < 2) return;
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+if (players[i] !is this)
+{
+this.sendpacket("play_3ds " + string_replace(parsed[1], ".ogg", empty, true) + " " + this.x + " " + this.y + " " + this.z);
+}
+}
+}
+break; case order_packsomething:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+string item = parsed[1];
+if (this.get_item_count(item) < 10) return;
+if (this.get_item_count("empty_pack") < 1) return;
+this.give(item, -10);
+this.give("pack_of_10_" + item, 1);
+this.give("empty_pack", -1);
+this.playsound("pack");
+this.alert(item + " 10개를 포장하여 한 묶음으로 만듭니다.");
+}
+break; case order_restartserver:
+{
+send(0, "notify 서버 재시작 중입니다.", 0);
+send(0, "reboot", 0);
+save_all();
+wait(200);
+run(get_script_path(), empty, false, false);
+exit();
+}
+break; case order_lchannelset:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+this.langchan = parsed[1];
+this.alert(this.langchan + " 언어 채널로 변경합니다.");
+}
+break; case order_remgunidset:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (parsed[1] == "attackall")
+{
+this.sendsound("remgun_connect");
+this.sendpacket("remcontrol");
+this.cremguns = true;
+return;
+}
+remgun@ temp = get_remgun_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("응답하지 않습니다. 아마도 누군가에 의해 고장난 것 같습니다.");
+return;
+}
+this.remgunid = string_to_number(parsed[1]);
+this.playsound("remgun_connect");
+send_serverbox(this.peer_id, 0, -1, 1, 1, "remguncommand", "명령을 내려주십시오. 도움말을 보려면 H를 누르십시오.");
+}
+break; case order_remguncommand:
+{
+if (parsed.length < 2) return;
+if (this.remgunid == -1) return;
+remgun@ temp = get_remgun_handle(this.remgunid);
+if (temp is null)
+{
+this.alert("응답하지 않습니다. 아마도 누군가에 의해 고장난 것 같습니다.");
+this.remgunid = -1;
+return;
+}
+temp.command(parsed[1], e.peer_id);
+}
+break; case order_adminlogcopy:
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+if (parsed[1] == "copyall")
+{
+this.sendpacket("clip " + adminlog);
+this.alert("클립보드로 복사되었습니다.");
+return;
+}
+string s = string_trim_left(message, 13);
+this.sendpacket("clip " + s);
+this.alert("클립보드로 복사되었습니다.");
+}
+break; case order_giveitem:
+{
+if (parsed.length < 3) return;
+if (parsed[2] == "[cncel]")
+{
+this.alert("취소되었습니다.");
+return;
+}
+this.tempitem = parsed[1];
+this.tempamount = (parsed[2] == "a" ? -1 : string_to_number(parsed[2]));
+int pret = 0;
+int playerslength = this.map.players.length;
+for (uint px = 0; px < playerslength; px++)
+{
+player@ temp = this.map.players[px];
+if (temp is this) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 5) continue;
+sm.add(temp.name);
+pret++;
+}
+if (pret < 1)
+{
+this.alert("주위엔 아무도 없습니다.");
+return;
+}
+sm.initial_packet = "giveset2";
+sm.intro = "플레이어 선택";
+sm.send(this.peer_id);
+sm.reset();
+}
+break; case order_giveset2:
+{
+if (parsed.length < 2) return;
+if (this.rank < 1)
+{
+if (this.invinsible) return;
+}
+if (this.stunned) return;
+if (parsed[1] == "back")
+{
+this.alert("취소되었습니다.");
+return;
+}
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert(parsed[1] + "님은 게임을 떠난 것 같습니다.");
+return;
+}
+if (temp is this)
+{
+this.alert("당신은 기괴한 포즈로 한 손으로 아이템을 잡고 반대 손으로 던져봅니다.");
+return;
+}
+if (temp.map !is this.map)
+{
+this.alert("다른 맵에 있습니다.");
+return;
+}
+int dist = temp.distancecheck(this.x, this.y, this.z);
+if (dist > 5)
+{
+this.alert("5칸보다 멀리 있어 던져도 닿지 않을 것 같습니다.");
+return;
+}
+string tempi = this.tempitem;
+if (tempi.is_empty()) return;
+int amount = this.tempamount;
+if (amount == 0 or amount < -1)
+{
+this.alert("당신은 아이템을 창조한다는 기특하지만 한편으로는 가소로운 발상에 도달했습니다. 당신의 용기만큼은 경의를 표합니다.");
+return;
+}
+int tempa = this.get_item_count(tempi);
+if (tempa <= 0)
+{
+this.alert("없는 아이템을 줄 순 없습니다.");
+return;
+}
+if (amount == -1) amount = tempa;
+if (tempa < amount)
+{
+this.alert(tempi + " " + amount + "개는 당신에게 없습니다. 당신은 " + tempa + "개를 가지고 있습니다.", true);
+return;
+}
+if (dontlosedict.exists(tempi))
+{
+this.alert("귀속 아이템은 줄 수 없습니다.");
+return;
+}
+this.give(tempi, -amount);
+temp.give(tempi, amount);
+this.playsound("give");
+this.alert(temp.name + "님에게 " + tempi + " " + amount + "개를 건네줍니다.", true);
+temp.alert(this.name + "님이 " + tempi + " " + amount + "개를 건네줍니다.", true);
+}
+break; case order_sellitem:
+{
+if (parsed.length < 3) return;
+if (this.rank < 1)
+{
+if (this.invinsible) return;
+}
+if (this.stunned) return;
+if (this.working()) return;
+if (parsed[1] == "street_check" or parsed[1] == "coin" or parsed[1] == "coin_pack")
+{
+this.alert("화폐를 팔고 싶으면 환전기 등을 이용하면 됩니다.");
+return;
+}
+if (!sellitems.exists(parsed[1]))
+{
+this.alert("팔 수 없는 아이템입니다.");
+return;
+}
+sell(parsed[1], parsed[2], this);
+}
+break; case order_toolbox:
+{
+if (parsed.length < 2) return;
+if (this.stunned) return;
+if (this.working()) return;
+if (parsed[1] == "back")
+{
+this.alert("창을 닫습니다.");
+return;
+}
+if (!this.inventory.exists("toolbox"))
+{
+this.alert("toolbox가 없어 작업을 시작할 수 없습니다.");
+return;
+}
+if (!combines.exists(parsed[1]))
+{
+this.alert("아직은 좋은 생각이 아닌 것 같습니다.");
+return;
+}
+combine_func@ func;
+if (!combines.get(parsed[1], @ func)) return;
+func(this);
+}
+break; case order_draw:
+{
+if (parsed.length < 2) return;
+this.draw_weapon(parsed[1]);
+}
+break; case order_reginfo:
+{
+set_char_val(this.name, "등록", string_trim_left(message, 8));
+}
+break; case order_regstatus:
+{
+this.registered = string_to_number(parsed[1]);
+}
+break; case order_travel:
+{
+if (parsed.length < 2) return;
+if (this.deadtimer.elapsed < 5000) return;
+if (this.maptraveltimer.elapsed < 200) return;
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.working()) return;
+if (this.weapon !is null)
+{
+if (heavyweapons.exists(this.weapon.type))
+{
+this.alert("무거운 무기를 들고 맵 사이를 이동할 수는 없습니다.");
+return;
+}
+}
+string[]@ data = string_split(string_trim_left(message, 7), "+++", true);
+if (data.length < 4) return;
+mapdata@ mid = get_map_handle(data[3]);
+if (mid is null)
+{
+this.alert("애석하게도 해당 맵은 삭제된 것 같습니다.");
+return;
+}
+if (data.length > 4)
+{
+if (!this.is_available(string_split(data[4], "*", true))) return;
+}
+this.maptraveltimer.force(0);
+vector new = this.get_travel_data(string_to_number(data[0]), string_to_number(data[1]), string_to_number(data[2]), mid);
+this.go_to(mid, new.x, new.y, new.z, true, true);
+}
+break; case order_travelinve:
+{
+if (parsed.length <  2) return;
+if (this.deadtimer.elapsed < 5000) return;
+if (this.maptraveltimer.elapsed < 200) return;
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.working()) return;
+vehicle@ temp = this.get_vehicle();
+if (temp is null) return;
+mapdata@ oldmap = temp.map;
+string[]@ data = string_split(string_trim_left(message, 11), "+++", true);
+if (data.length < 4) return;
+mapdata@ mid = get_map_handle(data[3]);
+if (mid is null)
+{
+this.alert("삭제된 맵으로 포탈이 뚫려 있습니다. 맵 개발자에게 문의하여 이 문제를 해결할 수 있습니다.");
+return;
+}
+if (is_no_item(string_to_number(data[0]), string_to_number(data[1]), string_to_number(data[2]), mid, temp.type))
+{
+this.alert("그 차량은 입장이 금지되어 있습니다.");
+return;
+}
+if (data.length > 4)
+{
+if (temp.inside is null)
+{
+if (temp.p !is null)
+{
+if (!this.is_available(string_split(data[4], "*", true))) return;
+if (temp.map !is mid)
+{
+throw_flag(temp.map, temp, this);
+lastmanloop(temp.map, this);
+}
+}
+}
+else
+{
+if (!temp.is_available(string_split(data[4], "*", true))) return;
+if (!mid.lastman_standing.is_empty())
+{
+int playerslength = temp.inside.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+if (temp.inside.players[i].following !is null) continue;
+if (mid.lastman_standing.exists(temp.inside.players[i].name)) continue;
+this.alert("라스트맨 스탠딩에 참가하고 있지 않은 사람이 있습니다.");
+return;
+}
+playerslength = temp.followed_players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+if (mid.lastman_standing.exists(temp.followed_players[i].name)) continue;
+this.alert("라스트맨 스탠딩에 참가하고 있지 않은 사람이 있습니다.");
+return;
+}
+if (temp.map !is mid)
+{
+int playerslength = temp.inside.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+if (temp.inside.players[i].following !is null) continue;
+throw_flag(temp.map, temp, temp.inside.players[i]);
+lastmanloop(temp.map, temp.inside.players[i]);
+}
+playerslength = temp.followed_players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+throw_flag(temp.map, temp, temp.followed_players[i]);
+lastmanloop(temp.map, temp.followed_players[i]);
+}
+}
+}
+}
+}
+this.maptraveltimer.force(0);
+@ temp.map = mid;
+vector new = this.get_travel_data(string_to_number(data[0]), string_to_number(data[1]), string_to_number(data[2]), mid);
+temp.x = new.x;
+temp.y = new.y;
+temp.z = new.z;
+temp.moveact(oldmap !is mid);
+}
+break; case  order_pressswitch:
+{
+if (parsed.length < 7) return;
+if (this.maptraveltimer.elapsed < 200) return;
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.working()) return;
+if (parsed.length > 7)
+{
+string limit = string_trim_left(message, parsed[0].size + parsed[1].size + parsed[2].size + parsed[3].size + parsed[4].size + parsed[5].size + parsed[6].size + 7);
+if (!limit.is_empty())
+{
+if (!this.is_available(string_split(limit, "*", true), 3)) return;
+}
+}
+this.maptraveltimer.force(0);
+press_switch(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), this.map);
+}
+break; case order_weaponselect:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back") return;
+if (this.map.name != "필멸의산") return;
+if (this.get_item_count("_ancient_street_rifle") < 1)
+{
+if (this.get_item_count("_ancient_street_armor") < 1)
+{
+this.alert("난... 나의... 잃어버린... 갑옷과... 총을... 찾고... 있다... 갑옷은... 지뢰밭... 어딘가에... 던져졌고... 총은... 깊은... 땅속에... 파묻혀... 잊혀졌다...");
+return;
+}
+this.alert("난... 나의... 잃어버린... 총을... 찾고... 있다... 총은... 깊은... 땅속에... 파묻혀... 잊혀졌다...");
+return;
+}
+if (this.get_item_count("_ancient_street_armor") < 1)
+{
+this.alert("난... 나의... 잃어버린... 갑옷을... 찾고... 있다... 갑옷은... 지뢰밭... 어딘가에... 던져져... 있을... 것이다...");
+return;
+}
+if (this.get_item_count("_ancient_street_ammo") < 1)
+{
+this.alert("난... 이제... 총을... 장전해야... 한다... 그러나... 그것은... 하늘... 어딘가로...  날아가... 보이지...  않는다... (/힌트 명령어를 사용하여 힌트를 얻으십시오. 이 임무를 계속 진행하려면 Guided missile이 필요합니다.)");
+return;
+}
+if (this.x < 498 or this.y < 498 or this.z != 400)
+{
+this.alert("이제... 그것들을... 나에게... 가져와라... 난... 의식의... 제단에서... 기다리고... 있다...");
+return;
+}
+if (this.a.exists("고대 민중의 힘"))
+{
+int spwlength = spw.length;
+for (uint i = 0; i < spwlength; i++)
+{
+if (!this.inventory.exists(spw[i])) continue;
+this.give(spw[i], -1);
+break;
+}
+}
+else this.add_achievement("고대 민중의 힘", "10000000 coin", true);
+this.give(parsed[1], 1);
+this.give("_ancient_street_rifle", -1);
+this.give("_ancient_street_armor", -1);
+this.give("_ancient_street_ammo", -1);
+this.alert("당신은 경건한 마음으로 가져온 3개의 제물을 제단에 바칩니다. 당신의 몸속에 가난하지만 강직한 자들의 물주의 강인한 힘이 맴도는 것 같습니다.");
+this.sendsound("get_blade");
+}
+break; case order_build:
+{
+if (!is_editable_map(this.map, this)) return;
+this.sendpacket("build" + (this.rank > 0 ? " admin" : empty));
+}
+break; case order_buildnow:
+{
+if (parsed.length < 2) return;
+if (!is_editable_map(this.map, this)) return;
+message = check_mapdata_errors(string_trim_left(message, 9), this, this.map);
+if (message.is_empty()) return;
+this.map.add_rawdata(message);
+this.alert("저장되었습니다.");
+}
+break; case order_buildothermap:
+{
+if (parsed.length < 3) return;
+mapdata@ tmap = get_map_handle(parsed[1]);
+if (tmap is null)
+{
+this.alert("그런 맵은 없습니다.");
+return;
+}
+if (!is_editable_map(tmap, this))
+{
+this.alert("당신은 그 맵의 개발 권한이 없습니다.");
+return;
+}
+message = check_mapdata_errors(string_trim_left(message, parsed[1].size + 15), this, tmap);
+if (message.is_empty()) return;
+tmap.add_rawdata(message);
+this.alert("내보냈습니다.");
+}
+break; case order_mapedit:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back") return;
+if (!is_editable_map(this.map, this)) return;
+if (!fl.open("./maps/" + this.map.name + ".map", "rb")) return;
+string data = "\r\n" + fl.read() + "\r\n";
+fl.close();
+string[]@ params = string_split(string_trim_left(message, 8), "[]", false);
+if (params.length < 2) return;
+data = string_replace(string_replace(data, params[0], params[1], true), "\r\n\r\n", "\r\n", true);
+fl.open("./maps/" + this.map.name + ".map", "wb");
+fl.write(data);
+fl.close();
+mapupdate(this.map.name);
+this.alert("저장되었습니다.");
+}
+break; case order_mapdelete:
+{
+if (parsed.length < 2) return;
+if (parsed[1] == "back") return;
+if (!is_editable_map(this.map, this)) return;
+if (!fl.open("./maps/" + this.map.name + ".map", "rb")) return;
+string data = "\r\n" + fl.read() + "\r\n";
+fl.close();
+string[]@ params = string_split(string_trim_left(message, 10), "[]", true);
+int success = 0;
+int param = params.length;
+for (uint i = 0; i < param; i++)
+{
+int a = data.size;
+data = string_replace(data, params[i], "\r\n", true);
+if (data.size < a) success++;
+}
+if (success == 0)
+{
+this.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+fl.open("./maps/" + this.map.name + ".map", "wb");
+fl.write(string_replace(data, "\r\n\r\n", "\r\n", true));
+fl.close();
+mapupdate(this.map.name);
+this.alert(success + "줄의 데이터를 삭제했습니다.");
+}
+break; case order_vote:
+{
+if (parsed.length < 2) return;
+if (!vote_started)
+{
+this.alert("지금은 투표가 없습니다.");
+return;
+}
+string res = string_trim_left(message, 5);
+bool reward = true;
+if (vote_cid_authenticate)
+{
+string id;
+string cid;
+if (voted_ctp.exists(this.compid)) voted_ctp.get(this.compid, id);
+if (voted_ptc.exists(this.name)) voted_ptc.get(this.name, cid);
+if (!id.is_empty())
+{
+voted_players.delete(id);
+voted_ptc.delete(id);
+voted_computers.delete(this.compid);
+voted_ctp.delete(this.compid);
+reward = false;
+}
+if (!cid.is_empty())
+{
+voted_computers.delete(cid);
+voted_ctp.delete(cid);
+voted_players.delete(this.name);
+voted_ptc.delete(this.name);
+reward = false;
+}
+voted_ctp.set(this.compid, this.name);
+voted_ptc.set(this.name, this.compid);
+voted_computers.set(this.compid, res);
+voted_players.set(this.name, res);
+file_put_contents("./votes/id.bak", serialize(voted_players), 250);
+file_put_contents("./votes/cid.bak", serialize(voted_computers), 250);
+file_put_contents("./votes/ptc.bak", serialize(voted_ptc), 250);
+file_put_contents("./votes/ctp.bak", serialize(voted_ctp), 250);
+}
+else
+{
+if (voted_players.exists(this.name)) reward = false;
+voted_players.set(this.name, res);
+file_put_contents("./votes/id.bak", serialize(voted_players), 250);
+}
+string sp = "투표를 완료했습니다.";
+if (reward and !votereward.is_empty())
+{
+this.give(votereward, 1);
+sp += " 보상으로 " + votereward + "를 받았습니다.";
+}
+this.alert(sp, true);
+}
+break; case order_voteadd:
+{
+if (parsed.length < 2) return;
+if (vote_started)
+{
+this.alert("이미 투표가 시작되었습니다.");
+return;
+}
+if (string_contains(parsed[1], "[cncel]", 1) > -1)
+{
+this.alert("취소되었습니다.");
+reset_vote(false);
+return;
+}
+vote_rawdata = string_trim_left(message, 8);
+vote_started = true;
+electimer.force(0);
+send(0, "notify " + (voted_players.is_empty() ? "새로운 투표가 등록되었습니다. 투표 내용을 확인하려면 /투표를 입력하세요." : "중단되었던 투표가 재개됩니다."), 0);
+}
+break;
+}
+}
+
+void order_func_item(player@ this, string message)
+{
+if (this is null) return;
+log("chan6", this.name + "님이 보냄: " + message);
+if (this.ds.exists("전투")) return;
+if (is_no_item(this.x, this.y, this.z, this.map, message)) return;
+if (this.ride !is null)
+{
+if (this.ride.noitems !is null)
+{
+if (this.ride.noitems.exists(message)) return;
+}
+}
+if (this.rank < 1 and !is_useable(this, message)) return;
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.working()) return;
+if (this.hidden) return;
+if (this.inventory.is_empty()) return;
+if (this.reloading > 0)
+{
+this.alert("그럴 겨를이 없습니다.");
+return;
+}
+if (this.invinsibility_starting)
+{
+send(0, this.name + "님이 비겁함을 보여주다 그만 심판을 받고 말았습니다.", 2);
+this.stun(30000, true, true, 0, true);
+this.invinsibility_starting = false;
+return;
+}
+if (this.newb == 1)
+{
+if (!newbdict.exists(message))
+{
+if (!snackitems.exists(message) and !equipments.exists(message) and string_left(message, 8) != "pack_of_") return;
+}
+}
+if (this.get_item_count(message) <= 0) return;
+log("action", this.name + "님이 " + message + " 아이템을 사용합니다.");
+bool takeobj = false;
+if (snackitems.exists(message))
+{
+takeobj = true;
+this.eat(message);
+}
+else if (vehicledict.exists(message))
+{
+if (this.map.is_vehicle)
+{
+this.alert("이 기능은 서버 안전을 위해 허가되어 있지 않습니다.");
+return;
+}
+string currenttile = get_tile_at(this.x, this.y, this.z, this.map);
+if (currenttile.is_empty())
+{
+this.alert("당신도 영원히 탈 수 없는 비행 물체를 만들려 합니까?");
+return;
+}
+spawn_vehicle(message, this);
+this.alert(message + " 캡슐의 압축을 풀었습니다. 이제 승차 가능합니다.");
+takeobj = true;
+}
+else if (equipments.exists(message))
+{
+this.equip(message);
+}
+else if (get_splash_handle(message) !is null and !item_hash.exists(message))
+{
+if (this.firetimer.elapsed < firetime_starter) return;
+weapon_data@ temp = get_weapon_handle(message);
+if (temp is null)
+{
+if (this.map.fighting == 0) return;
+this.temp_invinsible = false;
+spawn_splash(this.x, this.y, this.z, this.map, this.name, message);
+this.firetimer.force(firetime_starter - get_splash_firetime(message));
+this.give(message, -1);
+return;
+}
+if (temp.is_add_on) return;
+if (temp.cannot_draw)
+{
+if (this.map.fighting == 0) return;
+spawn_weapon(this.x, this.y, this.z, this.facing, message, this.map, this, message + "throw");
+this.give(message, -1);
+return;
+}
+this.draw_weapon(message, false, true);
+takeobj = false;
+}
+else if (get_weapon_handle(message, 1) !is null)
+{
+if (this.firetimer.elapsed < firetime_starter) return;
+this.draw_weapon(message, false, true);
+return;
+}
+else if (string_left(message, 8) == "pack_of_")
+{
+int wval = this.get_item_count(message);
+string s = string_trim_left(message, 8);
+string[]@ p = string_split(s, "_", false);
+this.give(string_replace(s, p[0] + "_", empty, false), wval * string_to_number(p[0]));
+this.give("empty_pack", wval);
+this.give(message, (0 - wval));
+this.playsound("packopen");
+return;
+}
+else if (string_left(message, 10) == "corpse_of_")
+{
+this.playsound("corpse_open");
+string cid = string_right(message, 9);
+corpse@ c = get_corpse_handle(cid);
+if (c is null)
+{
+this.alert("시체엔 아무것도 없습니다.");
+this.give(message, -1);
+this.give("_" + string_replace(message, cid, empty, false), 1);
+return;
+}
+if (c.oldinv.is_empty())
+{
+this.alert("시체엔 아무것도 없습니다.");
+this.give(message, -1);
+this.give("_" + string_replace(message, cid, empty, false), 1);
+return;
+}
+c.give_to(this);
+this.give(message, -1);
+this.give("_" + string_replace(message, cid, empty, false), 1);
+return;
+}
+else if (string_left(message, 9) == "shipment_")
+{
+string s = string_trim_left(message, 9);
+shipment_item@ temp = get_shipment_item_handle(s);
+if (temp is null)
+{
+this.alert("ID가 잘못되었습니다.");
+this.give(message, -1);
+return;
+}
+this.alert(temp.list_contents() + " 아이템을 배달 박스에서 꺼냅니다.", true);
+temp.give_to(this.name);
+this.give(message, -1);
+this.give("empty_pack", 1);
+this.playsound("packopen");
+return;
+}
+else
+{
+if (!item_hash.exists(message)) return;
+item_func@ func;
+if (!item_hash.get(message, @ func)) return;
+takeobj = func(this);
+}
+if (!this.stunned) this.stun(80, false, false);
+if (takeobj) this.give(message, -1);
+}
+
+void order_func_chat(player@ this, string message)
+{
+if (this is null) return;
+if (filter(message))
+{
+this.alert("해당 문자열은 서버의 보안 이슈로 인해 차단되어 있습니다.");
+return;
+}
+if (message[0] == "/")
+{
+log("chat-mands", this.name + "님이 보냄: " + message);
+string[]@ parsed = string_split(message, " ", true);
+if (!cod_hash.exists(parsed[0])) return;
+cod_func@ func;
+if (!cod_hash.get(parsed[0], @ func)) return;
+func(parsed, this, message);
+return;
+}
+if (this.ds.exists("채팅"))
+{
+this.alert("채팅이 금지되어 있습니다.");
+return;
+}
+if (chatting == 0)
+{
+string chatmessage = "서버 내 채팅이 꺼져 있습니다.";
+if (this.rank > 0) chatmessage += "개발자는 /서버설정 채팅 1이라고 입력하십시오.";
+this.alert(chatmessage, true);
+return;
+}
+if (message.size > 5000)
+{
+this.alert("메시지는 5000자를 넘을 수 없습니다.");
+return;
+}
+this.chats++;
+log("chats", this.name + "님의 메시지: " + message);
+string chatmess;
+if (!this.hidden)
+{
+if (!this.title.is_empty()) chatmess += this.title + " ";
+if (this.gang !is null) chatmess += this.gang.teamname + " ";
+chatmess += this.name + ": " + message;
+}
+else chatmess += message;
+this.chat(chatmess);
+}
+
+void order_func_xplay(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+if (message == "xmsoundstop")
+{
+if (this.xmsound !is null) @ this.xmsound = this.xmsound.destroy();
+if (this.xmsoundplus !is null) @ this.xmsoundplus = this.xmsoundplus.destroy();
+return;
+}
+if (this.hidden) return;
+if (this.invinsible) return;
+switch (string_to_hash(parsed[0]))
+{
+case order_xmsound:
+{
+if (parsed.length < 2) return;
+if (parsed.length >= 5)
+{
+if (this.xmsoundplus !is null) this.xmsoundplus.destroy();
+@ this.xmsoundplus = spawn_moving_sound(parsed[1], string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), this.map, this);
+if (parsed.length == 5) return;
+}
+if (this.xmsound !is null) this.xmsound.destroy();
+@ this.xmsound = spawn_moving_sound(parsed[1], this.x, this.y, this.z, this.map, this);
+}
+break; case order_xplay:
+{
+if (parsed.length < 2) return;
+if (parsed.length > 7)
+{
+sendmap("play_3ds " + parsed[1] + " " + string_to_number(parsed[2]) + " " + string_to_number(parsed[3]) + " " + string_to_number(parsed[4]) + " " + string_to_number(parsed[5]) + " " + string_to_number(parsed[6]) + " " + string_to_number(parsed[7]) + (parsed.length > 8 ? " " + string_to_number(parsed[8]) : empty), this.map, 4, this);
+return;
+}
+if (parsed.length >= 5)
+{
+play(parsed[1], string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), this.map, this);
+if (parsed.length == 5) return;
+}
+play(parsed[1], this.x, this.y, this.z, this.map, this);
+}
+break; case order_xplaysource:
+{
+if (parsed.length < 5) return;
+sendmap("play_source " + string_to_number(parsed[2]) + " " + string_to_number(parsed[3]) + " " + string_to_number(parsed[4]) + " " + parsed[1], this.map, 4, this);
+}
+break; case order_xplay_v:
+{
+if (parsed.length < 2) return;
+if (!this.map.is_vehicle) return;
+mapdata@ tmap = this.map.vhc.map;
+if (parsed.length > 7)
+{
+sendmap("play_3ds " + parsed[1] + " " + string_to_number(parsed[2]) + " " + string_to_number(parsed[3]) + " " + string_to_number(parsed[4]) + " " + string_to_number(parsed[5]) + " " + string_to_number(parsed[6]) + " " + string_to_number(parsed[7]) + (parsed.length > 8 ? " " + string_to_number(parsed[8]) : empty), tmap, 4, this);
+return;
+}
+if (parsed.length >= 5)
+{
+play(parsed[1], string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), tmap, this);
+if (parsed.length == 5) return;
+}
+play(parsed[1], this.x, this.y, this.z, tmap, this);
+}
+break; case order_xplaysource_v:
+{
+if (parsed.length < 5) return;
+if (!this.map.is_vehicle) return;
+sendmap("play_source " + string_to_number(parsed[2]) + " " + string_to_number(parsed[3]) + " " + string_to_number(parsed[4]) + " " + parsed[1], this.map.vhc.map, 4, this);
+}
+break; case order_rollhit:
+{
+if (parsed.length < 2) return;
+play(parsed[1], this.x, this.y, this.z, this.map, this);
+this.hit(random(2000, 2500), "와이어 대미지");
+this.stun(3500, false, false);
+}
+break; case order_codeclick:
+{
+this.playsound("code");
+}
+break; case order_invclose:
+{
+this.playsound("invclose");
+}
+break; case order_invopen:
+{
+this.playsound("invopen", false);
+}
+break;
+}
+}
+
+void order_func_special(player@ this, string message)
+{
+if (this is null) return;
+log("chan7", this.name + "님이 보냄: " + message);
+if (this.invinsible) return;
+if (this.stunned) return;
+if (this.hidden) return;
+if (this.working()) return;
+if (this.reloading > 0)
+{
+this.alert("그럴 겨를이 없습니다.");
+return;
+}
+if (this.invinsibility_starting)
+{
+send(0, this.name + "님이 비겁함을 보여주다 그만 심판을 받고 말았습니다.", 0);
+this.stun(30000, true, true, 0, true);
+this.invinsibility_starting = false;
+return;
+}
+vehicle@ v=this.get_vehicle();
+if (v is null)
+{
+int pid = string_to_hash(this.name);
+if (message == "firerem")
+{
+this.temp_invinsible = false;
+int remgunslength = this.map.remguns.length;
+for (uint r = 0; r < remgunslength; r++)
+{
+remgun@ temp = this.map.remguns[r];
+if (temp.ownerid != pid) continue;
+if (temp.owner != this.name) continue;
+if (temp.current_ammo <= 0) continue;
+temp.can_fire = !temp.can_fire;
+}
+this.alert("공격 모드를 서로 바꿉니다.");
+}
+else if (message == "remdisconnect")
+{
+this.cremguns = false;
+}
+else if (message == "destrem")
+{
+int remgunslength = this.map.remguns.length;
+for (uint r = 0; r < remgunslength; r++)
+{
+remgun@ temp = this.map.remguns[r];
+if (temp.ownerid != pid) continue;
+if (temp.owner != this.name) continue;
+temp.hid.health = -1;
+temp.hid.hitby.resize(0);
+spawn_obj(temp.x, temp.y, temp.z, temp.map, (temp.anti_air ? "remote_anti-air_gun" : "remote_gun"), 1, false);
+if (temp.current_ammo > 0) spawn_obj(temp.x, temp.y, temp.z, temp.map, (temp.anti_air ? "_battery" : "_338_magnum_bullet"), temp.current_ammo, false);
+if (temp.anti_air) temp.play("remgun_airshutdown");
+}
+this.cremguns = false;
+}
+return;
+}
+v.command(message, this);
+}
+
+void order_func_sound(player@ this, string message)
+{
+if (this is null) return;
+if (message.size > (file_size_limit_kb * 1024))
+{
+this.alert("파일 크기는 " + convert_size(file_size_limit_kb * 1024) + "보다 크면 안 됩니다.");
+return;
+}
+send(0, message, 5);
+fl.open("./upsounds/" + this.name + " Ssound_" + DATE_YEAR + DATE_MONTH + DATE_DAY + "-" + TIME_HOUR + TIME_MINUTE + TIME_SECOND + ".ogg", "wb");
+fl.write(message);
+fl.close();
+}
+
+void order_func_record(player@ this, string message)
+{
+if (this is null) return;
+if (!this.voicechat) return;
+if (message.size > (file_size_limit_kb * 1024))
+{
+this.alert("파일 크기는 " + convert_size(file_size_limit_kb * 1024) + "보다 크면 안 됩니다.");
+return;
+}
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+if (!temp.voicechat) continue;
+if (temp.muted.exists(this.name)) continue;
+if (temp is this) this.sendsound("confirmation");
+else temp.sendpacket(message, 5);
+}
+}
+
+void order_func_minigame_play(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+log("chan10", this.name + "님이 보냄: " + message);
+minigame@ m = joined_minigame(e.peer_id, true);
+if (m is null) return;
+int rdp = m.remove_disconnected_player();
+if (rdp < 0) return;
+if (rdp > 0) m.sendpacket(rdp + "명의 유령 참가자가 쫓겨납니다.");
+if (parsed[0] == "pipper")
+{
+if (parsed.length < 2) return;
+if (m.mode != M_PLAY) return;
+if (m.type != M_Pipper) return;
+int j = m.find_joinplayers(e.peer_id);
+switch (string_to_hash (parsed[1]))
+{
+case minigame_check:
+{
+int sttemp = m.pipper_starting_number + 1;
+sttemp = (sttemp == 16 ? Pipper_X : sttemp == Pipper_X + 1 ? 0 : sttemp);
+send(e.peer_id, "족보: " + m.return_to_pipper_mode() + " " + (m.pipper_mode < Pipper_Single ? empty : ", " + (sttemp == 0 ? "상위 족보를 내야 합니다." : sttemp == Pipper_X ? "X부터 낼 수 있습니다." : sttemp + "부터 낼 수 있습니다.")), 2);
+}
+break; case minigame_turn:
+{
+send(e.peer_id, m.joinplayers[m.turn].name + "님 차례", 2);
+}
+break; case minigame_reverse:
+{
+joinplayer@ temp = m.joinplayers[j];
+temp.reverse_hand = !temp.reverse_hand;
+m.pipper_send_hand(j, 0, "뒤집어서 보기를 " + (temp.reverse_hand ? "켭니다." : "끕니다."));
+}
+break; case minigame_view:
+{
+string mess;
+for (int i = m.joinplayers.length - 1; i > -1; i--)
+{
+joinplayer@ temp = m.joinplayers[i];
+if (i > 0) mess += ", ";
+mess += temp.name + ", " + temp.hand.length;
+}
+send(e.peer_id, mess, 2);
+}
+break; case minigame_pass:
+{
+if (m.turn != j)
+{
+send(e.peer_id, "당신 차례가 아닙니다.", 0);
+return;
+}
+if (m.pipper_mode == Pipper_Mine)
+{
+send(e.peer_id, "마인을 부른 후 바로 패스할 수 없습니다.", 2);
+return;
+}
+int valid = m.pipper_pass();
+}
+break; case minigame_mine:
+{
+if (!m.pipper_mine(j))
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+}
+break; case minigame_autoplay:
+{
+if (m.turn != j)
+{
+m.pipper_send_hand(j, 3);
+return;
+}
+if (parsed.length < 3)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+int valid = string_to_number(parsed[2]);
+if (valid == 0)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+joinplayer@ temp = m.joinplayers[m.turn];
+temp.pipper.resize(0);
+int[] temp_hand;
+if (valid > m.pipper_starting_number)
+{
+if (m.pipper_mode == Pipper_Pair_Straight)
+{
+temp_hand = temp.hand;
+int tempnum = m.pipper_length;
+if (tempnum > 5 and (tempnum & 1) == 0)
+{
+int[] result_hand;
+int j = 0;
+bool fail = false;
+for (uint i = 0; i < tempnum; i++)
+{
+if (i > 0)
+{
+if ((i & 1) == 0) j++;
+}
+int find = temp_hand.find(valid + j);
+if (find > -1)
+{
+temp_hand.remove_at(find);
+result_hand.insert_last(valid + j);
+continue;
+}
+find = temp_hand.find(Pipper_X);
+if (find > -1)
+{
+temp_hand.remove_at(find);
+result_hand.insert_last(Pipper_X);
+continue;
+}
+fail = true;
+break;
+}
+if (!fail)
+{
+result_hand.sort_ascending();
+pipper_temp pt;
+pt.hand = result_hand;
+pt.mode = Pipper_Pair_Straight;
+temp.pipper.insert_last(pt);
+}
+}
+}
+if (m.pipper_mode == Pipper_Straight)
+{
+temp_hand = temp.hand;
+int tempnum = m.pipper_length;
+if (tempnum > 2)
+{
+int[] result_hand;
+bool fail = false;
+for (uint i = 0; i < tempnum; i++)
+{
+int find = temp_hand.find(valid + i);
+if (find > -1)
+{
+temp_hand.remove_at(find);
+result_hand.insert_last(valid + i);
+continue;
+}
+find = temp_hand.find(Pipper_X);
+if (find > -1)
+{
+temp_hand.remove_at(find);
+result_hand.insert_last(Pipper_X);
+continue;
+}
+fail = true;
+break;
+}
+if (!fail)
+{
+result_hand.sort_ascending();
+pipper_temp pt;
+pt.hand = result_hand;
+pt.mode = Pipper_Straight;
+temp.pipper.insert_last(pt);
+}
+}
+}
+}
+int level = 0;
+temp_hand = array<int>(4, valid);
+if (m.pipper_is_legal(temp_hand, j) and m.pipper_type_check(Pipper_Power_Bomb, valid) >= Pipper_Single)
+{
+level = 4;
+pipper_temp pt;
+pt.hand = temp_hand;
+pt.mode = Pipper_Power_Bomb;
+temp.pipper.insert_last(pt);
+}
+temp_hand.remove_last();
+if ((level >= 4 or m.pipper_is_legal(temp_hand, j)) and m.pipper_type_check(Pipper_Bomb, valid) >= Pipper_Single)
+{
+level = 3;
+pipper_temp pt;
+pt.hand = temp_hand;
+pt.mode = Pipper_Bomb;
+temp.pipper.insert_last(pt);
+}
+if (m.pipper_type_check(Pipper_Pair, valid) >= Pipper_Single)
+{
+temp_hand.remove_last();
+if (level >= 3 or m.pipper_is_legal(temp_hand, j))
+{
+pipper_temp pt;
+pt.hand = temp_hand;
+pt.mode = Pipper_Pair;
+temp.pipper.insert_last(pt);
+}
+temp_hand.remove_last();
+temp_hand.insert_last(Pipper_X);
+if (m.pipper_is_legal(temp_hand, j))
+{
+pipper_temp pt;
+pt.hand = temp_hand;
+pt.mode = Pipper_X;
+temp.pipper.insert_last(pt);
+}
+}
+if (m.pipper_type_check(Pipper_Single, valid) >= Pipper_Single)
+{
+pipper_temp pt;
+pt.hand.insert_last(valid);
+pt.mode = Pipper_Single;
+temp.pipper.insert_last(pt);
+}
+int counter = temp.pipper.length;
+if (counter == 0)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+sm.intro = "원하는 항목을 선택하십시오.";
+sm.initial_packet = "autoplay";
+for (uint i = 0; i < counter; i++)
+{
+sm.add(m.return_to_pipper_mode(temp.pipper[i].mode), i);
+}
+sm.channel = 6;
+sm.send(e.peer_id);
+sm.reset();
+}
+break; default:
+{
+if (m.turn != j)
+{
+m.pipper_send_hand(j, 3);
+return;
+}
+if (parsed.length < 3)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+string[]@ tempstring = string_split(parsed[2], ",", false);
+int[] temp_hand;
+int counter = tempstring.length;
+temp_hand.reserve(counter);
+for (uint i = 0; i < counter; i++)
+{
+temp_hand.insert_last(string_to_number(tempstring[i]));
+}
+temp_hand.sort_ascending();
+if (temp_hand[0] == 0)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+int valid = m.pipper_validate_check(temp_hand);
+if (valid < Pipper_Single)
+{
+m.pipper_send_hand(j, 4);
+return;
+}
+m.pipper_play(temp_hand, valid);
+}
+}
+}
+}
+
+void order_func_minigame_main(player@ this, string message, string[]@ parsed)
+{
+if (this is null) return;
+log("chan11", this.name + "님이 보냄: " + message);
+switch (string_to_hash(parsed[0]))
+{
+case minigame_back:
+{
+send(e.peer_id, "speak 취소되었습니다.", 0);
+minigame@ m = joined_minigame(e.peer_id, true);
+if (m is null) return;
+if (m.mode == M_PLAY)
+{
+int j = m.find_joinplayers(e.peer_id);
+switch (m.type)
+{
+case M_Pipper:
+m.pipper_send_hand(j, 1);
+break;
+default:
+break;
+}
+}
+}
+break; case minigame_create:
+{
+if (parsed.length == 1)
+{
+sm.intro = "게임 선택";
+sm.initial_packet = "create";
+sm.add("피퍼", M_Pipper);
+sm.channel = 6;
+sm.send(e.peer_id);
+sm.reset();
+return;
+}
+if (parsed[1] == "back")
+{
+send_minigame_mainmenu();
+return;
+}
+if (joined_minigame(e.peer_id) !is null) return;
+if (this.map !is minigame_room) return;
+int random_x = random(0, 32767);
+int random_y = random(0, 32767);
+minigame@ new = spawn_minigame(random_x, random_y, 0, this, string_to_number(parsed[1]));
+this.go_to(minigame_room, random_x, random_y, 0);
+new.send_sidemenu(e.peer_id, "방을 만들었습니다.");
+}
+break; case minigame_join:
+{
+if (parsed.length == 1)
+{
+if (minigames.is_empty())
+{
+send_minigame_mainmenu("방이 없습니다.");
+return;
+}
+sm.intro = "들어갈 방을 선택하세요.";
+sm.initial_packet = "join";
+string gamename;
+int counter = minigames.length;
+for (uint i = 0; i < counter; i++)
+{
+minigame@ temp = minigames[i];
+int index = temp.find_joinplayers(temp.owner_peer);
+if (index < 0) continue;
+switch (temp.type)
+{
+case M_Pipper:
+gamename = "피퍼";
+break;
+default:
+break;
+}
+sm.add(temp.joinplayers[index].name + ", " + gamename + ", " + (temp.mode == M_PLAY ? "게임중" : "대기중") + ", 위치 " + temp.x + ", " + temp.y + ", " + temp.z, temp.id);
+}
+sm.channel = 6;
+sm.send(e.peer_id);
+sm.reset();
+return;
+}
+if (parsed[1] == "back")
+{
+send_minigame_mainmenu();
+return;
+}
+if (joined_minigame(e.peer_id) !is null) return;
+minigame@ temp = get_minigame_handle(string_to_number(parsed[1]));
+if (temp is null) return;
+temp.add(e.peer_id);
+temp.send_sidemenu(e.peer_id, "방에 입장합니다.");
+this.go_to(minigame_room, temp.x, temp.y, temp.z);
+}
+break; case minigame_leave:
+{
+minigame@ m = joined_minigame(e.peer_id);
+if (m is null) return;
+int pind = m.find_joinplayers(e.peer_id);
+if (pind > -1 and m.mode == M_PLAY)
+{
+joinplayer@ temp = m.joinplayers[pind];
+if (temp.last_game_counter > 4)
+{
+m.send_sidemenu(e.peer_id, "세번째 번복은 불가능합니다.");
+return;
+}
+temp.last_game_counter++;
+temp.last_game = !temp.last_game;
+m.sendpacket(temp.name + "님" + (temp.last_game ? "의 마지막 게임입니다." : "이 마지막 게임 선언을 번복했습니다."));
+m.send_sidemenu(e.peer_id, "게임 메뉴");
+return;
+}
+m.remove(e.peer_id);
+send_minigame_mainmenu();
+}
+break; case minigame_move:
+{
+minigame@ temp = joined_minigame(e.peer_id);
+if (temp is null) return;
+this.go_to(minigame_room, temp.x, temp.y, (this.distancecheck(temp.x, temp.y, 0) < 10 ? 60 : 0));
+temp.send_sidemenu(e.peer_id);
+}
+break; case minigame_kick:
+{
+minigame@ temp = joined_minigame(e.peer_id, false);
+if (temp is null) return;
+if (parsed.length == 1)
+{
+sm.intro = "플레이어 목록";
+sm.initial_packet = "kick";
+temp.create_player_menu();
+temp.create_spectator_menu();
+sm.channel = 6;
+sm.send(e.peer_id);
+sm.reset();
+return;
+}
+if (parsed[1] == "back")
+{
+temp.send_sidemenu(e.peer_id);
+return;
+}
+if (temp.owner_peer != e.peer_id)
+{
+temp.send_sidemenu(e.peer_id, "방장이 아닙니다.");
+return;
+}
+if (temp.mode == M_PLAY)
+{
+temp.send_sidemenu(e.peer_id, "지금은 할 수 없습니다.");
+return;
+}
+int peer_temp = string_to_number(parsed[1]);
+if (joined_minigame(peer_temp) !is temp)
+{
+temp.send_sidemenu(e.peer_id);
+return;
+}
+temp.remove(peer_temp, true);
+if (e.peer_id != peer_temp) temp.send_sidemenu(e.peer_id);
+else send_minigame_mainmenu();
+}
+break; case minigame_option:
+{
+minigame@ temp = joined_minigame(e.peer_id, true);
+if (temp is null) return;
+if (temp.owner_peer != e.peer_id)
+{
+temp.send_sidemenu(e.peer_id, "방장이 아닙니다.");
+return;
+}
+if (parsed.length == 1)
+{
+temp.send_optionmenu(e.peer_id);
+return;
+}
+switch (string_to_hash(parsed[1]))
+{
+case minigame_stadium:
+{
+temp.is_a_stadium ? temp.stadium_remove() : temp.stadium_install();
+temp.send_optionmenu(e.peer_id, (temp.is_a_stadium ? "스타디움을 설치합니다." : "스타디움을 제거합니다."));
+}
+break; case minigame_pipper_adv:
+{
+temp.pipper_adv = !temp.pipper_adv;
+temp.send_optionmenu(e.peer_id, "가변 X 모드를 " + (temp.pipper_adv ? "켭니다." : "끕니다."));
+}
+break; default:
+temp.send_sidemenu(e.peer_id);
+}
+}
+break; case minigame_change:
+{
+minigame@ temp = joined_minigame(e.peer_id);
+if (temp is null) return;
+if (temp.change_player_spectator(e.peer_id) == -1) temp.send_sidemenu(e.peer_id, "지금은 할 수 없습니다.");
+}
+break; case minigame_menu:
+{
+minigame@ temp = joined_minigame(e.peer_id);
+if (temp is null) return;
+temp.send_sidemenu(e.peer_id);
+}
+break; case minigame_start:
+{
+minigame@ temp = joined_minigame(e.peer_id, true);
+if (temp is null) return;
+if (temp.owner_peer != e.peer_id)
+{
+temp.send_sidemenu(e.peer_id, "방장이 아닙니다.");
+return;
+}
+switch (temp.type)
+{
+case M_Pipper:
+temp.pipper_set();
+break;
+default:
+break;
+}
+}
+break; case minigame_autoplay:
+{
+if (parsed.length < 2) break;
+minigame@ m = joined_minigame(e.peer_id, true);
+if (m is null) return;
+if (m.mode != M_PLAY) return;
+int pind = m.find_joinplayers(e.peer_id);
+if (pind < 0) return;
+joinplayer@ temp = m.joinplayers[pind];
+switch (m.type)
+{
+case M_Pipper:
+{
+if (pind != m.turn)
+{
+m.pipper_send_hand(pind, 3);
+temp.pipper.resize(0);
+return;
+}
+if (parsed[1] == "back")
+{
+m.pipper_send_hand(pind, 1);
+temp.pipper.resize(0);
+return;
+}
+int selected = string_to_number(parsed[1]);
+if (selected < 0 or selected >= temp.pipper.length)
+{
+m.pipper_send_hand(pind, 5);
+temp.pipper.resize(0);
+return;
+}
+pipper_temp@ pt = temp.pipper[selected];
+if (pt.hand.is_empty())
+{
+m.pipper_send_hand(pind, 5);
+temp.pipper.resize(0);
+return;
+}
+if (!m.pipper_is_legal(pt.hand, pind))
+{
+m.pipper_send_hand(pind, 4);
+temp.pipper.resize(0);
+return;
+}
+if (pt.mode == Pipper_X) pt.mode = Pipper_Pair;
+if (pt.mode > m.pipper_type_check(pt.mode, pt.hand[0], pt.hand.length))
+{
+m.pipper_send_hand(pind, 4);
+temp.pipper.resize(0);
+return;
+}
+m.pipper_play(pt.hand, pt.mode);
+temp.pipper.resize(0);
+}
+break;
+default:
+break;
+}
+}
+break;
+}
+}

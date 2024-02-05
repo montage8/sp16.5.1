@@ -1,0 +1,70 @@
+class canister
+{
+mapdata@ map;
+int x, y, z;
+int mode = 0;
+timer actiontimer;
+}
+void canisterloop(mapdata@ map)
+{
+int playerslength = map.players.length;
+for (int i = map.canisters.length - 1; i > -1; i--)
+{
+canister@ this = map.canisters[i];
+if (this.actiontimer.elapsed >= 1500)
+{
+play("canister", this.x, this.y, this.z, this.map);
+play_dist("canisterdist", this.x, this.y, this.z, this.map);
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 3)
+{
+switch (this.mode)
+{
+case 1:
+temp.health += random(100, 600);
+break;
+case 2:
+if (temp.mask == 0) temp.air += random(1, 20);
+break;
+case 3:
+temp.poisoned += 5;
+temp.statchangetimer.force(0);
+temp.playsound("hit" + temp.voice + random(1, 5));
+break;
+default:
+temp.health *= 0.5;
+temp.oldhealth *= 0.5;
+temp.hitby == "증오의 통조림";
+temp.playsound("hit" + temp.voice + random(1, 5));
+temp.statchangetimer.force(0);
+}
+temp.playsound("canisterhit");
+}
+}
+map.canisters.remove_at(i);
+}
+}
+}
+void spawn_canister(int x, int y, int z, mapdata@ map, const string& in type)
+{
+canister can1;
+can1.x = x;
+can1.y = y;
+can1.z = z;
+@ can1.map = map;
+switch (string_to_hash(type))
+{
+case items_heal: can1.mode = 1;
+break; case items_air: can1.mode = 2;
+break; case items_toxic: can1.mode = 3;
+break; case items_death_bringer: can1.mode = 4;
+break;
+}
+play("canisteruse", x, y, z, map);
+map.canisters.insert_last(can1);
+}

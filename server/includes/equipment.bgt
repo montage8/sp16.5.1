@@ -1,0 +1,120 @@
+enum equipstatus
+{
+EQUIP_WEAR, EQUIP_UPDATE, EQUIP_REMOVE
+}
+dictionary equipments;
+funcdef bool equipment_function(player@ this, int status = EQUIP_UPDATE);
+
+class equipment
+{
+string name;
+string wear_text, wear_sound;
+string remove_text, remove_sound;
+string region;
+equipment_function@ handle;
+
+// use constructor...
+equipment(const string& in n, const string& in w1, const string& in w2, const string& in r1, const string& in r2, const string& in p, equipment_function@ h)
+{
+name = n;
+wear_text = w1;
+wear_sound = w2;
+remove_text = r1;
+remove_sound = r2;
+region = p;
+@ handle = h;
+}
+
+void wear(player@ temp, bool announce = true, bool update = true, bool take_item = true)
+{
+if (take_item) temp.give(name, -1);
+if (update)
+{
+temp.wear.set(this.region, @ this);
+temp.wear_text.set(this.name, empty);
+}
+if (announce)
+{
+if (!this.wear_text.is_empty()) temp.alert(this.wear_text);
+if (!this.wear_sound.is_empty()) temp.playsound(this.wear_sound);
+}
+}
+
+void remove(player@ temp, bool announce = true, bool update = true, bool return_item = true)
+{
+if (return_item) temp.give(name, 1);
+if (update)
+{
+temp.wear.delete(this.region);
+temp.wear_text.delete(this.name);
+}
+if (announce)
+{
+if (!this.remove_text.is_empty()) temp.alert(this.remove_text);
+if (!this.remove_sound.is_empty()) temp.playsound(this.remove_sound);
+}
+}
+}
+
+void install_equipments()
+{
+equipments.set("oxygen_mask", @ equipment("oxygen_mask", "oxygen mask를 낍니다.", "gas_maskon", "oxygen mask를 벗습니다.", "gas_maskoff", "얼굴", @ equip_oxygen_mask));
+equipments.set("running_boots", @ equipment("running_boots", "running boots를 신습니다.", "wearboots", "running boots를 벗습니다.", "removeboots", "발", @ equip_running_boots));
+equipments.set("jumping_shoes", @ equipment("jumping_shoes", "jumping shoes를 신습니다.", "wearboots", "jumping shoes를 벗습니다.", "removeboots", "발", @ equip_jumping_shoes));
+equipments.set("safety_helmet", @ equipment("safety_helmet", "safety helmet을 머리에 씁니다.", "safety_helmeton", "safety helmet을 벗습니다.", "safety_helmetoff", "머리", @ equip_safety_helmet));
+}
+
+equipment@ get_equipment_handle(const string& in name)
+{
+if (!equipments.exists(name)) return null;
+equipment@ temp;
+equipments.get(name, @ temp);
+return temp;
+}
+
+bool equip_oxygen_mask(player@ this, int status = EQUIP_UPDATE)
+{
+if (status <= EQUIP_UPDATE)
+{
+if (this.air <= 0)
+{
+this.alert("여유분 산소가 부족해 지금 끼는 것은 위험합니다.");
+return false_t;
+}
+this.airlifetimer.force(0);
+this.airtimer.force(0);
+this.mask = 1;
+return true_t;
+}
+this.mask = 0;
+return true_t;
+}
+
+bool equip_running_boots(player@ this, int status = EQUIP_UPDATE)
+{
+if (status <= EQUIP_UPDATE)
+{
+this.bonus_walktime *= 0.8;
+this.energy_factor *= 2;
+return true_t;
+}
+this.bonus_walktime *= 1.25;
+this.energy_factor *= 0.5;
+return true_t;
+}
+
+bool equip_jumping_shoes(player@ this, int status = EQUIP_UPDATE)
+{
+if (status <= EQUIP_UPDATE)
+{
+this.bonus_jump *= 1.4;
+return true_t;
+}
+this.bonus_jump /= 1.4;
+return true_t;
+}
+
+bool equip_safety_helmet(player@ this, int status = EQUIP_UPDATE)
+{
+return true_t;
+}

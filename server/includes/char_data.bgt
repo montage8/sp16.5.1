@@ -1,0 +1,119 @@
+dictionary playerdata_parser_level1;
+dictionary playerdata_parser_level2;
+string[] playerdata_parser_list1 = {"임무", "장비", "손절", "신뢰", "금지"};
+string[] playerdata_parser_list2 = {"소유", "무기카운트", "무기모드"};
+
+string get_char_val(const string& in name, const string& in key, bool get_size = false)
+{
+dictionary@ data;
+player@ this = get_player_handle(name);
+if (this !is null) @ data = this.sf.d;
+else
+{
+if (!fl.open("./chars/" + name + ".usr", "rb")) return empty;
+@ data = deserialize(fl.read());
+fl.close();
+}
+if (!data.exists(key)) return empty;
+string result;
+data.get(key, result);
+if (!result.is_empty())
+{
+if (playerdata_parser_level2.exists(key))
+{
+if (get_size) return deserialize(string_base64_decode(result)).size;
+return dictionary_to_text(deserialize(string_base64_decode(result)));
+}
+if (playerdata_parser_level1.exists(key))
+{
+if (get_size) return deserialize(string_base64_decode(result)).size;
+return dictionary_to_text(deserialize(string_base64_decode(result)), "\r\n", false);
+}
+return result;
+}
+double result2 = 0.0;
+data.get(key, result2);
+return result2;
+}
+
+bool& set_char_val(const string& in name, const string& in key, const string& in value, bool effect_now = true)
+{
+dictionary data;
+player@ this = get_player_handle(name);
+if (this !is null) data = this.sf.d;
+else
+{
+if (!fl.open("./chars/" + name + ".usr", "rb")) return false_t;
+data = deserialize(fl.read());
+fl.close();
+}
+data.set(key, (playerdata_parser_level2.exists(key) ? string_base64_encode(serialize(text_to_dictionary(value, "\r\n", VALUE_DOUBLE))) : playerdata_parser_level1.exists(key) ? string_base64_encode(serialize(text_to_dictionary(value, "\r\n", VALUE_NONE))) : value));
+fl.open("./chars/" + name + ".usr", "wb");
+fl.write(serialize(data));
+fl.close();
+if (effect_now)
+{
+if (this !is null) this.load(false, true);
+}
+return true_t;
+}
+
+const string& chartrash()
+{
+int del = 0;
+string names;
+string[]@ chars = find_files("./chars/*.usr");
+string name;
+int charslength = chars.length;
+for (uint i = 0; i < charslength; i++)
+{
+name = string_trim_right(chars[i], 4);
+if (filterchar(name))
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 부적절한 이름";
+del++;
+continue;
+}
+if (robottemps.exists(name))
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 로봇 이름과 겹침";
+del++;
+continue;
+}
+if (namebans.exists(name))
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 차단됨";
+del++;
+continue;
+}
+if (string_is_digits(name))
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 숫자로만 이루어짐";
+del++;
+continue;
+}
+if (name.size <= 1)
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 너무 짧음.";
+del++;
+continue;
+}
+if (get_char_val(name, "info").is_empty())
+{
+file_delete("./chars/" + chars[i]);
+names += "\r\n" + name + ", 사유: 호환되지 않음";
+del++;
+continue;
+}
+}
+fl.open("./prefs/char_spam.svr", "wb");
+fl.write(names);
+fl.close();
+ref_string = chars.length + "개 계정 중 " + del + "개(" + round(percent(del, chars.length), 0) + "%) 계정이 삭제되었습니다.";
+return ref_string;
+}

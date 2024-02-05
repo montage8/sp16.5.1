@@ -1,0 +1,93 @@
+timer packagetimer;
+int packagetime;
+sound prog;
+string encryption_key;
+string targetname;
+string foldername;
+timer t;
+string scps="E&t5dP9-uV6mdsKl";
+void main()
+{
+prog.load("progress.ogg");
+int pd=question("sound crypt creator","would you like to use last saved settings?");
+if(pd!=1)
+{
+foldername=input_box("sound crypt creater", "enter the name of the folder you wish to save your encrypted sound files");
+if(foldername.is_empty())
+{
+exit();
+}
+targetname=input_box("sound crypt creater", "enter the path that the files you wish to crypt are contained.");
+if(targetname.is_empty())
+{
+exit();
+}
+encryption_key=input_box("file encryptor", "enter the encryption key you wish to use.");
+if(encryption_key.is_empty())
+{
+exit();
+}
+file fl;
+fl.open("sound.crypt","wb");
+fl.write(string_encrypt(foldername+";"+targetname+";"+encryption_key,scps));
+fl.close();
+}
+else
+{
+file fl;
+fl.open("sound.crypt","rb");
+string[] parsed=string_split(string_decrypt(fl.read(),scps),";",false);
+fl.close();
+if(parsed.length!=3)
+{
+exit();
+}
+foldername=parsed[0];
+targetname=parsed[1];
+encryption_key=parsed[2];
+}
+if(!directory_exists(targetname))
+{
+alert("error", "folder does not exist!");
+exit();
+}
+if(directory_exists(foldername)) directory_delete(foldername);
+directory_create(foldername);
+show_game_window("working");
+string[] filelist=find_files(targetname+"/*.*");
+int files=filelist.length();
+alert("pack creater", "there are "+files+" files in the pack. Hit OK to start packing!");
+t.restart();
+packagetime=filelist.length*50;
+int percent=-1;
+for(uint i=0; i<files; i++)
+{
+double l=files;
+double ind=i;
+int perc=ind/l*100.0;
+if(perc!=percent)
+{
+percent=perc;
+beep_percentage(percent);
+}
+file_encrypt(targetname+"/"+filelist[i], foldername+"/"+filelist[i], string_hash(encryption_key, 2, true));
+}
+t.pause();
+alert("success!", "Files were added successfully! The pack creater took "+t.elapsed+" ms");
+exit();
+}
+tone_synth progress_synth;
+sound@ progress_sound;
+void beep_percentage(double val)
+{
+val=round(val,0);
+if(val<0) val=0;
+if(val>100) val=100;
+double freq=110*2**(val/25);
+progress_synth.waveform_type=4;
+progress_synth.set_edge_fades(1,1);
+progress_synth.freq_ms(""+freq,40);
+@progress_sound=progress_synth.write_wave_sound();
+progress_synth.reset();
+progress_sound.play();
+}

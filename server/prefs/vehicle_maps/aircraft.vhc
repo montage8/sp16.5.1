@@ -1,0 +1,33 @@
+no_coord:1
+no_seethrough:1
+owner:gog
+mapname:aircraft
+maxx:2
+maxy:3
+fightingstate:0
+startingx:1
+startingy:1
+startingz:1
+tile:0:2:0:2:0:2:wallmetal8
+tile:1:1:1:1:0:1:chair
+sb:0:2:0:2:0:2:조종석:45
+zone:0:2:0:2:0:2:조종석
+zone:1:1:1:1:1:1:출입문
+door:1:1:1:1:0:0:1:1:8:콘솔메뉴:1:6:door34:0
+tile:0:2:0:3:3:15:wall2:hazard
+zone:1:1:1:2:8:8:콘솔 메뉴, 방향키와 페이지 업다운을 사용하여 원하시는 항목에서 엔터를 누르세요.
+zone:1:1:1:1:7:7:미사일 요격기
+zone:1:1:1:1:6:6:항공기 조종
+zone:1:1:1:1:5:5:Flare 발사기
+zone:1:1:2:2:7:7:유도 미사일
+zone:1:1:2:2:6:6:레이저포
+zone:1:1:2:2:5:5:폭탄
+tile:1:1:1:2:4:7:air:hazard
+zone:1:1:1:2:4:4:닫기
+door:1:1:1:2:4:4:1:1:0:닫기:1:6:door34:0
+sb:0:2:0:3:3:9:콘솔메뉴:45
+tile:0:2:2:2:1:1:wallglass2:hazard
+tile:0:2:1:2:2:2:wallglass2:hazard
+etp:1:1:1:2:4:7:menuclick:140:1
+etp:1:1:1:2:4:4:menuenter:10:0
+etp:1:1:1:1:0:0:menuopen:10:0

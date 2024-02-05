@@ -1,0 +1,8 @@
+const uint lock_locker = 24020854;
+const uint lock_security_boosts = 2216229303;
+const uint lock_inventory = 2587312139;
+const uint lock_code = 892321506;
+const uint lock_lockerx = 3763068971;
+const uint lock_lockery = 3763068970;
+const uint lock_lockerz = 3763068969;
+const uint lock_owner = 1253553732;

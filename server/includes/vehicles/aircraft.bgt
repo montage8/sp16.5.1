@@ -1,0 +1,263 @@
+vehicle spawn_aircraft()
+{
+vehicle v;
+v.type = "aircraft";
+v.flying = true;
+v.maxhealth = 40000;
+v.defense = 4000;
+v.sight_range = 20000;
+v.missile_range = 500;
+v.minspeed = 5;
+v.maxspeed = 50;
+v.groundlimit = 15;
+v.accelpower = 0.0075;
+v.decelpower = 0.005;
+v.breakpower = 0.015;
+v.vfueltime = 1000;
+v.vfuelspeed = 5;
+v.vfuelpitch = 3;
+v.vsspawn = 6130;
+v.vsstart = 3530;
+v.vsstop = 3497;
+v.vsdie = 1750;
+v.autopilot = true;
+v.gear1_maxpitch = 220;
+v.maxpassengers = 2;
+v.explode_min = 16000;
+v.explode_max = 24000;
+vehicle_interior new1;
+new1.x = 1;
+new1.y = 1;
+new1.z = 1;
+new1.type = INTERIOR_DOOR;
+v.interiors.insert_last(new1);
+vehicle_interior new2;
+new2.x = 1;
+new2.y = 1;
+new2.z = 6;
+new2.type = INTERIOR_STEERING;
+v.interiors.insert_last(new2);
+vehicle_interior new3;
+new3.x = 1;
+new3.y = 2;
+new3.z = 6;
+new3.type = INTERIOR_WEAPON;
+new3.reusetime = 10;
+new3.pretime = 700;
+new3.looptime = 50;
+@ new3.prework = @ prework_aircraft_weapon1;
+@ new3.work = @ work_aircraft_weapon1;
+@ new3.loop = @ loop_aircraft_weapon1;
+v.interiors.insert_last(new3);
+vehicle_interior new4;
+new4.x = 1;
+new4.y = 2;
+new4.z = 5;
+new4.type = INTERIOR_WEAPON;
+new4.reusetime = 2000;
+new4.pretime = 1000;
+@ new4.prework = @ prework_aircraft_weapon2;
+@ new4.work = @ work_aircraft_weapon2;
+new4.max_ammo = 8;
+new4.require_ammo = "_250pound_aerial_bomb";
+v.interiors.insert_last(new4);
+vehicle_interior new5;
+new5.x = 1;
+new5.y = 2;
+new5.z = 7;
+new5.type = INTERIOR_WEAPON;
+new5.reusetime = 2000;
+new5.pretime = 1000;
+@ new5.prework = @ prework_aircraft_weapon3;
+@ new5.work = @ work_aircraft_weapon3;
+new5.max_ammo = 4;
+new5.require_ammo = "guided_missile";
+v.interiors.insert_last(new5);
+vehicle_interior new6;
+new6.x = 1;
+new6.y = 1;
+new6.z = 5;
+new6.type = INTERIOR_WEAPON;
+new6.reusetime = 480;
+new6.pretime = 10;
+@ new6.prework = @ prework_aircraft_weapon4;
+@ new6.work = @ work_aircraft_weapon4;
+new6.max_ammo = 40;
+new6.require_ammo = "_flare_bomb";
+v.interiors.insert_last(new6);
+vehicle_interior mint;
+mint.x = 1;
+mint.y = 1;
+mint.z = 7;
+mint.type = INTERIOR_WEAPON;
+@ mint.prework = @ prework_vehicle_weapon2;
+@ mint.work = @ work_vehicle_weapon2;
+v.interiors.insert_last(mint);
+return v;
+}
+
+bool prework_aircraft_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.looping)
+{
+vi.pretimer.force(vi.pretime);
+return true_t;
+}
+if (vi.user.facing > 20 and vi.user.facing < 340)
+{
+vi.user.alert("그 무기의 조준경은 그렇게 많이 돌아가지 않습니다.");
+return false_t;
+}
+if (this.fuel <= 0.4)
+{
+vi.user.alert("연료가 부족합니다.");
+return false_t;
+}
+vi.dir = vi.user.facing;
+this.playsound("aircraft_shot_start", true, true);
+return true_t;
+}
+
+bool work_aircraft_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.looping)
+{
+vi.reserve_stop = true;
+return true_t;
+}
+vi.looping = true;
+vi.charge = true;
+vi.chargetimer.force(700);
+vi.reserve_stop = false;
+return true_t;
+}
+
+bool loop_aircraft_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (this.fuel <= 0.4) return false_t;
+if (vi.user.facing > 20 and vi.user.facing < 340) return false_t;
+if (vi.charge)
+{
+if (vi.chargetimer.elapsed < 700) return true_t;
+vi.chargetimer.force(0);
+int facing = this.facing + vi.dir;
+play_dist("aircraft_shot_fire_dist", this.x, this.y, this.z, this.map, 0.5);
+this.playsound("aircraft_shot_fire",true,true);
+spawn_weapon(this.x, this.y, this.z, facing, "aircraft_laser", this.map, vi.user, "aircraft_shot_fire");
+this.fuel -= 0.4;
+vi.charge = false;
+return true_t;
+}
+if (vi.chargetimer.elapsed < 50) return true_t;
+if (vi.reserve_stop)
+{
+vi.reserve_stop = false;
+return false_t;
+}
+vi.chargetimer.force(0);
+vi.charge = true;
+this.playsound("aircraft_shot_start", true, true);
+return true_t;
+}
+
+bool prework_aircraft_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.user.facing > 10 and vi.user.facing < 350)
+{
+vi.user.alert("그 무기의 조준경은 그렇게 많이 돌아가지 않습니다.");
+return false_t;
+}
+if (vi.current_ammo < 1)
+{
+vi.user.alert("폭탄 무장창이 텅 비었습니다.");
+return false_t;
+}
+vi.dir = vi.user.facing;
+this.playsound("aircraft_bombing_bay", true, true);
+return true_t;
+}
+
+bool work_aircraft_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+vi.current_ammo--;
+int facing = this.facing + vi.dir;
+this.playsound("aircraft_bombing", true, true);
+spawn_weapon(this.x, this.y, this.z, facing, "250pound_aerial_bomb", this.map, vi.user, empty, -1);
+return true_t;
+}
+
+bool prework_aircraft_weapon3(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1)
+{
+vi.user.alert("미사일 무장창이 텅 비었습니다.");
+return false_t;
+}
+vi.targetx = -1;
+vi.targety = -1;
+vi.targetz = -1;
+@ vi.targetv = null;
+if (vi.user.tracking_type == ascii_v)
+{
+if (!vi.user.tracking_target.get("target", @ vi.targetv))
+{
+vi.user.alert("대인이나 대로봇용으로는 쓸 수 없습니다.");
+return false_t;
+}
+if (vi.targetv is null) return false_t;
+if (vi.targetv.health <= 0)
+{
+vi.user.alert("이미 완파된 대상입니다.");
+return false_t;
+}
+if (vi.targetv.map !is this.map)
+{
+vi.user.alert("사거리를 벗어났습니다.");
+return false_t;
+}
+vi.targetx = vi.targetv.x;
+vi.targety = vi.targetv.y;
+vi.targetz = vi.targetv.z;
+}
+else
+{
+vi.targetx = vi.user.trackx;
+vi.targety = vi.user.tracky;
+vi.targetz = vi.user.trackz;
+}
+if (vi.targetx < 0) return false_t;
+if (vi.targety < 0) return false_t;
+this.playsound("aircraft_bombing_bay", true, true);
+return true_t;
+}
+
+bool work_aircraft_weapon3(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+vi.current_ammo--;
+play_dist("missilelaunchdist", this.x, this.y, this.z, this.map);
+this.playsound("missilelaunch", true, true);
+if (vi.targetv !is null) this.playsound("carrier_missileinput", true, false);
+spawn_missile(this.x, this.y, this.z, vi.targetx, vi.targety, vi.targetz, this.x, this.y, this.z, this.map, vi.user, vi.targetv);
+return true_t;
+}
+
+bool prework_aircraft_weapon4(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1)
+{
+vi.user.alert("조명탄이 모두 소진되었습니다.");
+return false_t;
+}
+return true_t;
+}
+
+bool work_aircraft_weapon4(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+vi.current_ammo--;
+this.playsound("flare", true, true);
+Robot@ temp = robot_spawn("flare", this.x, this.y, this.z, this.map, 0, empty, null, vi.user.name);
+return true_t;
+}

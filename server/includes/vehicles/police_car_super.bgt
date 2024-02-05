@@ -1,0 +1,119 @@
+vehicle spawn_police_car_super()
+{
+vehicle v;
+v.type = "police_car_super";
+v.maxhealth = 55000;
+v.defense = 3000;
+v.sight_range = 200;
+v.missile_range = 200;
+v.maxspeed = 28;
+v.accelpower = 0.0042;
+v.decelpower = 0.0042;
+v.breakpower = 0.0112;
+v.vfueltime = 1200;
+v.vfuelspeed = 20;
+v.vfuelpitch = 2;
+v.autopilot = true;
+v.extra_engine_sound = true;
+v.maxsiren = 2;
+v.explode_min = 11000;
+v.explode_max = 14000;
+v.maxpassengers = 5;
+vehicle_interior new1;
+new1.x=1;
+new1.y=6;
+new1.z=0;
+new1.type=INTERIOR_DOOR;
+v.interiors.insert_last(new1);
+vehicle_interior new2;
+new2.x=1;
+new2.y=5;
+new2.z=0;
+new2.type=INTERIOR_STEERING;
+v.interiors.insert_last(new2);
+vehicle_interior new3;
+new3.x=3;
+new3.y=6;
+new3.z=0;
+new3.type=INTERIOR_DOOR;
+v.interiors.insert_last(new3);
+vehicle_interior new4;
+new4.x=1;
+new4.y=3;
+new4.z=0;
+new4.type=INTERIOR_DOOR;
+v.interiors.insert_last(new4);
+vehicle_interior new5;
+new5.x=3;
+new5.y=3;
+new5.z=0;
+new5.type=INTERIOR_DOOR;
+v.interiors.insert_last(new5);
+vehicle_interior new6;
+new6.x = 3;
+new6.y = 5;
+new6.z = 10;
+new6.type = INTERIOR_WEAPON;
+new6.reusetime = 300;
+new6.pretime = 2150;
+@ new6.prework = @ prework_police_car_weapon1;
+@ new6.work = @ work_police_car_weapon1;
+v.interiors.insert_last(new6);
+vehicle_interior mint;
+mint.x = 3;
+mint.y = 5;
+mint.z = 9;
+mint.type = INTERIOR_WEAPON;
+@ mint.prework = @ prework_vehicle_weapon2;
+@ mint.work = @ work_vehicle_weapon2;
+v.interiors.insert_last(mint);
+vehicle_interior lk;
+lk.x = 3;
+lk.y = 5;
+lk.z = 1;
+lk.type = INTERIOR_LOCKER;
+v.interiors.insert_last(lk);
+return v;
+}
+
+bool prework_vehicle_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1)
+{
+vi.user.alert("연막탄이 모두 소진되었습니다.");
+return false_t;
+}
+this.playsound("smoke", true, true);
+return true_t;
+}
+
+bool work_vehicle_weapon1(vehicle@ this, vehicle_interior@ vi)
+{
+if (vi.current_ammo < 1) return false_t;
+vi.current_ammo--;
+vi.user.alert("연막탄이 피어 오릅니다.");
+placesmoke_grenade(this.x, this.y, this.z, this.map, vi.user.name, true);
+return true_t;
+}
+
+bool prework_vehicle_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+vi.pretime = 700;
+vi.reusetime = 200;
+if (this.fuel < this.missile_intercept_fuel)
+{
+vi.user.alert("전파를 쏘기 위한 연료가 부족합니다.");
+return false_t;
+}
+this.playsound("missile_interceptor_fire", true, true);
+play_dist("missile_interceptor_firedist", this.x, this.y, this.z, this.map);
+return true_t;
+}
+
+bool work_vehicle_weapon2(vehicle@ this, vehicle_interior@ vi)
+{
+if (this.fuel < this.missile_intercept_fuel) return false_t;
+this.fuel -= this.missile_intercept_fuel;
+missile_intercept(this.x, this.y, this.z, this.map, vi.user, 55);
+return true_t;
+}

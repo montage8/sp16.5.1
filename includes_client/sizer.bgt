@@ -1,0 +1,82 @@
+const string& get_file_size(const string& in filename)
+{
+if (!fl.open(filename, "rb")) return "-1";
+else
+{
+string size = fl.read();
+fl.close();
+ref_string = get_string_size(size);
+}
+return ref_string;
+}
+double get_file_size_b(const string& in filename)
+{
+if (!fl.open(filename, "rb")) return -1;
+string size = fl.read();
+fl.close();
+return get_string_size_b(size);
+}
+const string& get_string_size(const string& in size)
+{
+double bytes = size.size;
+if (bytes < 1024)
+{
+ref_string = round(bytes, 2) + " B";
+return ref_string;
+}
+bytes /= 1024;
+if (bytes < 1024)
+{
+ref_string = round(bytes, 2) + " KB";
+return ref_string;
+}
+bytes /= 1024;
+if (bytes < 1024)
+{
+ref_string = round(bytes, 2) + " MB";
+return ref_string;
+}
+bytes /= 1024;
+if (bytes < 1024)
+{
+ref_string = round(bytes, 2) + " GB";
+return ref_string;
+}
+bytes /= 1024;
+ref_string = round(bytes, 2) + " TB";
+return ref_string;
+}
+const string& convert_size(double size)
+{
+if (size < 1024)
+{
+ref_string = round(size, 2) + " B";
+return ref_string;
+}
+size /= 1024;
+if (size < 1024)
+{
+ref_string = round(size, 2) + " KB";
+return ref_string;
+}
+size /= 1024;
+if (size < 1024)
+{
+ref_string = round(size, 2) + " MB";
+return ref_string;
+}
+size /= 1024;
+if (size < 1024)
+{
+ref_string = round(size, 2) + " GB";
+return ref_string;
+}
+size /= 1024;
+ref_string = round(size, 2) + " TB";
+return ref_string;
+}
+double get_string_size_b(const string& in size)
+{
+double bytes = size.size;
+return bytes;
+}

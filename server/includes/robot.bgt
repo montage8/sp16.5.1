@@ -1,0 +1,2057 @@
+uint robotid = 0;
+int robotspawn_origin = 1200000;
+dictionary robots;
+funcdef bool Robot_Attack(Robot &inout this);
+dictionary robot_attacks;
+funcdef bool Robot_Counter(Robot &inout this);
+dictionary robot_counters;
+void install_special_robot_hash()
+{
+robot_attacks.set("awsn", @ robot_attack_awsn);
+robot_attacks.set("ivan", @ robot_attack_ivan);
+robot_attacks.set("bomber", @ robot_attack_bomber);
+robot_attacks.set("corporal", @ robot_attack_corporal);
+robot_attacks.set("tentacle", @ robot_attack_tentacle);
+robot_attacks.set("lion", @ robot_attack_lion);
+robot_attacks.set("brucelee", @ robot_attack_brucelee);
+robot_attacks.set("fireball", @ robot_attack_fireball);
+robot_attacks.set("ghost_sayori", @ robot_attack_ghost_sayori);
+robot_counters.set("man_eater", @ robot_counter_man_eater);
+robot_counters.set("brucelee", @ robot_counter_brucelee);
+}
+
+// flags
+const int RT_FLYING = 1;
+const int RT_NO_TRACKABLE = 2;
+const int RT_SHOULD_SUBTRACT = 4;
+const int RT_RESIST_SMOKE = 8;
+const int RT_NO_CHANGE_MAP = 16;
+const int RT_RESIST_SOUND = 32;
+const int RT_IGNORE_SHIELD = 64;
+const int RT_RESIST_EMP = 128;
+const int RT_RANDOM_MOVE = 256;
+const int RT_FIX_VOICE = 512;
+const int RT_PROTEIN = 1024;
+const int RT_UNDEAD = 2048;
+const int RT_FIRST_HIT = 4096;
+
+class RobotTemplate // Template robot.
+{
+string name; // Robot name.
+int weight = 500;
+int health = 100, defense = 0, fire_defense = 0, bullet_eva = 0, speed = 1000, pace = 1, shoot = 3000, shoot_ready = 0, distance = 1, aggro = 75, self_destruct = 0, self_vanish = 0, flee_min = 0, flee_max = 0, fleetime_min = 0, fleetime_max = 0, spread = 5, angle = 1, zangle = 1; // stats.
+int minzfacing = -90, maxzfacing = 90;
+int mindamage = 1, maxdamage = 1;
+int steps = 0; // Steps numbers.
+string loot; // Robot loot.
+string tile; // Robot tile only.
+uint poisonlevel = 0, stunlevel = 0;
+string voicetime; // Not parsing
+int amount = 0, maxamount = 0, voices = 0, loops = 0, shoots = 0, hits = 0, pains = 0, kills = 0; // loot is amount then killed.
+int level = 1;
+bool flying = false, trackable = true, should_subtract = false, resist_smoke = false, resist_sound = false, resist_emp = false, ignore_shield = false, no_change_map = false, random_move = false, fix_voice = false, protein = false, undead = false, first_hit = false;
+string voice_data;
+double volume = 1.0;
+int minfw = -1, maxfw = -1;
+double lowest = 0, highest = 0, confront = 0;
+Robot_Attack@ attack_func;
+Robot_Counter@ counter_func;
+string kill_success;
+} // class.robottemplate.
+
+class Robot : RobotTemplate // Class robot.
+{
+double x, y;
+int z; // Robot position.
+int rx, ry; // Real position with tile check.
+uint id = 0;
+string owner;
+string hit_sound;
+player@ owner_handle;
+int find_way = 0;
+int look = random(0, 359), zdir = 0; // Robot look, angle to left turn.
+int walkmode = random(0, 3);
+int zwalkmode = (random(1, 2) == 1 ? -1 : 1);
+string player; // Player to shoting.
+mapdata@ map;
+msound@ voice, loopid; // Robot location.
+string[] loots;
+dictionary tiles;
+maptile@ ct;
+bool ct_changed = false;
+int shooting = 0;
+player@ target_p;
+vehicle@ target_v;
+Robot@ target_r;
+remgun@ target_g;
+timer movetimer, shoottimer; // Timers moving, shooting.
+timer ownerchecktimer;
+maprspawn@ mapr;
+int acttime = random(1000, 6000);
+int act = 0;
+timer falltimer;
+int accumulated_damage = 0;
+double oldx, oldy;
+int oldz;
+int slidetime = 0, slidedir = -1, falldist = 0, self_count = 0, flee_count = 0, flee = 0, next_flee = 0, next_fleetime = 0;
+timer slidetimer, selftimer, fleetimer, smoketimer, stuntimer;
+bool reserve_fallcheck = false, in_smoke = false;
+uint group = 0;
+timer angletimer, zangletimer;
+bool is_pawn = false, stunned = false;
+int stuntime = 0;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+void hit(int damage, const string& in weaponname, const string& in playername = empty)
+{
+if (bullet_eva > 0)
+{
+if (!weaponname.is_empty())
+{
+weapon_data@ temp = get_weapon_handle(weaponname);
+if (temp !is null)
+{
+if (temp.bullet)
+{
+if (random(1, 100) <= bullet_eva)
+{
+this.playsound(this.name + "_resist" + random(1, 3));
+return;
+}
+}
+}
+}
+}
+if (damage < this.defense)
+{
+if (this.pains == 0) this.playsound("hnd" + random(1, 3));
+return;
+}
+int rdam = damage - this.defense;
+this.accumulated_damage += rdam;
+this.player = playername;
+} // method.hit.
+
+void stun(int time)
+{
+if (resist_emp) return;
+if (stunned) return;
+stunned = true;
+stuntime = time;
+stuntimer.force(0);
+}
+
+void playsound(const string& in soundname)
+{
+int l = map.players.length;
+if (l == 0) return;
+string sendpacket = string_encrypt("play_3ds " + soundname + " " + this.x + " " + this.y + " " + this.z + " " + this.volume, pcps);
+int range = (75 / this.map.pan_step) / this.volume;
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < ((range / temp.weaponsight) / this.volume))
+n.send_reliable(temp.peer_id, sendpacket, 0);
+}
+}
+
+void move_default()
+{
+if (this.in_smoke) return;
+double tx = -1, ty = -1, tz = -1;
+int current_distance = this.aggro + 1;
+if (this.group > 0)
+{
+int b = this.map.robots.length;
+for (uint j = 0; j < b; j++)
+{
+Robot@ temp = map.robots[j];
+if (temp.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.defense >= this.maxdamage) continue;
+}
+if (temp.group == this.group) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+if (temp.in_smoke) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+if (map.fighting == 1)
+{
+int g = this.map.remguns.length;
+for (uint c = 0; c < g; c++)
+{
+remgun@ temp = map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.hid.defense >= this.maxdamage) continue;
+}
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+int v = this.map.vs.length;
+for (uint c = 0; c < v; c++)
+{
+vehicle@ temp = map.vs[c];
+if (temp.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.defense >= this.maxdamage) continue;
+}
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+if (temp.in_smoke) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+int p = this.map.players.length;
+for (uint c = 0; c < p; c++)
+{
+player@ temp =  map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.frequency) continue;
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+if (temp.in_smoke) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+bool success = true;
+if (current_distance > this.aggro) 
+{
+this.look = random(0, 359);
+success = this.move(random(0, 3) * 90, this.pace);
+if (!success) success = this.artmove((random(0, 1) * 2) - 1);
+}
+else
+{
+this.rotate(tx, ty);
+this.artrotate(get_2d_distance(this.x, this.y, tx, ty), this.z - tz);
+if (random(1, 2) == 1)
+{
+if (!this.artmove(tz)) success = this.move(this.look, this.pace);
+}
+else
+{
+if (!this.move(this.look, this.pace)) success = this.artmove(tz);
+}
+if (success)
+{
+if (this.weight < 0) moving_attack(this);
+return;
+}
+}
+if (!success) this.find_way = random(this.minfw, this.maxfw);
+}
+
+bool& move_and_find_way()
+{
+if (this.move(this.walkmode, this.pace)) return true_t;
+if (this.artmove(this.zwalkmode, true)) return true_t;
+int new;
+do
+{
+new = random(0, 3) * 90;
+}
+while (this.walkmode == new);
+this.walkmode = new;
+if (this.move(this.walkmode, this.pace)) return true_t;
+this.zwalkmode *= -1;
+if (this.artmove(this.zwalkmode, true)) return true_t;
+this.walkmode = random(0, 3) * 90;
+this.find_way++;
+return false_t;
+}
+
+bool& rotate(double tx, double ty)
+{
+int current = angletimer.elapsed;
+int time = current / angle;
+if (time == 0) return false_t;
+angletimer.force(random(0, angle - 1));
+int ang = calculate_x_y_angle(this.x, this.y, tx, ty, this.look);
+int amount = get_rotate_amount(ang, (flee > 0 ? flee : 0));
+if (amount == 0) return false_t;
+int val =  (abs(amount) <= time ? abs(amount) : time);
+this.look = (amount < 0 ? turnright(this.look, val) : turnleft(this.look, val));
+return true_t;
+}
+
+bool& artrotate(double length, double height)
+{
+int current = zangletimer.elapsed;
+int time = current / zangle;
+if (time == 0) return false_t;
+zangletimer.force(random(0, zangle - 1));
+int ang = calculate_x_y_angle(0, 0, height, length, 0);
+ang = (ang > 180 ? ang - 360 : ang);
+ang = (ang < minzfacing ? minzfacing : ang > maxzfacing ? maxzfacing : ang);
+int amount = abs(ang - zdir);
+if (amount == 0) return false_t;
+zdir = (amount <= time ? ang : (zdir < ang ? zdir + time : zdir - time));
+return true_t;
+}
+
+bool& move(int dir, int pace_t = 1, bool sound = true)
+{
+double new_x = this.x + (pace_t * sine_theta[dir]);
+double new_y = this.y + (pace_t * cosine_theta[dir]);
+int new_rx = round(new_x, 0);
+int new_ry = round(new_y, 0);
+maptile@ tt = get_tile_handle_at(new_rx, new_ry, this.z, this.map);
+if ((tt is null ? true : (tt.type.is_empty() ? !flying : (tiles.is_empty() ? tt.is_wall : !tiles.exists(tt.type))))) return false_t;
+this.x = new_x;
+this.y = new_y;
+rx = new_rx;
+ry = new_ry;
+@ ct = tt;
+ct_changed = true;
+if (sound)
+{
+if (this.steps == 0)
+{
+if (tt !is null and !tt.type.is_empty()) this.playsound(tt.type + "step" + random(1, 5));
+}
+else if (this.steps > 0) this.playsound(this.name + "_step" + random(1, this.steps));
+}
+return true_t;
+}
+
+bool& artmove(int tz, bool force = false)
+{
+int temp_z = this.z;
+if (force) temp_z = tz + this.z;
+else
+{
+if (flee > 0) temp_z += (tz > this.z ? -1 : tz < this.z ? 1 : (random(1, 2) == 1 ? 1 : -1));
+else
+{
+if (tz > (this.z + (this.highest * confront))) temp_z++;
+else if (tz < (this.z + (this.lowest * confront))) temp_z--;
+else return false_t;
+}
+}
+maptile@ tt = get_tile_handle_at(this.rx, this.ry, temp_z, map);
+if ((tt is null ? true : (tt.type.is_empty() ? !flying : (tiles.is_empty() ? tt.is_wall : !tiles.exists(tt.type))))) return false_t;
+this.z = temp_z;
+@ ct = tt;
+ct_changed = true;
+if (this.steps == 0)
+{
+if (tt !is null and !tt.type.is_empty()) this.playsound(tt.type + "step" + random(1, 5));
+}
+else if (this.steps > 0) this.playsound(this.name + "_step" + random(1, this.steps));
+return true_t;
+}
+
+void fallcheck()
+{
+if (falltimer.elapsed < 100) return;
+falltimer.force(0);
+reserve_fallcheck = false;
+if (this.ct is null and this.z < 0)
+{
+if (falldist > 0) this.hit(falldist * abs(this.weight), "중력의 법칙", "중력의 법칙");
+this.z = 0;
+falldist = 0;
+return;
+}
+if (this.ct !is null and !this.ct.type.is_empty())
+{
+if (ct.type != "air" and falldist > 0) this.hit(falldist * abs(this.weight), "중력의 법칙", "중력의 법칙");
+this.playsound(ct.type + "hardland");
+falldist = 0;
+slidetime = ct.slidetime;
+slidedir = ct.slidedir;
+step_mine(this.x, this.y, this.z, this.map, this.owner);
+return;
+}
+this.z--;
+falldist++;
+}
+
+bool hitbox(double tx, double ty, double tz)
+{
+int realz = (zdir < 0 ? zdir + 360 : zdir);
+double xlength = sine_theta[this.look] * cosine_theta[realz] * this.distance;
+double ylength = cosine_theta[this.look] * cosine_theta[realz] * this.distance;
+double zlength = sine_theta[realz] * this.distance;
+tx -= this.x;
+ty -= this.y;
+tz -= this.z;
+double dot_product = tx * xlength + ty * ylength + tz * zlength;
+double project_length = 0.0;
+if (dot_product > 0)
+{
+tx = xlength - tx;
+ty = ylength - ty;
+tz = zlength - tz;
+dot_product = tx * xlength + ty * ylength + tz * zlength;
+if (dot_product > 0) project_length = dot_product * dot_product / distance;
+}
+double final_length = tx * tx + ty * ty + tz * tz - project_length;
+if (final_length < 0) final_length = 0;
+return (final_length ** 0.5) < spread;
+}
+
+bool& attack_default()
+{
+player@ tgp;
+vehicle@ tgv;
+Robot@ tgr;
+remgun@ tgg;
+int current_distance = this.distance;
+if (map.fighting == 1)
+{
+int p = this.map.players.length;
+for (uint c = 0; c < p; c++)
+{
+player@ temp = map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.frequency) continue;
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+@ tgp = temp;
+}
+int v = this.map.vs.length;
+for (uint c = 0; c < v; c++)
+{
+vehicle@ temp = map.vs[c];
+if (temp.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.defense >= this.maxdamage) continue;
+}
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+@ tgv = temp;
+}
+int g = this.map.remguns.length;
+for (uint c = 0; c < g; c++)
+{
+remgun@ temp = map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.hid.defense >= this.maxdamage) continue;
+}
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+@ tgg = temp;
+}
+}
+if (this.group > 0)
+{
+int b = this.map.robots.length;
+for (uint j = 0; j < b; j++)
+{
+Robot@ temp = map.robots[j];
+if (temp.health < 0) continue;
+if (this.maxdamage >= 0)
+{
+if (temp.defense >= this.maxdamage) continue;
+}
+if (temp.group == this.group) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > current_distance) continue;
+double z_l = temp.z - this.z;
+if ((z_l < 0 ? z_l > this.lowest : z_l < this.highest)) dist -= this.aggro;
+current_distance = dist;
+@ tgr = temp;
+}
+}
+double tx = -1, ty = -1, tz = -1;
+if (tgr !is null)
+{
+tx = tgr.x;
+ty = tgr.y;
+tz = tgr.z;
+@ target_r = tgr;
+}
+else if (tgg !is null)
+{
+tx = tgg.x;
+ty = tgg.y;
+tz = tgg.z;
+@ target_g = tgg;
+}
+else if (tgv !is null)
+{
+tx = tgv.x;
+ty = tgv.y;
+tz = tgv.z;
+@ target_v = tgv;
+}
+else if (tgp !is null)
+{
+bool is_vehicle = false;
+if (tgp.ride !is null)
+{
+if (tgp.ride.hit_percent < random(1, 100))
+{
+@ tgv = tgp.ride;
+is_vehicle = true;
+tx = tgv.x;
+ty = tgv.y;
+tz = tgv.z;
+@ target_v = tgv;
+}
+}
+if (!is_vehicle)
+{
+tx = tgp.x;
+ty = tgp.y;
+tz = tgp.z;
+@ target_p = tgp;
+}
+}
+if (tx == -1 and ty == -1 and tz == -1) return false_t;
+this.rotate(tx, ty);
+this.artrotate(get_2d_distance(this.x, this.y, tx, ty), round(tz - this.z, 0));
+if (this.shoots >= 0)
+{
+string shoot_sound = this.name + "_shoot";
+if (this.shoots > 0) shoot_sound += random(1, this.shoots);
+this.playsound(shoot_sound);
+}
+this.shooting = 1;
+return true_t;
+}
+
+void attack_p()
+{
+if (target_p.map !is this.map) return;
+if (this.distancecheck(target_p.x, target_p.y, target_p.z) > this.spread)
+{
+if (!hitbox(target_p.x, target_p.y, target_p.z)) return;
+}
+if (flee_min > 0) flee_count++;
+if (target_p.deathfreecards > 0)
+{
+if (is_pawn) target_p.deathfreetimer.force(0);
+}
+double dam = random(mindamage, maxdamage);
+if (target_p.shielded and !ignore_shield)
+{
+int shchance = random(1, 100);
+if (shchance > 10)
+{
+double shots = round(dam ** 0.5, 0);
+double current = target_p.shieldshots;
+target_p.shieldhit(shots);
+if (shots < current) return;
+dam -= abs(shots - current) * abs(shots - current);
+}
+}
+target_p.playsound(hit_sound);
+if (dam >= target_p.health)
+{
+if (!this.kill_success.is_empty()) target_p.death_sound = this.kill_success;
+}
+target_p.hit(dam, this.name, should_subtract, true);
+if (this.stunlevel > 0) target_p.stun(this.stunlevel * 100, true, true);
+if (this.poisonlevel > 0) target_p.poisoned += this.poisonlevel;
+}
+
+void attack_v()
+{
+if (target_v.map !is this.map) return;
+if (this.distancecheck(target_v.x, target_v.y, target_v.z) > this.spread)
+{
+if (!hitbox(target_v.x, target_v.y, target_v.z)) return;
+}
+play(hit_sound, target_v.x, target_v.y, target_v.z, target_v.map);
+target_v.hit(random(this.mindamage, this.maxdamage), this.name, false, true);
+if (flee_min > 0) flee_count++;
+}
+
+void attack_r()
+{
+if (target_r.map !is this.map) return;
+if (this.distancecheck(target_r.x, target_r.y, target_r.z) > this.spread)
+{
+if (!hitbox(target_r.x, target_r.y, target_r.z)) return;
+}
+target_r.playsound(hit_sound);
+target_r.hit(random(this.mindamage, this.maxdamage), this.name);
+if (flee_min > 0) flee_count++;
+}
+
+void attack_g()
+{
+if (target_g.map !is this.map) return;
+if (this.distancecheck(target_g.x, target_g.y, target_g.z) > this.spread)
+{
+if (!hitbox(target_g.x, target_g.y, target_g.z)) return;
+}
+play(hit_sound, target_g.x, target_g.y, target_g.z, target_g.map);
+target_g.hid.hit(random(this.mindamage, this.maxdamage), this.name, empty);
+if (flee_min > 0) flee_count++;
+}
+
+bool& is_in_spread(int rs = 5)
+{
+if (map.fighting == 1)
+{
+int playerslength = this.map.players.length;
+for (uint c = 0; c < playerslength; c++)
+{
+player@ temp = map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.frequency) continue;
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+if (rs >= 0)
+{
+if (this.distancecheck(temp.x, temp.y, temp.z) > rs) continue;
+}
+return true_t;
+}
+int vslength = this.map.vs.length;
+for (uint c = 0; c < vslength; c++)
+{
+vehicle@ temp = map.vs[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+if (rs >= 0)
+{
+if (this.distancecheck(temp.x, temp.y, temp.z) > rs) continue;
+}
+return true_t;
+}
+int remlength = this.map.remguns.length;
+for (uint c = 0; c < remlength; c++)
+{
+remgun@ temp = map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+if (rs >= 0)
+{
+if (this.distancecheck(temp.x, temp.y, temp.z) > rs) continue;
+}
+return true_t;
+}
+}
+if (this.group > 0)
+{
+int counter = map.robots.length;
+for (uint j = 0; j < counter; j++)
+{
+Robot@ temp = map.robots[j];
+if (temp.health < 0) continue;
+if (temp.group == this.group) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+if (rs >= 0)
+{
+if (this.distancecheck(temp.x, temp.y, temp.z) > rs) continue;
+}
+return true_t;
+}
+}
+return false_t;
+}
+} // class.Robot.
+
+dictionary robottemps; // Robot template dictionary.
+
+RobotTemplate@ get_rt_handle (const string& in name)
+{
+if (!robottemps.exists(name)) return null;
+RobotTemplate@ temp;
+robottemps.get(name, @ temp);
+return temp;
+} // func.get_rt_handle.
+
+Robot@ robot_spawn (const string& in name, double x, double y, double z, mapdata@ map, uint group = 0, const string& in tile = empty, maprspawn@ mapr = null, const string& in owner = empty)
+{
+if (map is null) return null;
+RobotTemplate@ tr = get_rt_handle(name);
+if (tr is null) return null;
+Robot this; 
+this.x = x;
+this.y = y;
+this.z = z;
+this.kill_success = tr.kill_success;
+this.self_vanish = tr.self_vanish;
+this.group = group;
+@ this.map = map;
+this.weight = tr.weight;
+this.aggro = tr.aggro;
+if (!owner.is_empty())
+{
+this.owner = owner;
+@ this.owner_handle = get_player_handle(owner);
+if (this.owner_handle !is null)
+{
+this.group = (this.owner_handle.peer_id + 2140000000);
+this.is_pawn = true;
+}
+if (tr.self_vanish > 1200000) this.self_vanish = 1200000;
+this.aggro = 100000;
+}
+else
+{
+if (mapr !is null)
+{
+@ this.mapr = mapr;
+this.mapr.currobots++;
+}
+}
+this.rx = round(x, 0);
+this.ry = round(y, 0);
+this.oldx = x;
+this.oldy = y;
+this.oldz = z;
+this.protein = tr.protein;
+this.undead = tr.undead;
+this.flying = tr.flying;
+this.no_change_map = tr.no_change_map;
+this.should_subtract = tr.should_subtract;
+@ this.ct = get_tile_handle_at(this.rx, this.ry, this.z, this.map);
+if (this.ct is null) this.reserve_fallcheck = true;
+else
+{
+if (!this.flying and this.ct.type.is_empty()) this.reserve_fallcheck = true;
+else
+{
+this.slidetime = this.ct.slidetime;
+this.slidedir = this.ct.slidedir;
+}
+}
+this.trackable = tr.trackable;
+this.volume = tr.volume;
+this.health = tr.health;
+this.defense = tr.defense;
+this.fire_defense = tr.fire_defense;
+this.bullet_eva = tr.bullet_eva;
+this.speed = tr.speed;
+this.pace = tr.pace;
+this.shoot = tr.shoot;
+this.shoot_ready = tr.shoot_ready;
+this.mindamage = tr.mindamage;
+this.maxdamage = tr.maxdamage;
+this.poisonlevel = tr.poisonlevel;
+this.stunlevel = tr.stunlevel;
+this.level = tr.level;
+this.distance = tr.distance;
+this.self_destruct = tr.self_destruct;
+this.self_vanish = tr.self_vanish;
+this.minfw = tr.minfw;
+this.maxfw = tr.maxfw;
+this.flee_min = tr.flee_min;
+this.flee_max = tr.flee_max;
+this.next_flee = random(this.flee_min, this.flee_max);
+this.fleetime_min = tr.fleetime_min;
+this.fleetime_max = tr.fleetime_max;
+this.spread = tr.spread;
+this.angle = tr.angle;
+this.zangle = tr.zangle;
+this.minzfacing = tr.minzfacing;
+this.maxzfacing = tr.maxzfacing;
+this.lowest = tr.lowest;
+this.highest = tr.highest;
+this.confront = tr.confront;
+this.steps = tr.steps;
+this.loot = tr.loot;
+this.amount = tr.amount;
+this.maxamount = tr.maxamount;
+if (!this.loot.is_empty()) this.loots = string_split(this.loot, ",", true);
+this.tile = (tile.is_empty() ? tr.tile : tile);
+if (!this.tile.is_empty())
+{
+string[]@ temptiles = string_split(this.tile, ",", true);
+int temptilelength = temptiles.length;
+for (uint i = 0; i < temptilelength; i++)
+{
+this.tiles.set(temptiles[i], 0);
+}
+}
+this.voices = tr.voices;
+this.shoots = tr.shoots;
+this.loops = tr.loops;
+this.hits = tr.hits;
+this.pains = tr.pains;
+this.kills = tr.kills;
+if (robotid > 999999999) robotid = 0;
+else robotid++;
+this.id = robotid;
+this.name = tr.name;
+this.voice_data = (tr.fix_voice ? tr.name + "_voice" + random(1, tr.voices) + tr.voicetime : tr.voice_data);
+@ this.voice = spawn_moving_sound(this.voice_data, x, y, z, map);
+if (this.volume != 1) this.voice.set_volume(this.volume);
+this.resist_smoke = tr.resist_smoke;
+this.resist_sound = tr.resist_sound;
+this.resist_emp = tr.resist_emp;
+this.ignore_shield = tr.ignore_shield;
+this.random_move = tr.random_move;
+if (this.loops > 0)
+{
+@ this.loopid = spawn_moving_sound(this.name + "_loop" + random(1, this.loops), x, y, z, map);
+if (this.volume != 1) this.loopid.set_volume(this.volume);
+}
+@ this.attack_func = tr.attack_func;
+@ this.counter_func = tr.counter_func;
+if (!this.flying) this.fallcheck();
+if (tr.first_hit)
+{
+this.movetimer.force(2000000000);
+this.shoottimer.force(2000000000);
+this.angletimer.force(2000000000);
+this.zangletimer.force(2000000000);
+}
+map.robots.insert_last(this);
+robots.set(robotid, @ this);
+return this;
+} // func.robot_spawn.
+
+Robot@ get_spawned_robot_handle (const string& in id)
+{
+if (!robots.exists(id)) return null;
+Robot@ temp;
+robots.get(id, @ temp);
+return temp;
+}
+
+void robotloop (mapdata@ map)
+{
+int p = map.players.length;
+int v = map.vs.length;
+int b = map.robots.length;
+int g = map.remguns.length;
+for (int r = b - 1; r > -1; r--)
+{
+Robot@ this = map.robots[r];
+bool removed = false;
+if (this.owner_handle !is null)
+{
+if (this.ownerchecktimer.elapsed > 1000)
+{
+this.ownerchecktimer.force(0);
+if (this.owner_handle.disconnected) removed = true;
+else
+{
+if ((this.owner_handle.map.is_vehicle ? this.owner_handle.map.vhc.map : this.owner_handle.map) !is this.map)
+{
+if (this.no_change_map) removed = true;
+else
+{
+mapdata@ tmap = this.owner_handle.map;
+if (tmap.fighting == 0) removed = true;
+else
+{
+@ this.map = tmap;
+this.x = this.owner_handle.x;
+this.y = this.owner_handle.y;
+this.z = this.owner_handle.z;
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+this.oldx = this.x;
+this.oldy = this.y;
+this.oldz = this.z;
+if (this.voice !is null) @ this.voice = this.voice.change_map(tmap, this.x, this.y, this.z);
+if (this.loopid !is null) @ this.loopid = this.loopid.change_map(tmap, this.x, this.y, this.z);
+this.ct_changed = false;
+@ this.ct = get_tile_handle_at(this.rx, this.ry, this.z, this.map);
+if (this.ct is null)
+{
+this.slidetime = 0;
+this.slidedir = -1;
+this.reserve_fallcheck = true;
+}
+else
+{
+if (this.ct.type.is_empty())
+{
+this.slidetime = 0;
+this.slidedir = -1;
+if (!this.flying) this.reserve_fallcheck = true;
+}
+else
+{
+if (this.slidedir == -1) this.slidetimer.force(0);
+this.slidetime = this.ct.slidetime;
+this.slidedir = this.ct.slidedir;
+}
+}
+if (this.reserve_fallcheck) this.fallcheck();
+tmap.robots.insert_last(this);
+map.robots.remove_at(r);
+continue;
+}
+}
+}
+}
+}
+}
+
+if (this.shooting == 1)
+{
+if (this.shoottimer.elapsed >= this.shoot_ready)
+{
+this.shoottimer.force(0);
+this.hit_sound = this.name + "_hit";
+if (this.hits > 0) this.hit_sound += random(1, this.hits);
+if (this.self_destruct > 0) this.self_count++;
+if (this.maxdamage >= 0)
+{
+if (this.target_p !is null) 
+{
+this.attack_p();
+@ this.target_p = null;
+}
+if (this.target_r !is null) 
+{
+this.attack_r();
+@ this.target_r = null;
+}
+if (this.target_v !is null) 
+{
+this.attack_v();
+@ this.target_v = null;
+}
+if (this.target_g !is null) 
+{
+this.attack_g();
+@ this.target_g = null;
+}
+}
+this.shooting = 0;
+}
+}
+if (this.stunned)
+{
+if (this.stuntimer.elapsed >= this.stuntime) this.stunned = false;
+}
+else
+{
+if (map.active_pv > 0)
+{
+if (this.attack_func is null)
+{
+if (this.flee == 0 and this.shooting == 0)
+{
+if (this.shoottimer.elapsed >= this.shoot)
+{
+this.shoottimer.force(0);
+this.attack_default();
+}
+}
+}
+else this.attack_func(this);
+if (this.movetimer.elapsed >= this.speed)
+{
+this.movetimer.force(0);
+if (this.find_way > 0)
+{
+this.find_way--;
+bool success = this.move_and_find_way();
+if (success)
+{
+if (this.weight < 0) moving_attack(this);
+}
+}
+else if (this.random_move)
+{
+this.move(random(0, 3) * 90, this.pace);
+this.artmove((random(0, 1) * 2) - 1);
+}
+else this.move_default();
+}
+}
+}
+ 
+bool updated = false;
+if (this.x != this.oldx)
+{
+this.oldx = this.x;
+this.rx = round(this.x, 0);
+updated = true;
+}
+if (this.y != this.oldy)
+{
+this.oldy = this.y;
+this.ry = round(this.y, 0);
+updated = true;
+}
+if (this.z != this.oldz)
+{
+this.oldz = this.z;
+updated = true;
+}
+if (updated)
+{
+if (this.voice !is null) this.voice.update(this.x, this.y, this.z);
+if (this.loopid !is null) this.loopid.update(this.x, this.y, this.z);
+if (this.ct_changed) this.ct_changed = false;
+else @ this.ct = get_tile_handle_at(this.rx, this.ry, this.z, this.map);
+if (this.ct is null)
+{
+this.slidetime = 0;
+this.slidedir = -1;
+this.reserve_fallcheck = true;
+}
+else
+{
+if (this.ct.type.is_empty())
+{
+this.slidetime = 0;
+this.slidedir = -1;
+if (!this.flying) this.reserve_fallcheck = true;
+}
+else
+{
+if (this.slidedir == -1) this.slidetimer.force(0);
+this.slidetime = this.ct.slidetime;
+this.slidedir = this.ct.slidedir;
+step_mine(this.x, this.y, this.z, this.map, this.owner);
+if (this.falldist != 0) this.reserve_fallcheck = true;
+}
+}
+}
+
+if (this.reserve_fallcheck) this.fallcheck();
+if (this.slidedir >= 0 and this.falldist == 0)
+{
+if (this.slidetimer.elapsed >= this.slidetime)
+{
+this.slidetimer.force(0);
+switch (this.slidedir)
+{
+case 0: {this.y++;}
+break; case 1: {this.x++;}
+break; case 2: {this.y--;}
+break; case 3: {this.x--;}
+break; case 4: {this.z++;}
+break; case 5: {this.z--;}
+break; case 6: {this.x++; this.y++;}
+break; case 7: {this.x--; this.y++;}
+break; case 8: {this.x++; this.y--;}
+break; case 9: {this.x--; this.y--;}
+break;
+}
+if (this.x < 0 or this.x > this.map.max.x or this.y < 0 or this.y > this.map.max.y)
+{
+this.slidedir = -1;
+this.x = this.oldx;
+this.y = this.oldy;
+}
+}
+}
+
+if (this.flee_min > 0)
+{
+if (this.flee == 0)
+{
+if (this.flee_count >= this.next_flee)
+{
+this.fleetimer.force(0);
+this.next_fleetime = random(this.fleetime_min, this.fleetime_max);
+this.flee = random(90, 270);
+}
+}
+}
+if (this.flee > 0)
+{
+if (this.fleetimer.elapsed >= this.next_fleetime)
+{
+this.flee_count = 0;
+this.next_flee = random(this.flee_min, this.flee_max);
+this.flee = 0;
+}
+}
+
+if (this.in_smoke)
+{
+if (this.smoketimer.elapsed >= 510) this.in_smoke = false;
+}
+if (this.self_destruct > 0)
+{
+if (this.self_count >= this.self_destruct)
+{
+this.hit(2000000000, "자폭하여 죽음");
+this.amount = 0;
+}
+}
+bool vanished = false;
+if (removed)
+{
+this.health = -1;
+this.owner.resize(0);
+@ this.owner_handle = null;
+this.is_pawn = false;
+this.amount = 0;
+vanished = true;
+}
+else if (this.self_vanish > 0 and this.accumulated_damage <= 0)
+{
+if (this.selftimer.elapsed >= this.self_vanish)
+{
+this.hit(2000000000, "시간이 되어 사라짐");
+vanished = true;
+this.amount = 0;
+}
+}
+if (this.accumulated_damage > 0)
+{
+this.health -= this.accumulated_damage;
+if (this.counter_func !is null) this.counter_func(this);
+this.accumulated_damage = 0;
+if (this.health > 0)
+{
+this.playsound(this.pains > 0 ? this.name + "_pain" + random(1, this.pains) : "h_ext" + random(1, 3));
+this.aggro += 5;
+}
+}
+
+if (this.health > 0) continue;
+this.playsound((vanished ? this.name + "_vanish" : this.kills > 0 ? this.name + "_kill" + random(1, this.kills) : (this.kills == -1 and this.ct !is null) ? this.ct.type + "hardland" : this.name + "_kill"));
+if (splash_list.exists(this.name)) spawn_splash(this.x, this.y, this.z, this.map, this.owner, this.name);
+if (this.owner_handle !is null)
+{
+if (this.self_count >= this.self_destruct and this.self_destruct > 0)
+{
+this.owner_handle.alert(this.name + " 로봇이 임무를 완수했습니다.");
+this.owner_handle.sendsound("robot_success");
+}
+else if (vanished)
+{
+this.owner_handle.alert(this.name + " 로봇의 수명이 다했습니다.");
+this.owner_handle.sendsound("robot_vanished");
+}
+else
+{
+this.owner_handle.alert(this.name + " 로봇이 완파되었습니다.");
+this.owner_handle.sendsound("robot_fail");
+}
+}
+if (map.fighting == 1)
+{
+if (this.amount > 0)
+{
+if (!this.loot.is_empty())
+{
+if (this.owner_handle is null and this.player != "...") spawn_obj(this.x, this.y, this.z, this.map, this.loots[random(0, this.loots.length - 1)], random(this.amount, this.maxamount), true, 120000, true);
+}
+}
+player@ temp = get_player_handle(this.player);
+if (temp !is null)
+{
+if (this.level > 0) temp.give_exp(this.level * random(5000, 10000) * (g > 0 ? 1 : temp.map.is_vehicle ? 10 : temp.ride !is null ? 5 : 1));
+temp.add_achievement("첫번째 로봇 사냥", "500000 coin", false);
+if (this.name == "amphibian") temp.add_achievement("가장 강한 로봇 잡기", "1 street_vehicle_pack", true);
+else if (this.name == "ivan") temp.add_achievement("만악의 근원이여, 영원히 잠들어라!", "20 street_check_pack", true);
+}
+}
+if (this.voice !is null) this.voice.destroy();
+if (this.loopid !is null) this.loopid.destroy();
+if (this.mapr !is null) this.mapr.currobots--;
+robots.delete(this.id);
+b--;
+map.robots.remove_at(r);
+}
+}
+
+void kill_imac(bool direct = false)
+{
+int maplength = maps.length;
+for (uint j = 0; j < maplength; j++)
+{
+mapdata@ map = maps[j];
+int robotslength = map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+map.robots[r].hit(2147000000, "...", "...");
+}
+if (direct) robotloop(map);
+}
+}
+
+void kill_robots(bool direct = false)
+{
+int maplength = maps.length;
+for (uint j = 0; j < maplength; j++)
+{
+mapdata@ map = maps[j];
+int robotslength = map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+map.robots[r].hit(2000000000, "...", "...");
+}
+if (direct) robotloop(map);
+}
+}
+
+void load_robots(string rawdata = empty)
+{
+if (rawdata.is_empty())
+{
+if (!fl.open("./prefs/robots.svr", "rb")) return;
+rawdata = fl.read();
+fl.close();
+}
+else
+{
+if (!fl.open("./prefs/robots.svr", "wb")) return;
+fl.write(rawdata);
+fl.close();
+}
+string[]@ robots = string_split(rawdata, "~", false);
+string[]@ damages;
+int size = robots.length;
+for (uint f = 0; f < size; f++)
+{
+string[]@ lines = string_split(robots[f], "\r\n", false);
+RobotTemplate r;
+int line = lines.length;
+for (uint l = 0; l < line; l++)
+{
+string[]@ params = string_split(lines[l], "=", true);
+if (params.length < 2) continue;
+switch (string_to_hash(params[0]))
+{
+case rt_name: {r.name = params[1];}
+break; case rt_weight: {r.weight = string_to_number(params[1]);}
+break; case rt_volume: {r.volume = string_to_number(params[1]);}
+break; case rt_health: {r.health = string_to_number(params[1]);}
+break; case rt_defense: {r.defense = string_to_number(params[1]);}
+break; case rt_fire_defense: {r.fire_defense = string_to_number(params[1]);}
+break; case rt_bullet_eva: {r.bullet_eva = string_to_number(params[1]);}
+break; case rt_speed: {r.speed = string_to_number(params[1]);}
+break; case rt_pace: {r.pace = string_to_number(params[1]);}
+break; case rt_shoot: {r.shoot = string_to_number(params[1]);}
+break; case rt_shoot_ready: {r.shoot_ready = string_to_number(params[1]);}
+break; case rt_damage:
+{
+@ damages = string_split(params[1], ",", true);
+r.mindamage = string_to_number(damages[0]);
+r.maxdamage = (damages.length == 1 ? r.mindamage : string_to_number(damages[1]));
+} // if.damage.
+break; case rt_zfacing:
+{
+@ damages = string_split(params[1], ",", true);
+r.minzfacing = string_to_number(damages[0]);
+r.maxzfacing = (damages.length == 1 ? r.minzfacing : string_to_number(damages[1]));
+} // if.damage.
+break; case rt_fw:
+{
+@ damages = string_split(params[1], ",", true);
+r.minfw = string_to_number(damages[0]);
+r.maxfw = (damages.length == 1 ? r.minfw : string_to_number(damages[1]));
+} // if.damage.
+break; case rt_distance: {r.distance = string_to_number(params[1]);}
+break; case rt_poisonlevel: {r.poisonlevel = string_to_number(params[1]);}
+break; case rt_stunlevel: {r.stunlevel = string_to_number(params[1]);}
+break; case rt_aggro: {r.aggro = string_to_number(params[1]);}
+break; case rt_self_destruct: {r.self_destruct = string_to_number(params[1]);}
+break; case rt_self_vanish: {r.self_vanish = string_to_number(params[1]);}
+break; case rt_flee:
+{
+@ damages = string_split(params[1], ",", true);
+r.flee_min = string_to_number(damages[0]);
+r.flee_max = (damages.length == 1 ? r.flee_min : string_to_number(damages[1]));
+}
+break; case rt_fleetime:
+{
+@ damages = string_split(params[1], ",", true);
+r.fleetime_min = string_to_number(damages[0]);
+r.fleetime_max = (damages.length == 1 ? r.fleetime_min : string_to_number(damages[1]));
+}
+break; case rt_spread: {r.spread = string_to_number(params[1]);}
+break; case rt_angle: {r.angle = string_to_number(params[1]);}
+break; case rt_zangle: {r.zangle = string_to_number(params[1]);}
+break; case rt_steps: {r.steps = string_to_number(params[1]);}
+break; case rt_confront: {r.confront = string_to_number(params[1]);}
+break; case rt_tile: {r.tile = params[1];}
+break; case rt_kill_success: {r.kill_success = params[1];}
+break; case rt_loot: {r.loot = params[1];}
+break; case rt_amount:
+{
+@ damages = string_split(params[1], ",", true);
+r.amount = string_to_number(damages[0]);
+r.maxamount = (damages.length == 1 ? r.amount : string_to_number(damages[1]));
+}
+break; case rt_voices: {r.voices = string_to_number(params[1]);}
+break; case rt_voicetime: {r.voicetime = "*" + string_replace(params[1], ",", "|", true);}
+break; case rt_shoots: {r.shoots = string_to_number(params[1]);}
+break; case rt_hits: {r.hits = string_to_number(params[1]);}
+break; case rt_pains: {r.pains = string_to_number(params[1]);}
+break; case rt_kills: {r.kills = string_to_number(params[1]);}
+break; case rt_loops: {r.loops = string_to_number(params[1]);}
+break; case rt_level: {r.level = string_to_number(params[1]);}
+break; case rt_flags:
+{
+int tempflag = string_to_number(params[1]);
+r.flying = (tempflag & RT_FLYING > 0);
+r.trackable = (tempflag & RT_NO_TRACKABLE == 0);
+r.resist_smoke = (tempflag & RT_RESIST_SMOKE > 0);
+r.no_change_map = (tempflag & RT_NO_CHANGE_MAP > 0);
+r.resist_sound = (tempflag & RT_RESIST_SOUND > 0);
+r.ignore_shield = (tempflag & RT_IGNORE_SHIELD > 0);
+r.resist_emp = (tempflag & RT_RESIST_EMP > 0);
+r.random_move = (tempflag & RT_RANDOM_MOVE > 0);
+r.fix_voice = (tempflag & RT_FIX_VOICE > 0);
+r.protein = (tempflag & RT_PROTEIN > 0);
+r.undead = (tempflag & RT_UNDEAD > 0);
+r.first_hit = (tempflag & RT_FIRST_HIT > 0);
+r.should_subtract = (tempflag & RT_SHOULD_SUBTRACT > 0);
+}
+break;
+}
+} // for.lines.
+if (r.name.is_empty()) continue;
+if (r.angle <= 0) r.angle = 1;
+if (r.zangle <= 0) r.zangle = 1;
+if (r.minfw < 0) r.minfw = (r.flying ? 5 : 10);
+if (r.maxfw < 0) r.maxfw = (r.flying ? 10 : 20);
+r.lowest = -(sine_theta[abs(r.minzfacing)] * r.distance);
+r.highest = sine_theta[abs(r.maxzfacing)] * r.distance;
+if (robot_attacks.exists(r.name)) robot_attacks.get(r.name, @ r.attack_func);
+if (robot_counters.exists(r.name)) robot_counters.get(r.name, @ r.counter_func);
+if (r.voices == 0) r.voice_data = r.name + "_voice";
+else
+{
+for (uint i = 1; i <= r.voices; i++)
+{
+if (i > 0) r.voice_data += "|";
+r.voice_data += r.name + "_voice" + i;
+}
+}
+r.voice_data += r.voicetime;
+robottemps.set(r.name, @ r);
+} // for.robots.
+} // func.robot_load.
+
+bool robot_attack_awsn(Robot &inout this)
+{
+int ivanatime = this.acttime + 1000;
+if (this.shoottimer.elapsed >= this.acttime)
+{
+if (this.act == 0)
+{
+this.playsound("ivan_shoot");
+int ivans = 0;
+for (int i = this.map.robots.length - 1; i > -1; i--)
+{
+if (this.map.robots[i].name == "ivan") ivans++;
+}
+if (ivans <= 1) play_dist("ivan_shootdist", this.x, this.y, this.z, this.map, 0.04);
+this.act = 1;
+}
+}
+if (this.shoottimer.elapsed >= ivanatime)
+{
+this.act = 0;
+this.shoottimer.force(0);
+int p = this.map.players.length;
+int v = this.map.vs.length;
+int rr = this.map.robots.length;
+int rm = this.map.remguns.length;
+int tx = -1, ty = -1, tz = -1;
+int current_distance = 1000000;
+for (uint c = 0; c < rm; c++)
+{
+remgun@ temp = this.map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (temp.owner == this.owner) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist - this.aggro;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+if (this.group > 0)
+{
+for (uint c = 0; c < rr; c++)
+{
+Robot@ temp = this.map.robots[c];
+if (temp.health < 0) continue;
+if (temp.group == this.group) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist - this.aggro;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+for (uint c = 0; c < v; c++)
+{
+vehicle@ temp = this.map.vs[c];
+if (temp.health < 0) continue;
+if (temp.owner == this.owner) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+if (this.map.fighting == 1)
+{
+for (uint c = 0; c < p; c++)
+{
+player@ temp = this.map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+if (tx < 0) return false_t;
+if (ty < 0) return false_t;
+bool go_update = false;
+int attacks = random(0, 9);
+double rdx = (current_distance < 0 ? tx : this.x);
+double rdy = (current_distance < 0 ? ty : this.y);
+double rdz = (current_distance < 0 ? tz : this.z);
+switch (attacks)
+{
+case 1:
+{
+this.playsound("projectile_fire");
+Robot@ proj = robot_spawn("projectile", this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+if (this.health <= 100000) proj.stunlevel = 50;
+this.acttime = 1000;
+}
+break;
+case 2:
+{
+if (current_distance >= 0) placesmoke_grenade(this.x, this.y, this.z, this.map, this.name);
+else
+{
+placesmoke_grenade(this.x + 8, this.y + 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x + 13, this.y, this.z, this.map, this.name);
+placesmoke_grenade(this.x + 8, this.y - 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x, this.y - 13, this.z, this.map, this.name);
+placesmoke_grenade(this.x, this.y + 13, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 8, this.y + 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 13, this.y, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 8, this.y - 8, this.z, this.map, this.name);
+}
+this.acttime = 2000;
+}
+break;
+case 3:
+{
+placestun_grenade(rdx, rdy, rdz, this.map, this.name);
+this.acttime = 1000;
+}
+break;
+case 4:
+{
+this.playsound("alarm4");
+robot_spawn((random(1, 2) == 1 ? "imac" : "awsn"), rdx, rdy, rdz, this.map, this.group, this.tile, null, this.owner);
+this.acttime = 1000;
+}
+break;
+case 5:
+{
+rdx = (abs(tx) <= 3 ? 3 : abs(this.map.max.x - tx) <= 3 ? this.map.max.x - 3 : tx);
+rdy = (abs(ty) <= 3 ? 3 : abs(this.map.max.y - ty) <= 3 ? this.map.max.y - 3 : ty);
+if (this.health > 250000)
+{
+this.playsound("t1_rocket_launcher");
+spawn_splash(rdx, rdy, tz, this.map, this.name, "ivan_rocket");
+this.acttime = 1500;
+break;
+}
+this.playsound("molotov_cocktailthrow");
+play("ivan_fire", rdx, rdy, tz, this.map);
+spawn_fire(rdx, rdy, tz, this.map, 10000);
+this.acttime = 1000;
+}
+break;
+case 6:
+{
+this.playsound("ivan_build");
+robot_spawn("electromagnetic_wall", rdx, rdy, rdz, this.map, this.group, this.tile, null, this.owner);
+this.acttime = 1000;
+}
+break;
+case 7:
+{
+if (this.health <= 100000)
+{
+this.playsound("ivan_teleport");
+this.x = random(0, this.map.max.x);
+this.y = random(0, this.map.max.y);
+play("move", this.x, this.y, this.z, this.map);
+this.acttime = 4000;
+break;
+}
+spawn_splash(this.x, this.y, this.z, this.map, this.name, "suicide_bomb");
+this.acttime = 3000;
+}
+break;
+case 8:
+{
+if (this.health > 1008167)
+{
+this.playsound("ivan_teleport");
+this.x = random(0, this.map.max.x);
+this.y = random(0, this.map.max.y);
+play("move", this.x, this.y, this.z, this.map);
+this.acttime = 4000;
+break;
+}
+this.playsound("ivan_heal");
+this.health += 100000;
+this.acttime = 3000;
+}
+break;
+case 9:
+{
+if (this.health < 100000)
+{
+placeconcussive_grenade(this.x, this.y, this.z, this.map, this.name);
+this.acttime = 3000;
+break;
+}
+spawn_splash(this.x, this.y, this.z, this.map, this.name, "mass_bomb");
+this.acttime = 1000;
+}
+break;
+default:
+{
+if (current_distance < 0)
+placesound_grenade(tx, ty, tz, this.map, this.name);
+else
+{
+spawn_canister(this.x + 4, this.y, this.z, this.map, "toxic");
+spawn_canister(this.x - 4, this.y, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y + 4, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y - 4, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y - 4, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y - 4, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y - 4, this.z, this.map, "toxic");
+}
+this.acttime = 1500;
+}
+}
+return go_update;
+}
+return false_t;
+}
+
+bool robot_attack_ivan(Robot &inout this)
+{
+int ivanatime = this.acttime + 1000;
+if (this.shoottimer.elapsed >= this.acttime)
+{
+if (this.act == 0)
+{
+this.playsound("ivan_shoot");
+int ivans = 0;
+for (int i = this.map.robots.length - 1; i > -1; i--)
+{
+if (this.map.robots[i].name == "ivan") ivans++;
+}
+if (ivans <= 1) play_dist("ivan_shootdist", this.x, this.y, this.z, this.map, 0.04);
+this.act = 1;
+}
+}
+if (this.shoottimer.elapsed >= ivanatime)
+{
+this.act = 0;
+this.shoottimer.force(0);
+int p = this.map.players.length;
+int v = this.map.vs.length;
+int rr = this.map.robots.length;
+int rm = this.map.remguns.length;
+int tx = -1, ty = -1, tz = -1;
+int current_distance = 1000000;
+for (uint c = 0; c < rm; c++)
+{
+remgun@ temp = this.map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (temp.owner == this.owner) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist - this.aggro;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+if (this.group > 0)
+{
+for (uint c = 0; c < rr; c++)
+{
+Robot@ temp = this.map.robots[c];
+if (temp.health < 0) continue;
+if (temp.group == this.group) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist - this.aggro;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+for (uint c = 0; c < v; c++)
+{
+vehicle@ temp = this.map.vs[c];
+if (temp.health < 0) continue;
+if (temp.owner == this.owner) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+if (this.map.fighting == 1)
+{
+for (uint c = 0; c < p; c++)
+{
+player@ temp = this.map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist >= current_distance) continue;
+current_distance = dist;
+tx = temp.x;
+ty = temp.y;
+tz = temp.z;
+}
+}
+if (tx < 0) return false_t;
+if (ty < 0) return false_t;
+bool go_update = false;
+int attacks = random(0, 9);
+double rdx = (current_distance < 0 ? tx : this.x);
+double rdy = (current_distance < 0 ? ty : this.y);
+double rdz = (current_distance < 0 ? tz : this.z);
+switch (attacks)
+{
+case 1:
+{
+this.playsound("projectile_fire");
+Robot@ proj = robot_spawn("projectile", this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+if (this.health <= 100000) proj.stunlevel = 50;
+this.acttime = 1000;
+}
+break;
+case 2:
+{
+if (current_distance >= 0) placesmoke_grenade(this.x, this.y, this.z, this.map, this.name);
+else
+{
+placesmoke_grenade(this.x + 8, this.y + 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x + 13, this.y, this.z, this.map, this.name);
+placesmoke_grenade(this.x + 8, this.y - 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x, this.y - 13, this.z, this.map, this.name);
+placesmoke_grenade(this.x, this.y + 13, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 8, this.y + 8, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 13, this.y, this.z, this.map, this.name);
+placesmoke_grenade(this.x - 8, this.y - 8, this.z, this.map, this.name);
+}
+this.acttime = 2000;
+}
+break;
+case 3:
+{
+placestun_grenade(rdx, rdy, rdz, this.map, this.name);
+this.acttime = 1000;
+}
+break;
+case 4:
+{
+this.playsound("alarm4");
+robot_spawn((random(1, 2) == 1 ? "enes" : "x0"), rdx, rdy, rdz, this.map, this.group, this.tile, null, this.owner);
+this.acttime = 1000;
+}
+break;
+case 5:
+{
+rdx = (abs(tx) <= 3 ? 3 : abs(this.map.max.x - tx) <= 3 ? this.map.max.x - 3 : tx);
+rdy = (abs(ty) <= 3 ? 3 : abs(this.map.max.y - ty) <= 3 ? this.map.max.y - 3 : ty);
+if (this.health > 250000)
+{
+this.playsound("t1_rocket_launcher");
+spawn_splash(rdx, rdy, tz, this.map, this.name, "ivan_rocket");
+this.acttime = 1500;
+break;
+}
+this.playsound("molotov_cocktailthrow");
+play("ivan_fire", rdx, rdy, tz, this.map);
+spawn_fire(rdx, rdy, tz, this.map, 10000);
+this.acttime = 1000;
+}
+break;
+case 6:
+{
+this.playsound("ivan_build");
+robot_spawn("electromagnetic_wall", rdx, rdy, rdz, this.map, this.group, this.tile, null, this.owner);
+this.acttime = 1000;
+}
+break;
+case 7:
+{
+if (this.health <= 100000)
+{
+this.playsound("ivan_teleport");
+this.x = random(0, this.map.max.x);
+this.y = random(0, this.map.max.y);
+play("move", this.x, this.y, this.z, this.map);
+this.acttime = 4000;
+break;
+}
+spawn_splash(this.x, this.y, this.z, this.map, this.name, "suicide_bomb");
+this.acttime = 3000;
+}
+break;
+case 8:
+{
+if (this.health > 400000)
+{
+this.playsound("ivan_teleport");
+this.x = random(0, this.map.max.x);
+this.y = random(0, this.map.max.y);
+play("move", this.x, this.y, this.z, this.map);
+this.acttime = 4000;
+break;
+}
+this.playsound("ivan_heal");
+this.health += 100000;
+this.acttime = 3000;
+}
+break;
+case 9:
+{
+if (this.health < 100000)
+{
+placeconcussive_grenade(this.x, this.y, this.z, this.map, this.name);
+this.acttime = 3000;
+break;
+}
+spawn_splash(this.x, this.y, this.z, this.map, this.name, "mass_bomb");
+this.acttime = 1000;
+}
+break;
+default:
+{
+if (current_distance < 0)
+placesound_grenade(tx, ty, tz, this.map, this.name);
+else
+{
+spawn_canister(this.x + 4, this.y, this.z, this.map, "toxic");
+spawn_canister(this.x - 4, this.y, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y + 4, this.z, this.map, "toxic");
+spawn_canister(this.x, this.y - 4, this.z, this.map, "toxic");
+}
+this.acttime = 1500;
+}
+}
+return go_update;
+}
+return false_t;
+}
+
+bool robot_attack_lion(Robot &inout this)
+{
+if (this.flee != 0) return false_t;
+if (this.shooting != 0) return false_t;
+if (this.act >= random(2, 4))
+{
+if (this.shoottimer.elapsed < 750) return false_t;
+this.shoottimer.force(0);
+this.attack_default();
+this.act = 0;
+return true_t;
+}
+if (this.shoottimer.elapsed < (this.act == 0 ? this.shoot : 750)) return false_t;
+this.shoottimer.force(0);
+if (this.act == 0) this.act = 1;
+if (!this.is_in_spread(this.spread)) return false_t;
+this.act++;
+Robot@ r = robot_spawn("lion_bash", this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+if (r !is null) r.look = this.look;
+return true_t;
+}
+
+bool robot_attack_bomber(Robot &inout this)
+{
+if (this.shoottimer.elapsed < this.shoot) return false_t;
+this.shoottimer.force(0);
+if (!this.is_in_spread(-1)) return false_t;
+this.playsound("bomber_shoot");
+robot_spawn("stinger", this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+this.flee = random(90, 270);
+this.next_fleetime = 200000000;
+return true_t;
+}
+
+bool robot_attack_corporal(Robot &inout this)
+{
+int shoottime = 0;
+switch (this.act)
+{
+case 0: shoottime = 900;
+break; case 1: shoottime = 300;
+break; case 2: shoottime = 600;
+break; case 3: shoottime = 600;
+break; case 4: shoottime = 600;
+break;
+}
+if (this.shoottimer.elapsed < shoottime) return false_t;
+this.shoottimer.force(0);
+this.act++;
+switch (this.act)
+{
+case 1:
+{
+if (!this.is_in_spread(-1)) return false_t;
+this.playsound("corporal_shoot");
+}
+break; case 2: this.attack_default();
+break; case 3: this.attack_default();
+break; case 4: this.attack_default();
+break; default: this.act = 0;
+break;
+}
+return true_t;
+}
+
+bool robot_attack_tentacle(Robot &inout this)
+{
+if (this.shoottimer.elapsed < this.shoot) return false_t;
+this.shoottimer.force(0);
+if (random(1, 5) <= 4) this.attack_default();
+else
+{
+if (!this.is_in_spread(-1)) return false_t;
+this.playsound("tentacle_drag");
+int l = qtru.length - 1;
+for (uint i = 0; i < 5; i++)
+robot_spawn(qtru[random(0, l)], this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+}
+return true_t;
+}
+
+bool robot_attack_ghost_sayori(Robot &inout this)
+{
+if (this.shoottimer.elapsed < this.shoot) return false_t;
+this.shoottimer.force(0);
+if (random(1, 80) <= 79) this.attack_default();
+else
+{
+if (!this.is_in_spread(-1)) return false_t;
+this.playsound("ghost_sayori_teleport");
+this.x = random(0, this.map.max.x);
+this.y = random(0, this.map.max.y);
+play("ghost_sayori_teleportspawn", this.x, this.y, this.z, this.map);
+}
+return true_t;
+}
+
+bool robot_attack_brucelee(Robot &inout this)
+{
+if (this.shooting != 0) return false_t;
+if (this.shoottimer.elapsed < (this.act == 2 ? this.shoot_ready : this.shoot)) return false_t;
+this.shoottimer.force(0);
+if (this.act == 2)
+{
+this.act = 0;
+return true_t;
+}
+bool success = this.attack_default();
+if (success) this.act = 0;
+else if (this.act == 1)
+{
+this.act = 2;
+this.playsound("fireball_shot");
+robot_spawn("fireball", this.x, this.y, this.z, this.map, this.group, this.tile, null, this.owner);
+}
+return true_t;
+}
+
+bool robot_attack_fireball(Robot &inout this)
+{
+if (this.shoottimer.elapsed < this.shoot) return false_t;
+this.shoottimer.force(0);
+if (this.attack_default ()) spawn_fire(this.rx, this.ry, this.z, this.map, 2000, 20000, 8, "fire2");
+return true_t;
+}
+
+bool robot_counter_man_eater(Robot &inout this)
+{
+this.defense += (this.accumulated_damage / 2);
+if (this.shoottimer.elapsed < 1500) return false_t;
+this.shoottimer.force(5000);
+return true_t;
+}
+
+bool robot_counter_brucelee(Robot &inout this)
+{
+if (this.act == 0) this.act = 1;
+return true_t;
+}
+
+void moving_attack(Robot &inout this)
+{
+double mindam = abs(this.weight) * 0.8;
+double maxdam = mindam * 1.5;
+if (this.map.fighting == 1)
+{
+int playerslength = this.map.players.length;
+for (uint c = 0; c < playerslength; c++)
+{
+player@ temp = this.map.players[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp, this.owner_handle)) continue;
+}
+if (temp.hidden) continue;
+if (temp.invinsible) continue;
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > this.spread) continue;
+temp.hit(random(mindam, maxdam) * (1.0 - (dist / this.spread)), this.name, true, true);
+temp.statchangetimer.force(0);
+}
+int vslength = this.map.vs.length;
+for (uint c = 0; c < vslength; c++)
+{
+vehicle@ temp = this.map.vs[c];
+if (temp.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > this.spread) continue;
+temp.playsound("explode_impact_vehicle", true, true);
+temp.hit(random(mindam, maxdam) * (1.0 - (dist / this.spread)), this.name, true, true);
+}
+int remlength = this.map.remguns.length;
+for (uint c = 0; c < remlength; c++)
+{
+remgun@ temp = this.map.remguns[c];
+if (temp.hid.health < 0) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > this.spread) continue;
+temp.hid.hit(random(mindam, maxdam) * (1.0 - (dist / this.spread)), this.name, empty);
+}
+}
+if (this.group > 0)
+{
+int counter = this.map.robots.length;
+for (uint j = 0; j < counter; j++)
+{
+Robot@ temp = this.map.robots[j];
+if (temp.health < 0) continue;
+if (temp.group == this.group) continue;
+if (this.is_pawn)
+{
+if (are_teamed(temp.owner, this.owner)) continue;
+}
+double dist = this.distancecheck(temp.x, temp.y, temp.z);
+if (dist > this.spread) continue;
+temp.hit(random(mindam, maxdam) * (1.0 - (dist / this.spread)), this.name);
+}
+}
+}

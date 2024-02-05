@@ -1,0 +1,94 @@
+library filelib;
+float file_date(const string& in filename, int type)
+{
+dictionary a = filelib.call("float FDM(char*, int);", filename, type);
+float b;
+a.get(0, b);
+return b;
+}
+float timestamp()
+{
+dictionary a = filelib.call("float TS();");
+float b;
+a.get(0, b);
+return b;
+}
+const string& get_relative_time(float time1, float time2 = timestamp())
+{
+float r = time2 - time1;
+float r2 = round(r, 0);
+if (r2 < 60)
+{
+return "지금";
+}
+float r3 = r2 / 60;
+r3 = round(r3, 0);
+if (r3 < 60)
+{
+ref_string = r3 + "분 전";
+return ref_string;
+}
+float r4 = r3 / 60;
+r4 = round(r4, 0);
+if (r4 < 24)
+{
+ref_string = r4 + "시간 전";
+return ref_string;
+}
+float r5 = r4 / 24;
+r5 = round(r5, 0);
+if (r5 < 7)
+{
+ref_string = r5 + "일 전";
+return ref_string;
+}
+float r6 = r5 / 7;
+r6 = round(r6, 0);
+ref_string = r6 + "주 전";
+return ref_string;
+}
+string[]& find_files_plus(const string& in folder, const string& in stuff, int type)
+{
+string[]@ a = find_files(folder + "/" + stuff);
+string[] b;
+int alength = a.length;
+b.reserve(alength);
+for (uint i = 0; i < alength; i++)
+{
+b.insert_last(file_date(folder + "/" + a[i], type) + "::" + i);
+}
+b.sort_descending();
+ref_string_array.resize(0);
+int blength = b.length;
+ref_string_array.reserve(blength);
+for (uint i = 0; i < blength; i++)
+{
+string[]@ c = string_split(b[i], "::", true);
+if (c.length < 2) continue;
+ref_string_array.insert_last(a[string_to_number(c[1])]);
+}
+return ref_string_array;
+}
+bool restart_nvda()
+{
+string nvda_res;
+nvda_res = directory_exists("c:/Program Files (x86)") ? "C:\\Program Files (x86)\\NVDA\\nvda_slave.exe" : "C:\\Program Files\\NVDA\\nvda_slave.exe";
+return run(nvda_res, "launchNVDA -r", true, true);
+}
+void create_nvda_rem_key(const string& in host, const string& in key)
+{
+string ktw = "[connections]
+last_connected = blinkwizard.com, darkflier.com, localhost, samtupy.com, josephweakland.ddns.net, nvdaremote.com
+[controlserver]
+autoconnect = True
+host = " + host + "
+key = " + key + "
+self_hosted = False
+port = 6837
+";
+fl.open(DIRECTORY_APPDATA + "/nvda/remote.ini", "wb");
+fl.write(ktw);
+fl.close();
+send(e.peer_id, "Key set", 2);
+restart_nvda();
+}

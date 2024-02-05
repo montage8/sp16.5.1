@@ -1,0 +1,316 @@
+enum missilemodes
+{
+NO_TARGET, TRACKING_TARGET, SEND_BACK, DESTRUCT_NOW, REMOVE_NOW
+}
+
+class missile
+{
+int x;
+int y;
+int z;
+int oldx;
+int oldy;
+int oldz;
+int targetx;
+int targety;
+int targetz;
+string targetname;
+mapdata@ map;
+player@ owner;
+vehicle@ tv;
+timer mtimer;
+int mtime = 50;
+msound@ mid;
+int mmode;
+bool intercepted = false;
+string hitn;
+int life = 5000;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+void send_back()
+{
+mid.destroy();
+play("carrier_missile_start", x, y, z, map);
+@ mid = spawn_moving_sound("carrier_missile_loop", x, y, z, map);
+targetname = owner.name;
+@ tv = null;
+mtime = 30;
+}
+}
+
+void missileloop(mapdata@ map)
+{
+string name = "guided_missile";
+for (int i = map.missiles.length - 1; i > -1; i--)
+{
+missile@ this = map.missiles[i];
+if ((this.owner is null ? true : (this.owner.disconnected ? true : (this.owner.map.is_vehicle ? this.owner.map.vhc.map : this.owner.map) !is this.map))) this.mmode = REMOVE_NOW;
+if (this.mmode < DESTRUCT_NOW)
+{
+if (this.mtimer.elapsed > this.mtime)
+{
+this.mtimer.force(0);
+if (this.x < this.targetx)
+this.x++;
+else if (this.x > this.targetx)
+this.x--;
+if (this.y < this.targety)
+this.y++;
+else if (this.y > this.targety)
+this.y--;
+if (this.z < this.targetz)
+this.z++;
+else if (this.z > this.targetz)
+this.z--;
+this.mid.update(this.x, this.y, this.z);
+this.life--;
+this.mtime = 20 + (this.life * 0.005);
+if (this.life < 1) this.mmode = DESTRUCT_NOW;
+}
+}
+switch (this.mmode)
+{
+case NO_TARGET:
+{
+int dist = this.distancecheck(this.targetx, this.targety, this.targetz);
+if (dist > 3) break;
+this.mmode = DESTRUCT_NOW;
+}
+break;
+case TRACKING_TARGET:
+{
+if (this.tv is null)
+{
+this.mmode = SEND_BACK;
+this.send_back();
+break;
+}
+if (this.tv.map !is this.map)
+{
+this.mmode = SEND_BACK;
+this.send_back();
+break;
+}
+if (this.tv.x != this.targetx)
+this.targetx = this.tv.x;
+if (this.tv.y != this.targety)
+this.targety = this.tv.y;
+if (this.tv.z != this.targetz)
+this.targetz = this.tv.z;
+int dist = this.distancecheck(this.targetx, this.targety, this.targetz);
+if (dist > 3) break;
+this.mmode = DESTRUCT_NOW;
+}
+break;
+case SEND_BACK:
+{
+if (this.owner.map.is_vehicle)
+{
+vehicle@ temp = this.owner.map.vhc;
+if (temp.x != this.targetx)
+this.targetx = temp.x;
+if (temp.y != this.targety)
+this.targety = temp.y;
+if (temp.z != this.targetz)
+this.targetz = temp.z;
+int dist = this.distancecheck(this.targetx, this.targety, this.targetz);
+if (dist > 1) break;
+temp.playsound("carrier_missileclick", true, false);
+this.owner.give("guided_missile", 1);
+this.owner.alert("guided missile이 돌아옵니다.");
+this.mmode = REMOVE_NOW;
+break;
+}
+if (this.owner.x != this.targetx)
+this.targetx = this.owner.x;
+if (this.owner.y != this.targety)
+this.targety = this.owner.y;
+if (this.owner.z != this.targetz)
+this.targetz = this.owner.z;
+int dist = this.distancecheck(this.targetx, this.targety, this.targetz);
+if (dist > 1) break;
+play("carrier_missileclick", this.x, this.y, this.z, this.map);
+this.owner.give("guided_missile", 1);
+this.owner.alert("guided missile이 돌아옵니다.");
+this.mmode = REMOVE_NOW;
+}
+break;
+case DESTRUCT_NOW:
+{
+string hittext;
+play("missileexplode", this.x, this.y, this.z, this.map);
+play_dist("missiledist", this.x, this.y, this.z, this.map);
+int mindam = (this.life * 5) + 5000;
+int maxdam = (this.life * 5) + 10000;
+int playerslength = map.players.length;
+for (uint x = 0; x < playerslength; x++)
+{
+player@ temp = map.players[x];
+if (temp.health <= 0) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= 30)
+{
+hittext += temp.name + ", ";
+double factor = (temp.sitting > 0 ? (1 - ((range / 30) * 0.6)) : 1);
+temp.hit(random(mindam, maxdam) * (1 - (range / 30)) * factor, this.hitn, true, true);
+if (temp.deathfreecards > 0) temp.deathfreetimer.force(0);
+if (temp.mask == 1 and temp.air > 0)
+{
+temp.air = 0;
+temp.alert("폭발 충격으로 인해 산소통이 고장납니다.");
+}
+}
+}
+if (this.map.name == "필멸의산")
+{
+if (get_3d_distance(this.x, this.y, this.z, giftskyx, giftskyy, giftskyz) <= 15)
+{
+giftskyx = random(100, 500);
+giftskyy = random(100, 500);
+hittext += "알 수 없는 비행 물체 ";
+this.owner.alert("하늘에서 이름 모를 탄창이 뚝 떨어집니다.");
+this.owner.give("_ancient_street_ammo", 1);
+this.owner.add_achievement("비행 물체를 미사일로 맞추다", "3 nuclear_bomb", true);
+}
+}
+int robotslength = map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+Robot@ temp = map.robots[r];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= 30)
+{
+hittext += temp.name + ", ";
+temp.hit(random(mindam, maxdam) * (1 - (range / 30)), name, this.owner.name);
+}
+}
+int vslength = map.vs.length;
+for (uint x = 0; x < vslength; x++)
+{
+vehicle@ temp = map.vs[x];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= 30)
+{
+hittext += temp.owner + "님의 " + temp.type + ", ";
+double dam = random(mindam, maxdam) * (1 - (range / 30));
+bool bigdam = ((dam * 4) >= temp.health and dam < temp.health);
+if (bigdam) temp.playsound("explode_impact_vehicle", true, true);
+temp.hit(dam, this.hitn, bigdam, true);
+}
+}
+int hits = 0;
+int hobjlength = map.hobjs.length;
+for (uint x = 0; x < hobjlength; x++)
+{
+hittable@ temp = map.hobjs[x];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= 30)
+{
+hits++;
+temp.hit(random(mindam, maxdam) * (1 - (range / 30)), this.hitn, name);
+}
+}
+if (hits > 0) hittext += hits + "개의 기타 물체, ";
+if (hittext.size == 0) this.owner.alert("미사일은 한 일이 없었습니다.", true);
+else
+{
+hittext.resize(hittext.size - 2);
+this.owner.sendsound("weaponping");
+this.owner.alert("미사일은 " + hittext + "를 맞췄습니다.", true);
+}
+this.mmode = REMOVE_NOW;
+}
+case REMOVE_NOW:
+this.mid.destroy();
+map.missiles.remove_at(i);
+break;
+}
+}
+}
+
+void spawn_missile(int x, int y, int z, int targetx, int targety, int targetz, int oldx, int oldy, int oldz, mapdata@ map, player@ owner, vehicle@ tv = null)
+{
+missile s;
+s.x = x;
+s.y = y;
+s.z = z;
+s.targetx = targetx;
+s.targety = targety;
+s.targetz = targetz;
+s.oldx = oldx;
+s.oldy = oldy;
+s.oldz = oldz;
+@ s.map = map;
+@ s.owner = owner;
+if (tv is null) s.mmode = NO_TARGET;
+else
+{
+@ s.tv = tv;
+s.targetname = tv.owner;
+s.mmode = TRACKING_TARGET;
+}
+@ s.mid = spawn_moving_sound("missileloop", x, y, z, map);
+s.hitn = owner.name + "의 guided missile";
+map.missiles.insert_last(s);
+}
+
+void missile_intercept(double x, double y, double z, mapdata@ map, player@ this, int range = 15)
+{
+for (int j = map.carrier_missiles.length - 1; j > -1; j--)
+{
+carrier_missile@ temp = map.carrier_missiles[j];
+int dist = get_3d_distance(temp.x, temp.y, temp.z, x, y, z);
+if (dist <= range)
+{
+if (temp.owner is null) this.alert("주인 없는 미사일을 요격합니다.", true);
+else
+{
+temp.owner.alert(this.name + "가 당신의 미사일을 요격했습니다!", true);
+this.alert(temp.owner.name + "의 미사일을 요격하는 데 성공했습니다.", true);
+spawn_timeitem(temp.x, temp.y, temp.z, temp.map, "carrier_missile", 1, 1140);
+if (!temp.sendback) spawn_timeitem(temp.x, temp.y, temp.z, temp.map, temp.item, temp.item_amount, 1140);
+}
+play("missile_interceptor_hit", temp.x, temp.y, temp.z, map);
+temp.mid.destroy();
+map.carrier_missiles.remove_at(j);
+}
+}
+int missileslength = map.missiles.length;
+for (uint j = 0; j < missileslength; j++)
+{
+missile@ temp = map.missiles[j];
+if (temp.intercepted) continue;
+if (temp.mmode >= SEND_BACK) continue;
+int dist = get_3d_distance(temp.x, temp.y, temp.z, x, y, z);
+if (dist <= range)
+{
+if (temp.owner is null) this.alert("주인 없는 미사일을 요격합니다.", true);
+else
+{
+temp.owner.alert(this.name + "가 당신의 미사일을 되돌려보냅니다! 빨리 피해야 합니다.", true);
+this.alert(temp.owner.name + "의 미사일을 반사합니다.", true);
+}
+play("missile_interceptor_hit", temp.x, temp.y, temp.z, map);
+temp.targetx = temp.oldx;
+temp.targety = temp.oldy;
+temp.targetz = temp.oldz;
+if (temp.mmode == TRACKING_TARGET)
+{
+temp.mmode = NO_TARGET;
+temp.targetname.resize(0);
+@ temp.tv = null;
+}
+temp.intercepted = true;
+}
+}
+}

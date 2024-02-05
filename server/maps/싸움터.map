@@ -1,0 +1,16 @@
+
+mapname:½Î¿òÅÍ
+maxx:500
+maxy:500
+survival:0
+owner:qhfqkfrkstkcnsrl95,cuchulainn
+tile:0:500:0:500:0:0:concrete6
+tile:0:100:0:100:50:50:concrete12
+tile:0:101:101:101:50:60:wallbigmetal2
+tile:101:101:0:101:50:60:wallbigmetal2
+travelpoint:0:0:0:0:0:0:½Î¿òÅÍ:0:0:50:2Ãş:1
+fightingstate:1
+respawn:1
+src:0:500:0:500:0:10000:birds1|birds2|birds4|birds5|birds7|birds8|birds14|birds15|birds16:100
+travelpoint:0:0:0:0:50:50:½Î¿òÅÍ:0:0:0:1Ãş:1
+no_recall:1

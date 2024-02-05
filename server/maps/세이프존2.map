@@ -1,0 +1,9 @@
+
+mapname:세이프존2
+owner:hw
+maxx:5000
+maxy:5000
+survival:0
+
+tile:0:5000:0:5000:0:0:air
+fightingstate:1

@@ -1,0 +1,70 @@
+// savedata class.
+// by Ultrocity Audio
+class savedata
+{
+// internal variables for the class.
+string key;
+string fn;
+dictionary d;
+// the constructor
+savedata(const string& in filename, const string& in enckey = empty)
+{
+fn = filename;
+key = enckey;
+}
+// the function to load the saved data into the dictionary.
+void load()
+{
+// fn is our previously declared filename string, so use that.
+fl.open(fn, "rb");
+// check for a decryption key.
+if (key.is_empty())
+{
+// no key, so just deserialize.
+d = deserialize(fl.read());
+}
+else
+{
+// deserialize but first decrypt.
+d = deserialize(string_decrypt(fl.read(), key));
+}
+// close the file
+fl.close();
+}
+// function to save the data into the file.
+void save()
+{
+// again, use the FN string
+fl.open(fn, "wb");
+// check for a key.
+if (key.is_empty())
+fl.write(serialize(d));
+else
+fl.write(string_encrypt(serialize(d), key));
+fl.close();
+}
+// function to add a value.
+void add(const string& in name, double value)
+{
+d.set(name, value);
+}
+// function to read a number.
+double readn(const string& in name)
+{
+double tmp;
+d.get(name, tmp);
+return tmp;
+}
+// overloaded function of add to add a string.
+void add(const string& in name, const string& in value)
+{
+d.set(name, value);
+}
+// function to read a string
+string read(const string& in name)
+{
+string tmp;
+d.get(name, tmp);
+return tmp;
+}
+}

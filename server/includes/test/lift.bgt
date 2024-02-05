@@ -1,0 +1,60 @@
+class Lift {
+int x, y, z; // Lift's current position
+int dirX, dirY, dirZ; // Direction of lift's movement
+bool isActive; // Whether the lift is active or not
+array<int> passengers; // List of player IDs who are on the lift
+Lift(int startX, int startY, int startZ, int startDirX, int startDirY, int startDirZ) {
+x = startX;
+y = startY;
+z = startZ;
+dirX = startDirX;
+dirY = startDirY;
+dirZ = startDirZ;
+isActive = false;
+}
+
+  void start()
+{
+isActive = true;
+
+send(0, "play_sound ls.ogg", 0);
+sleep(3000); 
+send(0, "play_sound ll.ogg loop", 0); // The "loop" keyword makes the sound play in a loop
+}
+
+
+void stop() {
+isActive = false;
+    
+send(0, "stop_sound ll.ogg", 0);
+send(0, "play_sound lstop.ogg", 0);
+  }
+
+  // Method to move the lift
+  void move() {
+    if (!isActive) return;
+    // Update the lift position based on its current direction
+    x += dirX;
+    y += dirY;
+    z += dirZ;
+    for (int i = 0; i < passengers.length(); i++) {
+      // Update each player's position
+      player@ p = get_player_by_id(passengers[i]);
+      p.x = this.x;
+      p.y = this.y;
+      p.z = this.z;
+    }
+  }
+
+  // Method to board a player onto the lift
+  void board(int playerId) {
+    // Add the player ID to the passengers list
+    passengers.insertLast(playerId);
+  }
+
+  // Method to disembark a player from the lift
+  void disembark(int playerId) {
+    // Remove the player ID from the passengers list
+    passengers.removeAt(passengers.find(playerId));
+  }
+}

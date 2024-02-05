@@ -1,0 +1,16 @@
+
+mapname:uml_boss
+maxx:100
+maxy:100
+zone:0:100:0:100:0:100:Unstable Mutation Laboratory Underbridge
+tile:0:100:0:100:0:0:dirt4
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+robots:0:100:0:100:0:0:1:300000:tentacle
+robots:0:100:0:100:0:0:1:300000:hulk
+robots:0:100:0:100:0:0:1:300000:behemoth
+no_coord:1
+src:0:100:0:100:0:200:bog3:100
+startingx:-1
+startingy:-1
+startingz:0

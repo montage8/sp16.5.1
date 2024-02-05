@@ -1,0 +1,11 @@
+mapname:tankfight
+maxx:500
+maxy:500
+maxz:100
+tile:0:500:0:500:0:0:concrete
+src:0:500:0:500:0:100:amb1:100
+zone:0:500:0:500:0:100:tank fight zone
+tile:0:500:0:500:15:15:wood
+zone:0:500:0:500:15:30:viewing platform
+//ispawn:0:500:0:500:0:0:50:500:police_car:fuel_tank:toolbox:metal_pack
+fightingstate:1

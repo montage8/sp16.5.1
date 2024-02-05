@@ -1,0 +1,19 @@
+tts_voice vc;
+void main()
+{
+show_game_window("filedownloadwindow"); // 윈도우를 안 띄우고 다운로드를 하면 다운로드가 백그라운드에서 진행됩니다. sp는 처음부터 게임윈도우가 띄워저 있기 때문에 딱히 그럴 일은 없을 것 같네요.
+
+http download; // download라는 이름으로 http 객체를 선언합니다. 아시다싶이 string, int처럼 http 뒤에 이름은 마음대로 정하실 수 있습니다.
+file src; // 다운로드될 파일 객체입니다.
+string binary = download.get("http://kt9020.kr/content/downloads/06/11/macOS/11/10-301-30jfuiefjefdbcyr73-rirjmefjfnhfgeyegfytryref-fjfewjoijfioe/sp%20sierra%2013.0.zip"); //download안에 있는 get라는 메소드로 서버 파일에 접근할 수 있습니다. 지금은 sp 압축 파일을 다운받는 코드입니다.
+src.open("sp.zip", "wb"); // 압축파일은 바이너리 파일이기 때문에 wb모드로 열어주었습니다.
+vc.speak("다운로드가 진행중입니다.");
+while(download.progress) // 데이털를 계속 받아서 다운로드를 진행하려면 while문 안에 download.progress를 넣어주셔야 합니다.
+{
+binary+=download.request(); // binary = binary+download.request(); 와 같은 코드입니다.
+//또 아까 선언한 binary 변수에 실제 download.request() 메소드를 이용해서 데이터를 받아옵니다.
+src.write(binary); // 데이터를 파일에 적습니다.
+}
+vc.speak("다운로드가 완료되었습니다.");
+src.close(); //다운을 다 받으면 와일문 밖으로 나오기 때문에 다운로드 후처리(사용자에게 알림, 파일 닫기)등은 여기서 해 주었습니다.
+}

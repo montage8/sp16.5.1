@@ -1,0 +1,182 @@
+int bufferpos;
+buffer@[] buffers(0);
+class buffer
+{
+int interrupt = 1;
+int active = 1;
+int pos;
+string name;
+string[] items;
+bool hidden = false;
+}
+void create_buffer(const string& in bname)
+{
+buffer b1;
+b1.name = bname;
+buffers.insert_last(b1);
+}
+void firstbuffer()
+{
+bufferpos = 0;
+speakfocusedbuffer();
+}
+void lastbuffer()
+{
+bufferpos = buffers.length - 1;
+speakfocusedbuffer();
+}
+void bufferleft()
+{
+if (bufferpos <= 0)
+{
+bufferpos = 0;
+speakfocusedbuffer();
+}
+else
+{
+bufferpos--;
+if (buffer_hidden(bufferpos)) bufferpos--;
+speakfocusedbuffer();
+}
+}
+void bufferright()
+{
+if (bufferpos >= (buffers.length - 1))
+{
+if (!buffers.is_empty())
+bufferpos = buffers.length - 1;
+speakfocusedbuffer();
+}
+else
+{
+bufferpos++;
+if (buffer_hidden(bufferpos)) bufferpos++;
+speakfocusedbuffer();
+}
+}
+void nextbufferitem()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.pos > (temp.items.length - 2)) return;
+temp.pos++;
+speak(temp.items[temp.pos]);
+}
+void prevbufferitem()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.pos <= 0) return;
+temp.pos--;
+speak(temp.items[temp.pos]);
+}
+void topbufferitem()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.items.is_empty()) return;
+temp.pos = 0;
+speak(temp.items[temp.pos]);
+}
+void bottombufferitem()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.items.is_empty()) return;
+temp.pos = (temp.items.length - 1);
+speak(temp.items[temp.pos]);
+}
+void add_buffer_item(const string& in buffername, const string& in item, bool tr = translator, bool silent = false)
+{
+int ret = -1;
+int bufferslength = buffers.length;
+for (uint i = 0; i < bufferslength; i++)
+{
+buffer@ temp = buffers[i];
+if (temp.active != 1) continue;
+if (temp.name == buffername or temp.name == "전체")
+{
+temp.items.insert_last(item);
+ret = temp.interrupt;
+}
+}
+if (silent) return;
+if (ret < 1) return;
+if (tr) speak(item, ret, false, true);
+else speak(item, ret, false, false);
+}
+void export_all_buffers()
+{
+if (string_contains(get_script_path(), "dropbox", 1) > -1 and SCRIPT_COMPILED) return;
+if (!directory_exists("logs"))
+directory_create("logs");
+int itemslength;
+int bufferslength = buffers.length;
+for (uint i = 0; i < bufferslength; i++)
+{
+buffer@ tempobj = buffers[i];
+string temp = "\r\not출력 일시: " + get_date() + ", " + get_time();
+itemslength = tempobj.items.length;
+for (uint i2 = 0; i2 < itemslength; i2++)
+{
+temp += "\r\n" + tempobj.items[i2];
+}
+fl.open("logs/" + tempobj.name + ".log", "ab");
+fl.write(temp);
+fl.close();
+}
+}
+void activate_buffer()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.active == 1)
+{
+temp.active = 0;
+speak(temp.name + " 항목을 듣지 않습니다.");
+}
+else if (temp.active == 0)
+{
+temp.active = 1;
+speak(temp.name + " 항목을 듣습니다.");
+}
+}
+void interrupt_buffer()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.interrupt == 1)
+{
+temp.interrupt = 0;
+speak(temp.name + " 항목을 무시합니다.");
+}
+else if (temp.interrupt == 0)
+{
+temp.interrupt = 1;
+speak(temp.name + " 항목을 듣습니다.");
+}
+}
+int buffer_active(const string& in buffername)
+{
+int bufferslength = buffers.length;
+for (uint i = 0; i < bufferslength; i++)
+{
+if (buffers[i].name == buffername)
+{
+return buffers[i].active;
+}
+}
+return 0;
+}
+void copy_buffer_item()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.items.is_empty()) return;
+clipboard_copy_text(temp.items[temp.pos]);
+}
+void speakfocusedbuffer()
+{
+buffer@ temp = buffers[bufferpos];
+if (temp.items.is_empty()) speak(temp.name + ", 비어있음. " + (bufferpos + 1) + " / " + buffers.length);
+else speak(temp.name + ", " + (temp.pos + 1) + " / " + temp.items.length + "개의 항목. " + (bufferpos + 1) + " / " + buffers.length);
+}
+bool buffer_hidden(uint bufferindex)
+{
+if (bufferindex >= 0 and bufferindex < buffers.length)
+return buffers[bufferindex].hidden;
+return false_t;
+}

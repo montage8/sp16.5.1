@@ -1,0 +1,145 @@
+dictionary ultrabombs;
+class ultrabomb
+{
+string owner;
+player@ p;
+mapdata@ map;
+int x, y, z;
+int seconds = 10000;
+int beeptime;
+timer beeptimer, bombtimer, checktimer;
+bool d = false, ownerrange = true, readyd = false, started = false, silenced = false;
+uint coins = 0;
+string id;
+msound@ loopid;
+hittable@ hid;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+void ultrabombloop(mapdata@ map)
+{
+string name = "ultrabomb";
+for (int i = map.ultrabombs.length - 1; i > -1; i--)
+{
+ultrabomb@ this = map.ultrabombs[i];
+bool dest_now = false;
+if (!this.d)
+{
+if (this.checktimer.elapsed > 1000)
+{
+this.checktimer.force(0);
+if (this.p is null) @ this.p = get_player_handle(this.owner);
+else
+{
+if (this.p.disconnected) @ this.p = null;
+}
+}
+if (!this.readyd)
+{
+if (this.coins >= 20)
+{
+play("remote_timebombcode", this.x, this.y, this.z, this.map);
+this.readyd = true;
+if (this.p !is null) this.p.alert("ultrabomb이 가동되었습니다. 사거리 밖으로 벗어나십시오.");
+}
+else if (this.coins >= 5)
+{
+if (!this.started)
+{
+play("ultrabombgenerator_on", this.x, this.y, this.z, this.map);
+this.started = true;
+@ this.loopid = spawn_moving_sound("ultrabombgenerator_loop", this.x, this.y, this.z, this.map);
+}
+}
+}
+else
+{
+if (this.ownerrange)
+{
+if (this.p is null)
+{
+if (this.loopid !is null) @ this.loopid = this.loopid.destroy();
+ultrabombs.delete(this.id);
+map.ultrabombs.remove_at(i);
+continue;
+}
+if (this.hid.health > 0)
+{
+if (this.p.distancecheck(this.x, this.y, this.z) < 120 and this.p.map is this.map) continue;
+if (this.p.working()) continue;
+play("ultrabombstart", this.x, this.y, this.z, this.map);
+this.p.sendsound("ultrabombstart");
+if (this.p !is null) this.p.alert("카운트다운 시작!");
+}
+if (this.loopid !is null) @ this.loopid = this.loopid.destroy();
+if (!this.silenced) play("ultrabombgenerator_off", this.x, this.y, this.z, this.map);
+this.bombtimer.force(0);
+this.beeptimer.force(0);
+this.ownerrange = false;
+this.d = true;
+}
+}
+}
+else
+{
+this.seconds = 7000 - this.bombtimer.elapsed;
+this.beeptime = this.seconds / 5 + 20;
+if (this.beeptimer.elapsed >= this.beeptime)
+{
+this.beeptimer.force(0);
+play("ultrabombbeep", this.x, this.y, this.z, this.map);
+}
+if (this.seconds <= 0) dest_now = true;
+}
+if (this.hid.health <= 0) dest_now = true;
+if (dest_now)
+{
+this.hid.health = -1;
+spawn_splash(this.x, this.y, this.z, this.map, this.owner, name);
+if (this.loopid !is null) @ this.loopid = this.loopid.destroy();
+ultrabombs.delete(this.id);
+map.ultrabombs.remove_at(i);
+}
+}
+}
+void spawn_ultrabomb(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+string tempid;
+do
+{
+tempid = randomstring(5);
+}
+while (ultrabombs.exists(tempid));
+ultrabomb bomb1;
+bomb1.id = tempid;
+bomb1.owner = owner;
+@ bomb1.p = get_player_handle(owner);
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+@ bomb1.hid = spawn_hobj(x, y, z, map, 60000, 86400000, empty, empty, "ultrabomb");
+ultrabombs.set(tempid, @ bomb1);
+map.ultrabombs.insert_last(bomb1);
+}
+
+bool& setup_ultrabomb_silencer(int x, int y, int z, mapdata@ map)
+{
+int ultrabombslength = map.ultrabombs.length;
+for (uint i = 0; i < ultrabombslength; i++)
+{
+ultrabomb@ temp = map.ultrabombs[i];
+if (temp.silenced) continue;
+if (temp.loopid is null) continue;
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+play("ultrabombgenerator_off", temp.x, temp.y, temp.z, map);
+@ temp.loopid = temp.loopid.destroy();
+temp.silenced = true;
+return true_t;
+}
+return false_t;
+}

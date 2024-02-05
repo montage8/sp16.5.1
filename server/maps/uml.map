@@ -1,0 +1,20 @@
+
+mapname:uml
+maxx:444
+maxy:444
+zone:0:444:0:444:-4:444:Unstable Mutation Laboratory
+travelpoint:0:444:0:0:0:444:세이프존:3001:3001:30:포탈:0
+zone:0:444:0:0:0:444:여기를 통해 탈출하세요.
+travelpoint:0:444:444:444:0:444:세이프존:3001:3001:30:포탈:0
+zone:0:444:444:444:0:444:여기를 통해 탈출하세요.
+tile:0:444:0:444:0:0:bridge1
+tile:222:222:222:222:-2:-1:bridge1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:222
+startingy:222
+startingz:0
+src:0:444:0:444:-4:444:bog2:100
+robots:0:444:0:111:0:0:10:500:infected_creature1,infected_creature2,infected_creature3,infected_creature4,infected_creature5,infected_creature6,infected_creature7,infected_creature8,infected_human,zombie:.:1
+robots:0:444:333:444:0:0:8:500:canine,giant,troll,stalker,matriarch,lamprey,reaper,dire,amorphous:.:1
+travelpoint:222:222:222:222:-2:-2:uml_boss:-1:-1:0:포탈:2:20000000

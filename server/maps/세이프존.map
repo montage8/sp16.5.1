@@ -1,0 +1,205 @@
+
+mapname:세이프존
+maxx:30000
+maxy:30000
+survival:0
+zone:0:30000:0:30000:0:1000000000:세이프존
+tile:0:30:0:30:0:0:grass2
+tile:10:10:30:30:0:65:ladder2
+tile:0:30000:31:30000:0:0:marble
+tile:3001:3030:3001:3030:0:0:marble1
+tile:3010:3010:3030:3030:0:124:ladder2
+src:3001:3030:3001:3030:0:5:bigshoppingcenter:100
+door:10:10:30:30:65:65:3010:3030:65:리프트:1:1:subway2:2
+door:3010:3010:3030:3030:65:65:10:30:65:리프트:1:1:subway2:2
+tile:3001:3030:3001:3030:110:110:stone2
+zone:3031:3100:3001:3089:110:200:서버실
+zone:3050:3050:3001:3001:110:110:방송기
+zone:3057:3057:3001:3001:110:110:서버 속도 채크 버튼
+zone:3060:3060:3001:3001:110:110:공지하기
+zone:3062:3062:3001:3001:110:110:재부팅 버튼
+zone:3053:3053:3001:3001:110:110:새소식추가하기
+zone:3052:3052:3001:3001:110:110:소식 새로 등록하기
+zone:3079:3079:3001:3001:110:110:스플레시 재설정 버튼
+zone:3081:3081:3001:3001:110:110:설명 재설정 버튼
+tile:3010:3010:3030:3030:110:110:marble1
+zone:3061:3061:3001:3001:110:110:알림 보내기
+src:3001:3001:2015:2975:110:130:city:97
+src:3000:3050:3000:3050:30:40:city:100
+src:3020:3050:3020:3050:30:40:hall:95
+tile:3001:3050:3001:3050:30:30:concrete6
+src:0:30000:31:2999:0:10:room36:100
+tile:31:31:0:30:0:9:wall
+tile:0:3000:3000:3030:0:10:wallbuilding
+tile:3001:3001:2999:2999:0:0:metal6
+tile:3000:3000:3030:3030:110:120:wallbank
+tile:3001:3031:3031:3031:110:120:wallbank
+tile:32:30000:0:31:0:0:marble
+src:0:30000:3031:30000:0:13:room36:100
+src:0:30000:3031:30000:0:13:room34:100
+src:0:30000:3031:30000:0:13:room9:100
+gate:3000:3030:3000:3000:0:20:wallbigmetal2:0:1922:door12_open:7000:2000:door12_close:0:0:20000
+switch:3001:3001:2999:2999:0:0:3015:3015:3000:3000:10:10:1000:sp입구:button1_open
+switch:3001:3001:3001:3001:0:0:3015:3015:3000:3000:10:10:1000:sp출구:.
+tile:3031:3031:3001:3031:0:20:wallbigmetal2
+gate:3001:3030:3031:3031:0:20:wallbigmetal2:0:2000:edoor3_open:6000:2300:edoor3_close:0:0:30000
+switch:3001:3001:3030:3030:0:0:3015:3015:3031:3031:10:10:1000:sp 제2 터널 입구:button7_open
+switch:3001:3001:3032:3032:0:0:3015:3015:3031:3031:10:10:1000:sp입구:button7_open
+tile:3001:3001:3032:3032:0:0:metal6
+tile:3001:3001:3030:3030:0:0:metal6
+tile:3031:30000:3000:3031:0:20:wallbigmetal2
+tile:3000:3000:3050:3050:30:40:wall1
+tile:3001:3051:3051:3052:30:40:wall1
+tile:3051:3052:3050:3050:30:40:wall1
+tile:3000:3000:3001:3031:30:40:wall1
+tile:3000:3050:3000:3000:30:40:wall1
+tile:3051:3052:3001:3051:30:40:wall1
+tile:3000:3000:3000:3031:110:120:wall
+tile:3000:3120:3000:3000:110:120:wallbigmetal2
+tile:3031:3031:3001:3031:110:120:wallbigmetal
+tile:3032:3033:3002:3090:110:120:wallbigmetal2
+tile:3030:3100:3001:3089:110:110:stone2
+tile:3101:3102:3001:3200:110:120:wallbigmetal2
+tile:3033:3100:3090:3091:110:120:wallbigmetal2
+tile:3001:3100:2993:3000:110:120:wallbigmetal2
+tile:3029:3032:3036:3100:110:120:wallbigmetal2
+tile:3034:3100:3091:3099:110:120:wallbigmetal2
+tile:3103:3109:3001:3109:110:120:wallbigmetal2
+tile:24000:24000:24000:24000:0:0:metal7
+tile:10000:10000:10000:10000:10000:10000:mine
+ispawn:2926:2926:2907:2907:0:0:1:100:150000:0:0:sp_paper
+ispawn:3103:3103:3125:3125:0:0:1:100:150000:1:3600000:sp_paper2
+public:0
+tile:3030:3030:3031:3031:110:110:hardwood
+tile:3030:3030:3031:3031:110:110:wallbank
+src:0:1000:0:1000:9000:10000:docking bay:100
+src:0:1000:0:1000:9000:10000:engine1:100
+src:0:1000:0:1000:9000:10000:planet3:100
+src:0:1000:0:1000:9000:10000:planet8:100
+src:0:1000:0:1000:9000:10000:room14:99
+src:150:150:150:150:9850:9900:reactor:100
+src:3025:3035:3045:3050:30:36:o3:100
+tile:2950:3000:3001:3001:110:110:hardwood4
+tile:2900:2940:3001:3041:110:110:tile3
+tile:2941:2949:3001:3001:110:110:tile
+tile:2900:2950:3000:3000:110:120:wallgeneric3
+tile:2899:2899:3001:3041:110:120:wallgeneric3
+tile:2899:2899:3000:3000:110:120:wallgeneric3
+tile:2899:3050:3042:3042:110:120:wallgeneric3
+tile:2941:2941:3002:3041:110:120:wallgeneric3
+src:2900:2950:3001:3041:110:130:factory1:100
+tile:2900:2950:3000:3041:121:125:wallgeneric
+tile:3000:3000:3051:3051:30:40:wall1
+tile:3000:3000:3032:3049:30:40:wall1
+tile:3051:3051:3000:3000:30:40:wall1
+tile:3001:3001:3050:3050:5:29:concrete
+gate:3040:3046:3001:3110:110:10000:wallbigmetal2:0:2000:eldoor_open:3000:5000:eldoor_close:0:0:10
+switch:3039:3047:3001:3001:110:110:3043:3043:3055:3055:5055:5055:3000:서버실:button7_open:sp_member_card*1
+tile:3001:3030:3032:3060:110:110:stairs
+tile:2998:3000:2989:3080:110:120:wall
+tile:3001:3001:3031:3031:110:110:stairs
+tile:3031:3031:3032:3036:110:120:wall
+tile:3001:3030:3061:3062:110:120:wall
+src:3002:3030:3032:3059:110:120:Restaurant2:100
+src:3001:3001:3060:3060:110:110:caferoom2|Egg Fry|Hamburger_cooking:100
+tile:2998:3000:3001:3001:110:110:hardwood
+zone:3001:3030:3031:3060:110:200:식당:trackme
+tile:2951:2997:3000:3000:110:120:wall
+tile:2951:2997:3002:3003:110:120:wall
+tile:3030:3030:3032:3059:110:110:chair
+src:3001:3030:3031:3060:110:123:musickatawa2x400mrelay|musickatawaafternoon|musickatawaahehiohyou|musickatawaahehiohyoubeta|musickatawaairguitar|musickatawaairoriginal|musickatawaariadeletoile|musickatawaariadeletoilebeta|musickatawabreathlessly|musickatawacarefreedays|musickatawacloudlandswing|musickatawacoldiron|musickatawacoldironbeta|musickatawacomfort|musickatawaconcord|musickatawaconcordbeta|musickatawadamage|musickatawadaylight|musickatawadaylightbeta|musickatawaease|musickatawaeverydayfantasy|musickatawafocus|musickatawafriendship|musickatawafripperies|musickatawagenerichappymusic|musickatawagenerichappymusicbeta|musickatawahokabi|musickatawahokabibeta|musickatawainnocence|musickatawajitter|musickatawalettingmyheartspeak|musickatawalullabyofopeneyes|musickatawamomentofdecision|musickatawamomentofdecisionbeta|musickatawanocturne|musickatawanocturnebeta|musickatawaoutoftheloop|musickatawaoutoftheloopbeta|musickatawapainfulhistory|musickatawapainfulhistorybeta|musickatawaparity|musickatawaparitybeta|musickatawapassingoftime|musickatawaraindropsandpuddles|musickatawaraindropsandpuddlesbeta|musickatawaredvelvet|musickatawaredvelvet2.0saxophone|musickatawaredvelvet2|musickatawaromanceinandante|musickatawaromanceinandantebeta|musickatawaromanceinandanteii|musickatawaromanceinandanteiibeta|musickatawasarabandefrombwv1010|musickatawasarabandefrombwv1010cello|musickatawaschooldays|musickatawaschooldaysbeta|musickatawashadowofthetruth|musickatawashadowofthetruthbeta|musickatawasketchy|musickatawaspin|musickatawastandingtall|musickatawastandingtallbeta|musickatawastars|musickatawastride|musickatawastridebeta|musickatawateatimefastforward|musickatawathejapaneserock|musickatawathestudentcouncil|musickatawathestudentcouncilbeta|musickatawathreestars|musickatawatobecomeone|musickatawawhenitshardtosmile|musickatawawiosna|musickatawawiosnabeta|musicblueskiesapathinthesnow|musicblueskiesargument|musicblueskieschokingup|musicblueskiescinnamon|musicblueskiescredits|musicblueskiesday3end|musicblueskiesdeepwound|musicblueskiesdouxamer|musicblueskiesfamilybonds|musicblueskiesfamilybondsalt|musicblueskiesfestival1|musicblueskiesfreetime|musicblueskiesfromacrossthetable|musicblueskieshappenings|musicblueskieslongingforsmile|musicblueskiesmainmenu|musicblueskiesmonikamenu|musicblueskiesmonikasunday|musicblueskiesnathappy13|musicblueskiesnatsukimenu|musicblueskiesncaa|musicblueskiesorangetintedsky|musicblueskiesoshimai|musicblueskiesoutofreach|musicblueskiesplaywus|musicblueskiesrogueelegance|musicblueskiesrosetintedglasses|musicblueskiessayorimenu|musicblueskiessimplicities|musicblueskiesskip|musicblueskiessparksignite|musicblueskiesspookispookilovecraftclub|musicblueskiesspookispookilovecrafthappy|musicblueskiesspookycinnamon|musicblueskiesspookyplaywithme|musicblueskiesstudentatheart|musicblueskiessundaymonika|musicblueskiesteaandtranquility|musicblueskiesthecall|musicblueskiestimeout|musicblueskiestruelove|musicblueskiesyourfestivity|musicblueskiesyurimenu|musicdokidoki0|musicdokidoki1|musicdokidoki2|musicdokidoki22010ver|musicdokidoki3|musicdokidoki4|musicdokidoki4earlysketch|musicdokidoki48bitver|musicdokidoki5|musicdokidoki5monika|musicdokidoki5natsuki|musicdokidoki5sayori|musicdokidoki5yuri|musicdokidoki6|musicdokidoki8|musicdokidoki8earlysketch|musicdokidoki9|musicdokidoki10|musicdokidoki13monikaend|musicdokidoki14novocals|musicdokidoki15|musicdokidoki16|musicdokidoki17|musicdokidoki17piano|musicdokidoki18|musicdokidoki19|musicdokidoki20|musicdokidoki21|musicdokidoki22|musicdokidoki23|musicdokidoki24|musicdokidoki25|musicdokidoki26|musicdokidoki27|musicdokidoki28|musicpurist1|musicpurist2|musicpurist3|musicpurist4|musicpurist5|musicpurist6|musicpurist7|musicpurist8|musicpurist9|musicpurist11|musicpurist12|musicpurist13|musicpurist14|musicpurist15|musicpurist16|musicpurist17|musicpurist18|musicpurist19|musicpurist20*0|0*0*3:95
+src:3001:3030:3001:3030:110:120:hum:100
+tile:2900:2900:3001:3001:110:110:bleacher
+zone:2900:2900:3001:3001:110:120:탄환_판매소:trackme
+tile:2900:2900:3041:3041:110:110:bleacher
+zone:2900:2900:3041:3041:110:120:무기_판매소:trackme
+src:2900:2900:3041:3041:110:110:factory2#old:100
+src:2900:2900:3041:3041:110:110:factory3:97
+src:2900:2900:3001:3001:110:110:factory4:100
+zone:2951:3000:3001:3001:110:120:상점 근처 복도
+tile:2940:2940:3021:3021:110:110:bleacher
+zone:2940:2940:3021:3021:110:120:잡화점:trackme
+tile:2940:2940:3041:3041:110:110:bleacher
+zone:2940:2940:3041:3041:110:120:차량판매소:trackme
+tile:2920:2920:3001:3001:110:110:bleacher
+zone:2920:2920:3001:3001:110:120:액세서리_매점:trackme
+src:2920:2920:3001:3001:110:110:factory2#old:100
+src:2940:2940:3021:3021:110:110:fridge1:100
+src:2940:2940:3041:3041:110:110:generator:100
+tile:3001:3030:3001:3030:124:124:wood5
+tile:3010:3010:3030:3030:110:124:marble1
+tile:2999:2999:3001:3001:124:134:wall
+tile:3000:3000:3001:3001:124:134:wall
+tile:3001:3030:2999:3000:124:134:wall
+tile:3031:3033:3001:3030:124:134:wall
+zone:3001:3030:3001:3030:124:134:로커 룸
+tile:3010:3010:3030:3030:123:124:marble1
+zone:3001:3001:3060:3060:110:110:음식점:trackme
+tile:3000:3030:3031:3032:124:134:wall
+tile:2999:3000:3000:3030:124:134:wall
+tile:2942:2950:3002:3003:110:120:wall
+startingx:3001
+startingy:3001
+startingz:110
+zone:3001:3050:3001:3050:30:40:포탈 존
+zone:3010:3010:3030:3030:0:124:계단:trackme
+zone:3030:3030:3030:3030:110:110:입문자 지역 가기
+tile:3015:3015:3015:3015:110:110:warehouse
+zone:3015:3015:3015:3015:110:110:환전기
+src:3015:3015:3015:3015:110:110:fridge:100
+zone:3050:3050:3001:3001:30:30:미니게임 하기
+travelpoint:3050:3050:3001:3001:30:30:미니게임:-1:-1:0:보드게임 하러 가기:1
+travelpoint:3001:3001:3001:3001:30:30:robotland:64:64:0:레벨1:1
+travelpoint:3001:3001:3001:3001:30:30:robotland0:64:64:0:레벨2:0
+travelpoint:3001:3001:3001:3001:30:30:robotland1:64:64:0:레벨3:0
+travelpoint:3001:3001:3001:3001:30:30:robotland2:64:64:0:레벨4:0
+travelpoint:3001:3001:3001:3001:30:30:robotland3:75:75:0:레벨5:0
+travelpoint:3001:3001:3001:3001:30:30:robotland4:75:75:0:레벨6:0
+travelpoint:3001:3001:3001:3001:30:30:robotland5:100:100:0:레벨7:0
+travelpoint:3001:3001:3001:3001:30:30:robotland6:100:100:0:레벨8:0
+travelpoint:3001:3001:3001:3001:30:30:robotland7:125:125:0:레벨9:0
+travelpoint:3001:3001:3001:3001:30:30:robotland8:50:50:0:레벨10:0
+travelpoint:3001:3001:3001:3001:30:30:robotland9:125:125:0:레벨11:0
+travelpoint:3001:3001:3001:3001:30:30:robotland_boss:50:50:0:보스레벨:0
+travelpoint:3001:3001:3001:3001:30:30:robotland13:0:0:0:sp 보스레벨:0
+zone:3001:3001:3001:3001:30:30:로봇 사냥:trackme
+src:3047:3101:3001:3101:110:120:store#old:100
+src:3001:3300:3043:3300:0:20:run:100
+src:3047:3110:3001:3110:110:123:loop1:100
+zone:3055:3055:3001:3001:110:110:업데이트 작동 버튼
+zone:3056:3056:3001:3001:110:110:캐시 삭제 버튼
+zone:3065:3065:3001:3001:110:110:로봇초기화 버튼
+zone:3076:3076:3001:3001:110:110:화재진압 버튼
+zone:3077:3077:3001:3001:110:110:먹거리 재설정 버튼
+zone:3078:3078:3001:3001:110:110:무기 재설정 버튼
+zone:3082:3082:3001:3001:110:110:세이프존 재설정 버튼
+zone:3080:3080:3001:3001:110:110:로봇 재설정 버튼
+vending_machine:3005:3035:110:음료수, 과자 판매:apple;50,chips;25,cola;90,juce_box;120,mint;8,nut;30,protein_bar;135,water_bottle;200
+zone:3005:3005:3035:3035:110:3020:자판기:trackme
+tile:3005:3005:3035:3035:110:110:bleacher
+zone:10:10:30:30:0:65:계단:trackme
+zone:10:10:30:30:65:65:지하철:trackme
+zone:3010:3010:3030:3030:65:65:지하철:trackme
+gate:3000:3000:3001:3001:110:200:wallbigmetal2:0:2200:door11_open:3000:1970:door11_close:0:0:10
+switch:2999:3001:3001:3001:110:110:3000:3000:3001:3001:160:160:1000:문:button7_open
+gate:2941:2949:3001:3001:110:200:wallbigmetal2:0:1000:door7_open:0:1000:door7_close:0:0:10
+switch:2940:2950:3001:3001:110:110:2945:2945:3001:3001:160:160:1000:문:button7_open
+owner:kt9020
+tile:2920:2920:3041:3041:110:110:bleacher
+zone:2920:2920:3041:3041:110:120:폭발물_판매소:trackme
+tile:2920:2920:3021:3021:110:110:bleacher
+zone:2920:2920:3021:3021:110:120:약국:trackme
+src:3040:3050:3045:3050:30:37:o4:100
+src:3045:3050:3001:3005:30:37:o1:100
+src:3001:3015:3002:3006:30:37:o2:100
+travelpoint:3001:3001:3001:3001:30:30:uml:222:222:0:레벨 마이너스 1?:1
+travelpoint:3050:3050:3001:3001:30:30:탁구장:0:0:0:탁구장 가기:0
+travelpoint:3050:3050:3001:3001:30:30:로봇대련장:0:0:0:로봇대련장 가기:0
+zone:3001:3001:3050:3050:30:30:폐허가 된 고대 도시로 떠나기
+travelpoint:3001:3001:3050:3050:30:30:필멸의산:0:0:0:행운을 빕니다.:0
+travelpoint:3030:3030:3030:3030:110:110:입문:0:0:0:입문자 전용 지역 가기:0
+enter_sound:storeopen
+leave_sound:storeclose
+no_teleport:0
+respawn:1
+fightingstate:1

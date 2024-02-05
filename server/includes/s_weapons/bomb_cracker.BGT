@@ -1,0 +1,117 @@
+class bomb_cracker
+{
+double x, y, z;
+timer explodetimer;
+int range = 15;
+mapdata@ map;
+bool no_item = false;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+
+void bomb_crackerloop(mapdata@ map)
+{
+for (int j = map.bomb_crackers.length - 1; j > -1; j--)
+{
+bomb_cracker@ this = map.bomb_crackers[j];
+if (this.explodetimer.elapsed >= 2700)
+{
+for (int i = map.mines.length - 1; i > -1; i--)
+{
+mine@ temp = map.mines[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "mine", 1, false);
+map.mines.remove_at(i);
+}
+for (int i = map.wirebombs.length - 1; i > -1; i--)
+{
+wirebomb@ temp = map.wirebombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "wirebomb", 1, false);
+map.wirebombs.remove_at(i);
+}
+for (int i = map.motion_bombs.length - 1; i > -1; i--)
+{
+motion_bomb@ temp = map.motion_bombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "motion_bomb", 1, false);
+map.motion_bombs.remove_at(i);
+}
+for (int i = map.ultrabombs.length - 1; i > -1; i--)
+{
+ultrabomb@ temp = map.ultrabombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+if (temp.loopid !is null) @ temp.loopid.destroy();
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "ultrabomb", 1, false);
+map.ultrabombs.remove_at(i);
+}
+for (int i = map.remote_timebombs.length - 1; i > -1; i--)
+{
+remote_timebomb@ temp = map.remote_timebombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "remote_timebomb", 1, false);
+map.remote_timebombs.remove_at(i);
+}
+for (int i = map.timebombs.length - 1; i > -1; i--)
+{
+timebomb@ temp = map.timebombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "timebomb", 1, false);
+map.timebombs.remove_at(i);
+}
+for (int i = map.impact_bombs.length - 1; i > -1; i--)
+{
+impact_bomb@ temp = map.impact_bombs[i];
+if (temp.distancecheck(this.x, this.y, this.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "impact_bomb", 1, false);
+map.impact_bombs.remove_at(i);
+}
+for (int i = map.security_bombs.length - 1; i > -1; i--)
+{
+security_bomb@ temp = map.security_bombs[i];
+if (temp.distancecheck(this.x, this.y, this.z) > this.range) continue;
+temp.hid.health = -1;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "security_bomb", 1, false);
+map.security_bombs.remove_at(i);
+}
+for (int i = map.vs.length - 1; i > -1; i--)
+{
+vehicle@ temp = map.vs[i];
+if (temp.stickybombs.is_empty()) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > this.range) continue;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "stickybomb", temp.stickybombs.length, false);
+temp.stickybombs.resize(0);
+}
+for (int i = map.remguns.length - 1; i > -1; i--)
+{
+remgun@ temp = map.remguns[i];
+if (temp.stickybombs.is_empty()) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > this.range) continue;
+if (!this.no_item) spawn_obj(temp.x, temp.y, temp.z, temp.map, "stickybomb", temp.stickybombs.length, false);
+temp.stickybombs.resize(0);
+}
+map.bomb_crackers.remove_at(j);
+}
+}
+}
+bomb_cracker@ spawn_bomb_cracker(double x, double y, double z, mapdata@ map, int range = 15)
+{
+bomb_cracker f1;
+f1.x = x;
+f1.y = y;
+f1.z = z;
+@ f1.map = map;
+f1.range = range;
+play("bomb_cracker_warn", x, y, z, map);
+map.bomb_crackers.insert_last(f1);
+return f1;
+}

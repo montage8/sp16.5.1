@@ -1,0 +1,43 @@
+#include"includes_client/keyboard.bgt"
+#include"includes_client/UI_translator.bgt"
+#include"includes_client/mapeditor.bgt"
+#include"includes_client/sizer.bgt"
+#include"includes_client/door.bgt"
+#include"includes_client/vehicle.bgt"
+#include"includes_client/speed_stop_sound.bgt"
+#include"includes_client/moving_sound.bgt"
+#include"includes_client/speech.bgt"
+#include"includes_client/hip.bgt"
+
+#include"includes_client/dateandtime.bgt"
+#include"includes_client/tracker.bgt"
+#include"includes_client/input_box.bgt"
+#include"includes_client/buffer.bgt"
+#include"includes_client/dlg.bgt"
+#include "includes_client/constants.bgt"
+#include "includes_client/constant_includes.bgt"
+#include "includes_client/m_pro.bgt"
+#include "includes_client/map.bgt"
+#include "includes_client/net.bgt"
+#include "includes_client/rotation.bgt"
+#include "includes_client/sp.bgt"
+#include "includes_client/amb.bgt"
+#include "includes_client/sd.bgt"
+#include "includes_client/menu.bgt"
+#include "includes_client/rec.bgt"
+#include "includes_client/loop_sound.bgt"
+
+bool true_t = true;
+bool false_t = false;
+string ref_string, ref_string2, ref_string3, empty;
+string[] ref_string_array, empty_s;
+uint[] ref_uint_array, empty_ui;
+int[] ref_int_array, empty_i;
+dictionary empty_d;
+vector ref_vector;
+int _0 = 0;
+int _pos1 = 1;
+int _pos2 = 2;
+int _neg1 = -1;
+int _neg2 = -2;
+typedef uint8 usmall; typedef int8 small; 

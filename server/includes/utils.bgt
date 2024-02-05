@@ -1,0 +1,652 @@
+// constants
+const string randomstringdata = "abcdefghijklmnopqrstuvwxyz1234567890";
+string spp = "speak ";
+dictionary filterchars;
+enum valuelist
+{
+VALUE_NONE, VALUE_STRING, VALUE_DOUBLE, VALUE_DICTIONARY, VALUE_VECTOR
+}
+
+void send_x(string mess, int tx, int ty, int tz, mapdata &inout tmap, uint channel = 0, player@ exp = null, int range = 100)
+{
+int l = tmap.players.length;
+if (l == 0) return;
+mess = string_encrypt(mess, pcps);
+if (exp !is null)
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = tmap.players[i];
+if (temp is exp) continue;
+if (temp.distancecheck(tx, ty, tz) < range)
+n.send_reliable(temp.peer_id, mess, channel);
+}
+}
+else
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = tmap.players[i];
+if (temp.distancecheck(tx, ty, tz) < range)
+n.send_reliable(temp.peer_id, mess, channel);
+}
+}
+}
+
+void send(uint peer, string mess, uint channel = 0, bool exp = false)
+{
+if (!exp)
+{
+n.send_reliable(peer, string_encrypt(mess, pcps), channel);
+return;
+}
+int l = players.length;
+if (l == 0) return;
+mess = string_encrypt(mess, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ temp = players[i];
+if (temp.peer_id == peer) continue;
+n.send_reliable(temp.peer_id, mess, channel);
+}
+}
+
+void play(const string& in sound, double x, double y, double z, mapdata &inout map, player@ exp = null, int range = -1, bool no_weapon_sight = false)
+{
+int l = map.players.length;
+if (l == 0) return;
+if (range < 0) range = 75 / map.pan_step;
+string mess = string_encrypt("play_3ds " + sound + " " + x + " " + y + " " + z + (no_weapon_sight ? " 0" : empty), pcps);
+if (exp !is null)
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (exp is temp) continue;
+if (temp.distancecheck(x, y, z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+else
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(x, y, z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+}
+
+void play_dist(const string& in sound, double x, double y, double z, mapdata &inout map, double volume = 0.05, player@ exp = null)
+{
+int l = map.players.length;
+if (l > 0)
+{
+double range = 100 / volume;
+string mess = string_encrypt("distsound " + sound + " " + x + " " + y + " " + z + " " + volume, pcps);
+if (exp !is null)
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (exp is temp) continue;
+if (exp.following is temp) continue;
+if (temp.distancecheck(x, y, z) < range)
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+else
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(x, y, z) < range)
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+}
+if (map.active_vehicles == 0) return;
+int vl = map.vs.length;
+double range = 100 / volume;
+string vmess = "veplay " + sound + " " + x + " " + y + " " + z + " " + volume;
+if (exp !is null)
+{
+for (uint i = 0; i < vl; i++)
+{
+vehicle@ temp = map.vs[i];
+if ((temp.inside is null ? temp.p is exp : temp.inside.players.find_by_reference(exp) > -1)) continue;
+if (temp.distancecheck(x, y, z) < range) temp.sendpacket(vmess);
+}
+}
+else
+{
+for (uint i = 0; i < vl; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.distancecheck(x, y, z) < range) temp.sendpacket(vmess);
+}
+}
+}
+
+void sendmap(string packet, mapdata &inout map, int channel = 0, player@ exp = null)
+{
+int l = map.players.length;
+if (l == 0) return;
+packet = string_encrypt(packet, pcps);
+if (exp !is null)
+{
+for (uint i = 0; i < l; i++)
+{
+if (map.players[i] is exp) continue;
+n.send_reliable(map.players[i].peer_id, packet, channel);
+}
+}
+else
+{
+for (uint i = 0; i < l; i++)
+{
+n.send_reliable(map.players[i].peer_id, packet, channel);
+}
+}
+}
+
+void playmap(const string& in sound, mapdata &inout map, player@ exp = null)
+{
+int l = map.players.length;
+if (l == 0) return;
+string mess = string_encrypt("play_s " + sound, pcps);
+if (exp !is null)
+{
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp is exp) continue;
+if (temp.following is exp) continue;
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+else
+{
+for (uint i = 0; i < l; i++)
+{
+n.send_reliable(map.players[i].peer_id, mess, 0);
+}
+}
+}
+
+void send_serverbox(int peerid, int mode = 0, int minlength = -1, int autosend = 0, int keypresses = -1, const string& in sendtext = "server_box", const string& in text = "메시지를 입력하세요.")
+{
+string boxmess = string_encrypt("input " + mode + "+++" + minlength + "+++" + autosend + "+++" + keypresses + "+++" + sendtext + "+++" + text, pcps);
+n.send_reliable(peerid, boxmess, 0);
+}
+
+void send_menu(int id, const string& in menuintro, const string& in text, const string& in items)
+{
+string menumess = string_encrypt("launchmenu " + string_replace(menuintro, " ", "[SPCE]", true) + " " + string_replace(text, " ", "[SPCE]", true) + " " + items, pcps);
+n.send_reliable(id, menumess, 0);
+}
+
+void instant_notify(const string& in event)
+{
+log("admintells", event);
+admintell(event, false);
+}
+
+void admintell(string msg, bool adminonly = true)
+{
+msg = string_encrypt("admintell " + msg, pcps);
+if (!adminonly)
+{
+n.send_reliable(0, msg, 1);
+return;
+}
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+if (players[i].rank > 0)
+{
+n.send_reliable(players[i].peer_id, msg, 1);
+}
+}
+}
+
+string randomstring(uint length = 10, int mode = 1)
+{
+string ret;
+for (uint i = 0; i < length; i++)
+{
+switch (mode)
+{
+case 1:
+ret += randomstringdata[random(0, 35)];
+break;
+case 2:
+ret += randomstringdata[random(0, 25)];
+break;
+case 3:
+ret += randomstringdata[random(26, 35)];
+break;
+}
+}
+return ret;
+}
+
+bool& filter(string message)
+{
+if (filterstuff == 0) return false_t;
+message = string_to_lower_case(message);
+string[] filter;
+filter.insert_last("re=\\b(\\w+[bdflmnrvzqh])hes([bcdfgjklmnprtw]\\w+)\\b");
+filter.insert_last("re=(\\d):(\\d\\d[snrt][tdh])");
+filter.insert_last("re=([hH])'([bBdDfFjJkKpPtTvVxX]+)'([rR][aAeEiIoOuU]?)");
+filter.insert_last("re=(re|un|non|anti)cosp");
+filter.insert_last("re=(t+)zsche");
+filter.insert_last("re=(anti|non|re|un)caesure");
+filter.insert_last("re=(EUR[A-Z]+)(\\d+)");
+int filterlength = filter.length;
+for (uint counter = 0; counter < filterlength; counter++)
+{
+string banned = filter[counter];
+if (string_left(banned, 3) == "re=")
+{
+banned = string_trim_left(banned, 3);
+if (regexp(message, banned))
+{
+return true_t;
+}
+}
+if (string_contains(message, filter[counter], 1) > -1)
+{
+return true_t;
+}
+}
+return false_t;
+}
+
+void setup_filterchars()
+{
+filterchars.set("　", 0);
+filterchars.set("?", 0);
+filterchars.set(",", 0);
+filterchars.set("/", 0);
+filterchars.set("*", 0);
+filterchars.set("+", 0);
+filterchars.set("=", 0);
+filterchars.set("\"", 0);
+filterchars.set("'", 0);
+filterchars.set(">", 0);
+filterchars.set("<", 0);
+filterchars.set("\\", 0);
+filterchars.set("|", 0);
+filterchars.set(";", 0);
+filterchars.set(":", 0);
+filterchars.set("[", 0);
+filterchars.set("]", 0);
+filterchars.set("\r", 0);
+filterchars.set("\n", 0);
+filterchars.set("\r\n", 0);
+}
+
+bool& filterchar(const string& in message)
+{
+int messagelength = message.size;
+for (uint counter = 0; counter < messagelength; counter++)
+{
+if (filterchars.exists(message[counter])) return true_t;
+}
+return false_t;
+}
+
+double get_best_number_from(double[]@ numbers)
+{
+int temp = -2147483648;
+int numberslength = numbers.length;
+for (uint i = 0; i < numberslength; i++)
+{
+if (numbers[i] > temp) temp = numbers[i];
+}
+return temp;
+}
+
+double get_closest_value(double num, int[]@ arr, bool return_index = false)
+{
+double diff = -1;
+double result = -1;
+int arrlength = arr.length;
+for (uint i = 0; i < arrlength; i++)
+{
+int d = abs(num - arr[i]);
+if (d < diff or diff == -1)
+{
+diff = d;
+result = (return_index ? i : arr[i]);
+}
+}
+return result;
+}
+
+string convert_to_list(string[]@ arr, const string& in delimiter = ", ")
+{
+string list;
+if (arr.length == 0) return empty;
+if (arr.length == 1) return arr[0];
+int arrlength = arr.length;
+for (uint i = 0; i < arrlength; i++)
+{
+if (i > 0) list += delimiter;
+list += arr[i];
+}
+return list;
+}
+
+string convert_to_list(int[]@ arr, const string& in delimiter = ", ")
+{
+string list;
+if (arr.length == 0) return empty;
+if (arr.length == 1) return arr[0];
+int arrlength = arr.length;
+for (uint i = 0; i < arrlength; i++)
+{
+if (i > 0) list += delimiter;
+list += arr[i];
+}
+return list;
+}
+
+string array_to_string(string[]@ r, const string& in delimiter = "\r\n", bool reverse = false)
+{
+string final;
+if (reverse)
+{
+for (int i = r.length - 1; i > -1; i--)
+{
+final += r[i];
+if (i > 0) final += delimiter;
+}
+}
+else
+{
+int rlength = r.length;
+for (uint i = 0; i < rlength; i++)
+{
+if (i > 0) final += delimiter;
+final += r[i];
+}
+}
+return final;
+}
+
+string array_to_string_n(int[]@ r, const string& in delimiter = "\r\n", bool reverse = false)
+{
+string final;
+if (reverse)
+{
+for (int i = r.length - 1; i > -1; i--)
+{
+final += r[i] + delimiter;
+}
+}
+else
+{
+int rlength = r.length;
+for (uint i = 0; i < rlength; i++)
+{
+final += r[i] + delimiter;
+}
+}
+return final;
+}
+
+string dictionary_to_text(dictionary@ data, const string& in delimiter = "\r\n", bool include_value = true, const string& in delimiter2 = "=")
+{
+string[]@ keys = data.keys;
+int keylength = keys.length;
+if (keylength == 0) return empty;
+string result;
+if (include_value)
+{
+bool nd = delimiter2.is_empty();
+string tmp;
+double tmp2 = 0.0;
+vector tmp3;
+for (uint i = 0; i < keylength; i++)
+{
+if (data.get(keys[i], tmp))
+{
+if (i > 0) result += delimiter;
+result += (nd ? empty : keys[i] + delimiter2) + tmp;
+continue;
+}
+if (data.get(keys[i], tmp2))
+{
+if (i > 0) result += delimiter;
+result += (nd ? empty : keys[i] + delimiter2) + tmp2;
+continue;
+}
+if (!data.get(keys[i], tmp3)) continue;
+if (i > 0) result += delimiter;
+result += (nd ? empty : keys[i] + delimiter2) + tmp3.x + delimiter2 + tmp3.y + delimiter2 + tmp3.z;
+}
+return result;
+}
+for (uint i = 0; i < keylength; i++)
+{
+if (i > 0) result += delimiter;
+result += keys[i];
+}
+return result;
+}
+
+dictionary text_to_dictionary(const string& in data, const string& in delimiter = "\r\n", uint mode = VALUE_STRING, const string& in delimiter2 = "=")
+{
+dictionary result;
+string[]@ keys = string_split(data, delimiter, false);
+int keylength = keys.length;
+switch (mode)
+{
+case VALUE_STRING:
+{
+for (uint i = 0; i < keylength; i++)
+{
+string[]@ parsed = string_split(keys[i], delimiter2, false);
+if (parsed.length < 2) continue;
+result.set(parsed[0], parsed[1]);
+}
+}
+break;
+case VALUE_VECTOR:
+{
+for (uint i = 0; i < keylength; i++)
+{
+string[]@ parsed = string_split(keys[i], delimiter2, false);
+if (parsed.length < 4) continue;
+result.set(parsed[0], vector(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3])));
+}
+}
+break;
+case VALUE_DOUBLE:
+{
+for (uint i = 0; i < keylength; i++)
+{
+string[]@ parsed = string_split(keys[i], delimiter2, false);
+if (parsed.length < 2) continue;
+result.set(parsed[0], string_to_number(parsed[1]));
+}
+}
+break;
+case VALUE_NONE:
+{
+for (uint i = 0; i < keylength; i++)
+{
+result.set(keys[i], 0);
+}
+}
+break;
+default:
+break;
+}
+return result;
+}
+
+string[]& delete_array_item(string[]@ array, const string& in value)
+{
+string inv = array_to_string(array, "\r\n");
+string itemname = value;
+string[] peramitors = array;
+string[] values;
+int peramitorslen = peramitors.length;
+values.reserve(peramitorslen);
+for (uint i = 0; i < peramitorslen; i++)
+{
+values.insert_at(i, string_replace(peramitors[i], string_left(peramitors[i], string_contains(peramitors[i], "=", 1) + 1), empty, true));
+peramitors[i] = string_replace(peramitors[i], "=" + values[i], empty, true);
+}
+peramitorslen = peramitors.length;
+for (uint i = 0; i < peramitorslen; i++)
+{
+if (peramitors[i] == itemname)
+{
+inv = string_replace(inv, itemname + "=" + values[i] + "\r\n", empty, false);
+}
+}
+ref_string_array = string_split(inv, "\r\n", false);
+return ref_string_array;
+}
+
+int inv_item_number(const string& in inv, const string& in item)
+{
+string[]@ invvalues = string_split(inv, "\r\n", false);
+int res;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ parsed = string_split(invvalues[i], "=", false);
+if (parsed.length < 2) continue;
+if (parsed[0] == item)
+{
+res = string_to_number(parsed[1]);
+}
+}
+return res;
+}
+
+bool& inv_item_exists(const string& in inv, const string& in itemname)
+{
+string content = inv;
+string[]@ peramitors = string_split(content, "\r\n", true);
+string[] values;
+int peramitorslen = peramitors.length;
+values.reserve(peramitorslen);
+for (uint i = 0; i < peramitorslen; i++)
+{
+values.insert_at(i, string_replace(peramitors[i], string_left(peramitors[i], string_contains(peramitors[i], "=", 1) + 1), empty, true));
+peramitors[i] = string_replace(peramitors[i], "=" + values[i], empty, true);
+}
+peramitorslen = peramitors.length;
+for (uint i = 0; i < peramitorslen; i++)
+{
+if (peramitors[i] == itemname)
+{
+return true_t;
+}
+}
+return false_t;
+}
+
+string get_script_path()
+{
+if (!SCRIPT_COMPILED)
+{
+return SCRIPT_CURRENT_FILE;
+}
+return SCRIPT_EXECUTABLE;
+}
+
+class multiversion
+{
+int[] vers;
+int opIndex(uint n)
+{
+return this.vers[n];
+}
+
+int opCmp(multiversion@ other)
+{
+int l1 = this.vers.length;
+int l2 = other.vers.length;
+for (uint i = 0; i < l1; i++)
+{
+if (i >= l2) return 1;
+if (this.vers[i] > other.vers[i]) return 1;
+if (this.vers[i] < other.vers[i]) return -1;
+}
+if (l1 < l2) return -1;
+return 0;
+}
+}
+
+multiversion@ create_version(const string& in ver)
+{
+multiversion new;
+string[]@ split = string_split(ver, ".", false);
+int splitlength = split.length;
+new.vers.reserve(splitlength);
+for (uint i = 0; i < splitlength; i++)
+{
+new.vers.insert_last(string_to_number(split[i]));
+}
+return new;
+}
+
+double percent_pro(double n1, double n2, double n3)
+{
+if (n2 <= -100) return 0;
+return (power_pro(1 + (n2 * 0.01), n3) - 1) * n1;
+}
+
+double power_pro(double value, double count)
+{
+// Darn it, We must use return function.
+double result = 1.0;
+if (count > 16)
+{
+int new_count = count / 16;
+count %= 16;
+result = power_pro(value ** 16, new_count);
+}
+return result * (value ** count);
+}
+
+double abs(double n)
+{
+if (n >= 0) return n;
+return -n;
+}
+
+double string_math(string new, double defv)
+{
+if (new.is_empty()) return 0;
+int operator = 0;
+if (new.size > 1)
+{
+if (!string_is_digits(new[0]))
+{
+operator = character_to_ascii(new[0]);
+new = string_trim_left(new, 1);
+}
+}
+double result = string_to_number(new);
+switch (operator)
+{
+case ascii_plus: return defv + result;
+case ascii_under_bar: return defv - result;
+case ascii_star: return defv * result;
+case ascii_slash: return (result == 0 ? 0 : defv / result);
+case ascii_vertical_bar: return defv | result;
+case ascii_carat: return defv ^ result;
+case ascii_and: return defv & result;
+case ascii_dash: return abs(result) * -1;
+}
+return result;
+}

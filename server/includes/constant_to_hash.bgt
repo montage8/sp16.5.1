@@ -1,0 +1,35 @@
+void main()
+{
+string str = input_box("constant to hash", "아이템 이름을 입력하세요.");
+if (str.is_empty()) return;
+string category = input_box("constant to hash", "카테고리 이름을 입력하세요");
+if (category.is_empty()) return;
+string[] list = string_split(str, " ", false);
+file fl;
+fl.open("./hash_constants/" + category + ".bgt", "ab");
+int counter = list.length;
+for (uint i = 0; i < counter; i++)
+{
+uint result = 0;
+uint hash = 0;
+str = list[i];
+int str_size = str.size;
+for (uint j = 0; j < str_size; j++)
+{
+hash = 65599 * hash + character_to_ascii(str[j]);
+}
+result = hash ^ (hash >> 16);
+fl.write("const uint " + category + "_" + str + " = " + result + ";\r\n");
+}
+fl.close();
+string include_line = "#include \"./hash_constants/" + category + ".bgt\"\r\n";
+fl.open("./constant_includes.bgt", "rb");
+if (string_contains(fl.read(), include_line, 1) < 0)
+{
+fl.close();
+fl.open("./constant_includes.bgt", "ab");
+fl.write(include_line);
+}
+fl.close();
+alert("성공", "성공");
+}

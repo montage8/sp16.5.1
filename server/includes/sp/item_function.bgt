@@ -1,0 +1,1438 @@
+funcdef bool item_func(player@ this);
+dictionary item_hash;
+funcdef string item_grab_func(player@ this, obj@ temp);
+dictionary item_grab_hash;
+funcdef void combine_func(player@ this);
+dictionary combines;
+
+void install_item_hash()
+{
+item_hash.set("sp_paper2", @ items_sp_paper2);
+item_hash.set("sp_paper", @ items_sp_paper);
+item_hash.set("store_card", @ items_store_card);
+item_hash.set("locker_security_booster", @ items_locker_security_booster);
+item_hash.set("bluebox", @ items_bluebox);
+item_hash.set("locker_pack", @ items_locker_pack);
+item_hash.set("parachute", @ items_parachute);
+item_hash.set("team_member_booster", @ items_team_member_booster);
+item_hash.set("mountain_ticket", @ items_mountain_ticket);
+item_hash.set("temple_ticket", @ items_temple_ticket);
+item_hash.set("bomb_cracker", @ items_bomb_cracker);
+item_hash.set("empty_pack", @ items_empty_pack);
+item_hash.set("street_sacred_statue", @ items_street_sacred_statue);
+item_hash.set("ancient_wing", @ items_ancient_wing);
+item_hash.set("warp_box", @ items_warp_box);
+item_hash.set("impact_bomb", @ items_impact_bomb);
+item_hash.set("stun_dart", @ items_stun_dart);
+item_hash.set("shield", @ items_shield);
+item_hash.set("fire_extinguisher", @ items_fire_extinguisher);
+item_hash.set("stp429_mini-missile", @ items_stp429);
+item_hash.set("carrier_missile", @ items_carrier_missile);
+item_hash.set("air_canister", @ items_air_canister);
+item_hash.set("antibiotic_canister", @ items_antibiotic_canister);
+item_hash.set("toxic_canister", @ items_toxic_canister);
+item_hash.set("wirebomb", @ items_wirebomb);
+item_hash.set("wood", @ items_wood);
+item_hash.set("fuel_tank", @ items_fuel_tank);
+item_hash.set("remote_timebomb", @ items_remote_timebomb);
+item_hash.set("mine", @ items_mine);
+item_hash.set("frequency_scrambler", @ items_frequency_scrambler);
+item_hash.set("nuclear_bomb", @ items_nuclear_bomb);
+item_hash.set("stone", @ items_stone);
+item_hash.set("energetic_ball", @ items_energetic_ball);
+item_hash.set("beer_bottle", @ items_beer_bottle);
+item_hash.set("motion_bomb", @ items_motion_bomb);
+item_hash.set("health_dart", @ items_health_dart);
+item_hash.set("stun_grenade", @ items_stun_grenade);
+item_hash.set("concussive_grenade", @ items_concussive_grenade);
+item_hash.set("sound_grenade", @ items_sound_grenade);
+item_hash.set("invisibility_shield", @ items_invisibility_shield);
+item_hash.set("ultrabomb_silencer", @ items_ultrabomb_silencer);
+item_hash.set("toolbox", @ items_toolbox);
+item_hash.set("street_program_starter_kit", @ items_street_program_starter_kit);
+item_hash.set("dong_nae_gunner", @ items_dong_nae_gunner);
+item_hash.set("street_check", @ items_street_check);
+item_hash.set("coin", @ items_coin);
+item_hash.set("ultrabomb", @ items_ultrabomb);
+item_hash.set("health_orb", @ items_health_orb);
+item_hash.set("antibiotic", @ items_antibiotic);
+item_hash.set("mini_antibiotic_pack", @ items_mini_antibiotic_pack);
+item_hash.set("street_gang_chief_pack", @ items_street_gang_chief_pack);
+item_hash.set("street_warp_box_pack", @ items_street_warp_box_pack);
+item_hash.set("street_mini_warp_box_pack", @ items_street_mini_warp_box_pack);
+item_hash.set("street_ultra_warp_box_pack", @ items_street_ultra_warp_box_pack);
+item_hash.set("street_check_pack", @ items_street_check_pack);
+item_hash.set("antibiotic_pack", @ items_antibiotic_pack);
+item_hash.set("street_drug_set", @ items_street_drug_set);
+item_hash.set("street_drug", @ items_street_drug);
+item_hash.set("electron_bat", @ items_electron_bat);
+item_hash.set("street_dope", @ items_street_dope);
+item_hash.set("missile_interceptor", @ items_missile_interceptor);
+item_hash.set("wood_pack", @ items_wood_pack);
+item_hash.set("metal_pack", @ items_metal_pack);
+item_hash.set("robot_card", @ items_robot_card);
+item_hash.set("ultra_antibiotic_pack", @ items_ultra_antibiotic_pack);
+item_hash.set("remote_gun_controller", @ items_remote_gun_controller);
+item_hash.set("remote_gun", @ items_remote_gun);
+item_hash.set("remote_anti-air_gun", @ items_remote_gun_air);
+item_hash.set("remote_timebomb_controller", @ items_remote_timebomb_controller);
+item_hash.set("security_bomb", @ items_security_bomb);
+item_hash.set("ultrabomb_locator", @ items_ultrabomb_locator);
+item_hash.set("timebomb", @ items_timebomb);
+item_hash.set("street_lionhearted_soldier_pack", @ items_street_lionhearted_soldier_pack);
+item_hash.set("non-death_barrier", @ items_nondeath_barrier);
+item_hash.set("s_flag", @ items_s_flag);
+item_hash.set("r_flag", @ items_r_flag);
+item_hash.set("street_vehicle_pack", @ items_street_vehicle_pack);
+item_hash.set("mobile_shopping_device", @ items_mobile_shopping_device);
+item_hash.set("item_grabber", @ items_item_grabber);
+item_hash.set("throwaway_spray", @ items_throwaway_spray);
+}
+
+void install_item_grab_hash()
+{
+item_grab_hash.set("coin_pack", @ item_grab_coin_pack);
+item_grab_hash.set("street_program_starter_kit", @ item_grab_street_program_starter_kit);
+item_grab_hash.set("remote_timebomb_controller", @ item_grab_remote_timebomb_controller);
+item_grab_hash.set("remote_gun_controller", @ item_grab_remote_gun_controller);
+item_grab_hash.set("oxygen_mask", @ item_grab_oxygen_mask);
+item_grab_hash.set("ammo", @ item_grab_ammo);
+item_grab_hash.set("weapon", @ item_grab_weapon);
+item_grab_hash.set("vehicle", @ item_grab_vehicle);
+item_grab_hash.set("health_pack", @ item_grab_health_pack);
+item_grab_hash.set("ultrabomb_locator", @ item_grab_ultrabomb_locator);
+item_grab_hash.set("s_flag", @ item_grab_s_flag);
+item_grab_hash.set("r_flag", @ item_grab_r_flag);
+item_grab_hash.set("snack", @ item_grab_snack);
+}
+
+void install_combines()
+{
+combines.set("metal", @ combine_func_metal);
+combines.set("metal2", @ combine_func_metal2);
+combines.set("double_barrel_shotgun", @ combine_func_double_barrel_shotgun);
+combines.set("_arrow", @ combine_func_arrow);
+}
+
+bool items_sp_paper2(player@ this)
+{
+this.playsound("paper");
+this.sendpacket("24000, 24000, 0");
+return false_t;
+}
+bool items_sp_paper(player@ this)
+{
+this.playsound("paper");
+this.sendpacket("int macOS=0이라고 적혀있습니다.");
+return false_t;
+}
+bool items_store_card(player@ this)
+{
+this.go_to("세이프존", 3001, 3001, 110);
+return false_t;
+}
+bool items_locker_security_booster(player@ this)
+{
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("그곳엔 금고가 없습니다.");
+return false_t;
+}
+if (temp.vhc !is null)
+{
+this.alert("보안이 필요 없는 금고입니다.");
+return false_t;
+}
+if (temp.security_boosts >= 100) // security limit
+{
+this.alert("그 금고의 보안은 이미 완벽합니다.");
+return false_t;
+}
+temp.security_boosts++;
+temp.lockplay("security_booster");
+// this.stun(720, false, false);
+return true_t;
+}
+bool items_bluebox(player@ this)
+{
+minilocker@ temp = get_locker_at(this.rx, this.ry, this.z, this.map);
+if (temp is null)
+{
+this.alert("그곳엔 금고가 없습니다.");
+return false_t;
+}
+if (temp.vhc !is null)
+{
+this.alert("보안이 걸려 있지 않습니다.");
+return false_t;
+}
+if (temp.hacking)
+{
+this.alert("이미 누군가가 해킹 중입니다.");
+return false_t;
+}
+temp.hacktimer.force(0);
+// this.sendpacket("stopmoving");
+temp.hacker = this.name;
+temp.hacking = true;
+int r = random(0, 100);
+if (temp.security_boosts <= 0 or this.name == temp.owner)
+{
+this.playsound("locker_hackstart");
+temp.hackmode = 1;
+temp.hacktime = hack_successtime;
+}
+else if (temp.security_boosts >= 100)
+{
+this.playsound("locker_hackstop");
+temp.hackmode = 0;
+temp.hacktime = hack_failedtime;
+}
+else if (r < (power(0.95, temp.security_boosts) * 100))
+{
+this.playsound("locker_hackstart");
+temp.hackmode = 1;
+temp.hacktime = hack_successtime;
+}
+else
+{
+this.playsound("locker_hackstop");
+temp.hackmode = 0;
+temp.hacktime = hack_failedtime;
+}
+return true_t;
+}
+bool items_locker_pack(player@ this)
+{
+if (this.map !is locker_room) return false_t;
+if (locker_list.exists(this.name))
+{
+this.alert("이미 설치한 금고가 있습니다.");
+return false_t;
+}
+if (this.z != 20)
+{
+this.alert("세이프존 2층에서만 가능합니다.");
+return false_t;
+}
+if (get_locker_at(this.rx, this.ry, this.z, this.map) !is null)
+{
+this.alert("그곳엔 이미 남의 금고가 있습니다.");
+return false_t;
+}
+this.work(pc_lockerplacing);
+this.playsound("locker_placing");
+return true_t;
+}
+bool items_parachute(player@ this)
+{
+if (this.parachutist) return false_t;
+if (!is_fallable(this.x, this.y, this.z, this.map)) return false_t;
+this.work(pc_setting_parachute);
+this.playsound("parachute_set");
+return false_t;
+}
+bool items_team_member_booster(player@ this)
+{
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return false_t;
+}
+if (this.gang.teamleader != this.name)
+{
+this.alert("조직의 우두머리만이 이 아이템을 사용할 수 있습니다.");
+return false_t;
+}
+if (this.gang.maxmembers >= 10)
+{
+this.alert("이미 최대 수준까지 확장한 것 같습니다.");
+return false_t;
+}
+this.gang.maxmembers++;
+this.gang.transmit(this.gang.maxmembers + "명으로 정원이 확장되었습니다.");
+this.gang.team_save();
+return true_t;
+}
+bool items_mountain_ticket(player@ this)
+{
+if (this.deadtimer.elapsed < 5000) return false_t;
+if (is_fallable(this.x, this.y, this.z, this.map)) return false_t;
+if (!this.map.owner.exists(this.name) and this.map.no_teleport == 1) return false_t;
+this.go_to("필멸의산", 350, 50, 451);
+return true_t;
+}
+bool items_temple_ticket(player@ this)
+{
+if (this.deadtimer.elapsed < 5000) return false_t;
+if (is_fallable(this.x, this.y, this.z, this.map)) return false_t;
+if (!this.map.owner.exists(this.name) and this.map.no_teleport == 1) return false_t;
+switch (random(1, 5))
+{
+case 1:
+this.go_to("필멸의산", 498, 498, 401);
+break;
+case 2:
+this.go_to("필멸의산", 497, 498, 480);
+break;
+case 3:
+this.go_to("필멸의산", 198, 298, -130);
+break;
+case 4:
+this.go_to("필멸의산", giftskyx, giftskyy, 10);
+break;
+default:
+this.go_to("필멸의산", 498, 498, 403);
+}
+return true_t;
+}
+bool items_bomb_cracker(player@ this)
+{
+// this.stun(500, false, false);
+spawn_bomb_cracker(this.x, this.y, this.z, this.map);
+return true_t;
+}
+bool items_empty_pack(player@ this)
+{
+if (this.inventory.size <= 1) return false_t;
+sm.initial_packet = "packsomething";
+sm.intro = "어떤 아이템을 포장할까요?";
+string itemname;
+string name = "empty_pack";
+int invplength = this.itemnames.length;
+for (uint i = 0; i < invplength; i++)
+{
+itemname = this.itemnames[i];
+if (itemname == name) continue;
+int a;
+this.inventory.get(itemname, a);
+if (a < 10) continue;
+sm.add(itemname + ", " + a, itemname);
+}
+sm.send(this.peer_id);
+sm.reset();
+return false_t;
+}
+bool items_street_sacred_statue(player@ this)
+{
+this.playsound("spw_version_2_unity");
+sm.intro = "무엇을... 받길... 원하는가?...";
+sm.initial_packet = "weaponselect";
+sm.add("저는 억겁의 세월동안 타오른 가장 깊은 지옥의 불꽃을 받길 원합니다.", spw[0]);
+sm.add("저는 최후의 날까지 인내한 참된 영혼의 분노를 받길 원합니다.", spw[1]);
+sm.add("저는 어리석은 인간 1.0이 번뇌에 허덕이는 모습을 보고 싶습니다. 좋은 방법이 있습니까?", spw[2]);
+sm.add("저는 선조들이 동경하던 극락에 관심이 많습니다. 하늘의 열쇠를 보여주십시오.", spw[3]);
+sm.add("저는 무언가를 받길 원하지 않습니다. 모든 것은 다 무에서 왔으니, 모두 무로 돌아가고 말 뿐입니다.", spw[4]);
+sm.add("위의 선택지들은 모두 잘못되었습니다. 총잡이는 모름지기 총을 들어야 합니다. 저의 남은 힘을 총에 쏟을 수 있게 해주십시오.", spw[5]);
+sm.send(this.peer_id);
+sm.reset();
+return false_t;
+}
+bool items_ancient_wing(player@ this)
+{
+if (this.wingtimer.elapsed < 500) return false_t;
+if (this.weapon !is null)
+{
+if (this.weapon.walktime >= 1000) return false_t;
+}
+this.wingtimer.force(0);
+if (!this.move(this.facing, Forward, 7, false)) return false_t;
+this.playsound("ancient_wing" + random(1, 2));
+return false_t;
+}
+bool items_warp_box(player@ this)
+{
+/*if (this.warptimer.elapsed < 45000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+*/
+this.statchangetimer.force(0);
+this.warptimer.force(0);
+this.warping = true;
+this.playsound("wppowerup");
+this.sendpacket("stopmoving");
+return true_t;
+}
+bool items_impact_bomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+this.temp_invinsible = false;
+// if (this.stunthrowtimer.elapsed < 1600) return false_t;
+this.stunthrowtimer.force(0);
+spawn_impact_bomb(this.x, this.y, this.z, this.map, this.name);
+return true_t;
+}
+bool items_stun_dart(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stunthrowtimer.elapsed < 2000) return false_t;
+this.stunthrowtimer.force(0);
+spawn_weapon(this.x, this.y, this.z, this.facing, "stun_dart", this.map, this, "stun_dartthrow");
+return true_t;
+}
+bool items_throwaway_spray(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if  (this.stunthrowtimer.elapsed < 800) return false_t;
+this.stunthrowtimer.force(0);
+spawn_weapon(this.x, this.y, this.z, this.facing, "throwaway_spray", this.map, this, "throwaway_spray");
+return true_t;
+}
+bool items_shield(player@ this)
+{
+if (this.shieldshots > 0)
+{
+this.alert("이미 착용 중입니다.");
+return false_t;
+}
+this.work(pc_shielding);
+this.playsound("shieldon");
+return true_t;
+}
+bool items_fire_extinguisher(player@ this)
+{
+int current = this.get_item_count("fire_extinguisher");
+int su = 0;
+int fireslength = this.map.fires.length;
+for (uint i = 0; i < fireslength; i++)
+{
+fire@ temp = this.map.fires[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > 8) continue;
+if (su >= current) break;
+su++;
+temp.lifetimer.force(2000000000);
+}
+if (su > 0)
+{
+this.give("fire_extinguisher", -su);
+this.playsound("fire_extinguisher");
+}
+else this.alert("주변엔 화마가 없습니다.");
+return false_t;
+}
+bool items_stp429(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+if (this.missiletimer.elapsed < missiletime) return false_t;
+this.missiletimer.force(0);
+Robot@ temp = robot_spawn("stp429_mini-missile", this.x, this.y, this.z, this.map, 0, empty, null, this.name);
+if (temp !is null)
+{
+this.playsound("stp429_launch");
+int vslength = this.map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+this.map.vs[i].playsound("stp429_alarm", false);
+}
+}
+this.temp_invinsible = false;
+return true_t;
+}
+bool items_carrier_missile(player@ this)
+{
+if (this.tracking_type <= 0) return false_t;
+send_menu(this.peer_id, "목적지에 도착하면 자동으로 설치할까요?", "cmmode", "예:yes[]아니요:no");
+return false_t;
+}
+bool items_air_canister(player@ this)
+{
+spawn_canister(this.x, this.y, this.z, this.map, "air");
+return true_t;
+}
+bool items_antibiotic_canister(player@ this)
+{
+spawn_canister(this.x, this.y, this.z, this.map, "heal");
+return true_t;
+}
+bool items_toxic_canister(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+this.temp_invinsible = false;
+spawn_canister(this.x, this.y, this.z, this.map, "toxic");
+return true_t;
+}
+bool items_wirebomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+/*if (this.stunthrowtimer.elapsed < 15000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+*/
+if (get_tile_at(this.x, this.y, this.z, this.map, false).is_empty())
+{
+this.alert("공중에 설치하기엔 너무 무겁습니다.");
+return false_t;
+}
+int wirebombslength = this.map.wirebombs.length;
+for (uint i = 0; i < wirebombslength; i++)
+{
+wirebomb@ temp = this.map.wirebombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) <= 10)
+{
+this.alert("이미 충분히 가까운 지역에 설치되어 있습니다.");
+return false_t;
+}
+}
+this.temp_invinsible = false;
+place_wirebomb(this.x, this.y, this.z, this.map, this.name, this);
+return true_t;
+}
+bool items_wood(player@ this)
+{
+string tilecheck = get_tile_at(this.x, this.y, this.z, this.map);
+if (tilecheck.is_empty()) return false_t;
+if (string_left(tilecheck, 4) == "wall") return false_t;
+tilecheck = get_tile_at(this.x, this.y, this.z + 1, this.map);
+if (!tilecheck.is_empty()) return false_t;
+this.alert("plank를 설치했습니다.");
+this.stun(750, false, false);
+spawn_plank(this.x, this.y, this.z + 1, this.map);
+return true_t;
+}
+bool items_fuel_tank(player@ this)
+{
+int vslength = this.map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = this.map.vs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > 5) continue;
+if (temp.started) continue;
+if (temp.fuel >= 100.0) continue;
+temp.playsound("vehicle_refuel", true, false);
+temp.fuel = 100;
+return true_t;
+}
+this.alert("지금은 주변에 주유 가능한 차량이 없습니다.");
+return false_t;
+}
+bool items_remote_timebomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+send_serverbox(this.peer_id, 2, 1, 1, 12, "rbomb", "폭탄에 사용할 암호를 입력하세요");
+return false_t;
+}
+bool items_mine(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+if (this.stunthrowtimer.elapsed < 1000) return false_t;
+this.stunthrowtimer.force(0);
+int d = get_mine_depth(this.rx, this.ry, this.z, this.map);
+if (d == 0)
+{
+this.alert("이곳에는 설치할 만한 좋은 장소가 보이지 않습니다.");
+return false_t;
+}
+this.temp_invinsible = false;
+place_mine(this.x, this.y, this.z, this.map, this.name, d);
+return true_t;
+}
+bool items_frequency_scrambler(player@ this)
+{
+if (this.frequency)
+{
+this.alert("이미 사용 중입니다.");
+return false_t;
+}
+/*if (this.frequencyscramblertimer.elapsed < 60000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+*/
+this.frequencyscramblertimer.force(0);
+this.work(pc_frequency_on);
+this.playsound("frequency_scrambleron");
+return true_t;
+}
+bool items_nuclear_bomb(player@ this)
+{
+if (this.rank < 1)
+{
+if (this.map.fighting == 0) return false_t;
+}
+// if (this.nucleartimer.elapsed < 5000) return false_t;
+this.nucleartimer.force(0);
+this.temp_invinsible = false;
+placenuclear_bomb(this.x, this.y, this.z, this.map, this.name);
+return true_t;
+}
+bool items_stone(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stonetimer.elapsed < 1000) return false_t;
+spawn_weapon(this.x, this.y, this.z, this.facing, "stone", this.map, this, "stonethrow");
+this.stonetimer.force(0);
+return true_t;
+}
+bool items_energetic_ball(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stonetimer.elapsed < 4000) return false_t;
+spawn_weapon(this.x, this.y, this.z, this.facing, "ball", this.map, this, "ballthrow");
+this.stonetimer.force(0);
+return true_t;
+}
+bool items_beer_bottle(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stonetimer.elapsed < 1000) return false_t;
+spawn_weapon(this.x, this.y, this.z, this.facing, "beer_bottle", this.map, this, "stonethrow");
+this.stonetimer.force(0);
+return true_t;
+}
+bool items_motion_bomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.mbombtimer.elapsed < 1600) return false_t;
+this.mbombtimer.force(0);
+this.temp_invinsible = false;
+spawn_motion_bomb(this.x, this.y, this.z, this.map, this.name);
+this.playsound("motion_bombplacing");
+return true_t;
+}
+bool items_health_dart(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stunthrowtimer.elapsed < 1200) return false_t;
+this.stunthrowtimer.force(0);
+spawn_weapon(this.x, this.y, this.z, this.facing, "health_dart", this.map, this, "stun_dartthrow");
+return true_t;
+}
+bool items_stun_grenade(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.stungrenadetimer.elapsed < 5000) return false_t;
+this.stungrenadetimer.force(0);
+this.temp_invinsible = false;
+placestun_grenade(this.x, this.y, this.z, this.map, this.name);
+return true_t;
+}
+bool items_concussive_grenade(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.concussivegrenadetimer.elapsed < 3000) return false_t;
+this.concussivegrenadetimer.force(0);
+this.temp_invinsible = false;
+placeconcussive_grenade(this.x, this.y, this.z, this.map, this.name);
+return true_t;
+}
+bool items_sound_grenade(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+// if (this.sound_grenadetimer.elapsed < 5000) return false_t;
+this.sound_grenadetimer.force(0);
+this.temp_invinsible = false;
+placesound_grenade(this.x, this.y, this.z, this.map, this.name);
+return true_t;
+}
+bool items_invisibility_shield(player@ this)
+{
+if (this.invisible)
+{
+this.alert("이미 투명합니다.");
+return false_t;
+}
+/*if (this.invusetimer.elapsed < 60000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+*/
+this.invusetimer.force(0);
+this.invisible = true;
+this.invisibilitytimer.force(0);
+this.playsound("invisibility_start");
+this.stun(2500, false, false);
+return true_t;
+}
+bool items_ultrabomb_silencer(player@ this)
+{
+return setup_ultrabomb_silencer(this.x, this.y, this.z, this.map);
+}
+bool items_toolbox(player@ this)
+{
+send_menu(this.peer_id, "연장통을 어디에다 쓸까요?", "toolbox", "실드 수리:metal2[]차량 수리:metal[]double_barrel_shotgun:double_barrel_shotgun[]_arrow:_arrow");
+return false_t;
+}
+bool items_street_program_starter_kit(player@ this)
+{
+this.give_from_string(default_inv);
+this.alert("street program starter kit 작동");
+this.sendsound("teamcreate");
+this.save();
+return true_t;
+}
+bool items_dong_nae_gunner(player@ this)
+{
+this.give_from_string("./prefs/inventories/dong_nae.inv", true);
+this.alert("당신은 영락없는 동네 총잡이가 되었군요. 축하드립니다.");
+this.sendsound("teamcreate");
+this.save();
+return true_t;
+}
+bool items_street_check(player@ this)
+{
+if (this.map.name == "세이프존" and round(this.x, 0) == 15 and round(this.y, 0) == 15 and this.z == 0)
+{
+send_serverbox(this.peer_id, 1, -1, 0, -1, "convertcoin", "street check 몇 개를 coin으로 환전할까요? 최대 " + this.get_item_count("street_check") + "개 가능합니다.");
+return false_t;
+}
+if (this.map.name == "서바이벌" and round(this.x, 0) == 250 and round(this.y, 0) == 250 and this.z == 0)
+{
+send_serverbox(this.peer_id, 1, -1, 0, -1, "convertcoin", "street check 몇 개를 coin으로 환전할까요? 최대 " + this.get_item_count("street_check") + "개 가능합니다.");
+return false_t;
+}
+bool useable = false;
+vending_machine@ v = find_vending_machine(this.rx, this.ry, this.z, this.map);
+if (v !is null)
+{
+useable = true;
+this.stun(250, false, false);
+this.give("street_check", -1);
+v.coins += 100000;
+}
+if (this.map.name == "필멸의산")
+{
+if (this.rx == 350 and this.ry == 50 and this.z >= 449)
+{
+useable = true;
+this.give("mountain_ticket", 10);
+this.give("street_check", -1);
+this.add_achievement("필멸의 산장 정복", "1 sky_286_laser_pistol", true);
+}
+if (this.rx == 498 and this.ry == 498 and this.z >= 400)
+{
+useable = true;
+this.give("temple_ticket", 1);
+this.give("street_check", -1);
+}
+}
+if (useable) this.playsound("shelter_insertdollar");
+else this.alert("이곳에서는 쓸 수 없습니다.");
+return false_t;
+}
+bool items_coin(player@ this)
+{
+vending_machine@ vending = find_vending_machine(this.rx, this.ry, this.z, this.map);
+if (vending !is null)
+{
+send_serverbox(this.peer_id, 2, -1, 0, -1, "insertamount", "자판기에 돈을 얼마나 넣을까요?");
+return false_t;
+}
+if (this.map.name == "세이프존" and round(this.x, 0) == 15 and round(this.y, 0) == 15 and this.z == 0)
+{
+send_serverbox(this.peer_id, 1, -1, 0, -1, "convertcheck", "street check 몇 개로 환전할까요? 최대 " + (this.get_item_count("coin") / 105000) + "개 가능합니다.");
+return false_t;
+}
+if (this.map.name == "서바이벌" and round(this.x, 0) == 250 and round(this.y, 0) == 250 and this.z == 0)
+{
+send_serverbox(this.peer_id, 1, -1, 0, -1, "convertcheck", "street check 몇 개로 환전할까요? 최대 " + (this.get_item_count("coin") / 105000) + "개 가능합니다.");
+return false_t;
+}
+int current = this.get_item_count("coin");
+int su = 0;
+int ultrabombslength = this.map.ultrabombs.length;
+for (uint i = 0; i < ultrabombslength; i++)
+{
+ultrabomb@ temp = this.map.ultrabombs[i];
+if (temp.coins >= 20) continue;
+if (temp.x != this.rx) continue;
+if (temp.y != this.ry) continue;
+if (temp.z != this.z) continue;
+if (su >= current) break;
+su++;
+temp.coins++;
+temp.owner = this.name;
+@ temp.p = this;
+play("ultrabombcoinadd", temp.x, temp.y, temp.z, temp.map);
+}
+if (su > 0) this.give("coin", -su);
+return false_t;
+}
+bool items_ultrabomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+if (this.map.is_vehicle)
+{
+this.alert("차량이 감당하기에 너무 육중합니다.");
+return false_t;
+}
+string tile = get_tile_at(this.x, this.y, this.z, this.map);
+if (tile.is_empty())
+{
+this.alert("하늘에 대롱대롱 매달아놓기엔 너무 육중합니다.");
+return false_t;
+}
+int ultrabombslength = this.map.ultrabombs.length;
+for (uint u = 0; u < ultrabombslength; u++)
+{
+ultrabomb@ temp = this.map.ultrabombs[u];
+if (temp.x != this.x) continue;
+if (temp.y != this.y) continue;
+if (temp.z != this.z) continue;
+this.alert("이미 주변에 많이 설치되어 있어 더 설치하기는 곤란합니다.");
+return false_t;
+}
+this.work(pc_ultrabombplacing);
+this.temp_invinsible = false;
+this.playsound("ultrabombdeploy");
+return true_t;
+}
+bool items_health_orb(player@ this)
+{
+this.statchangetimer.force(0);
+spawn_horb(this.x, this.y, this.z, this.map);
+return true_t;
+}
+bool items_antibiotic(player@ this)
+{
+if (this.antibioticed)
+{
+this.alert("아직 약효가 건재합니다. 더 복용하면 치사량을 넘길 수도 있습니다.");
+return false_t;
+}
+if (this.awarnouttimer.elapsed < 30000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+this.playsound("antibiotic");
+this.awarnouttimer.force(0);
+this.antibiotictimer.force(0);
+this.antibioticed = true;
+return true_t;
+}
+bool items_antibiotic_pack(player@ this)
+{
+int amount = this.get_item_count("antibiotic_pack");
+this.give("antibiotic", amount * 20);
+this.give("empty_pack", amount);
+this.give("antibiotic_pack", -amount);
+this.playsound("getantibiotic");
+return false_t;
+}
+bool items_mini_antibiotic_pack(player@ this)
+{
+int amount = this.get_item_count("mini_antibiotic_pack");
+this.give("antibiotic", amount * 5);
+this.give("empty_pack", amount);
+this.give("mini_antibiotic_pack", -amount);
+this.playsound("getantibiotic");
+return false_t;
+}
+bool items_ultra_antibiotic_pack(player@ this)
+{
+int amount = this.get_item_count("ultra_antibiotic_pack");
+this.give("antibiotic", amount * 50);
+this.give("empty_pack", amount);
+this.give("ultra_antibiotic_pack", -amount);
+this.playsound("getantibiotic");
+return false_t;
+}
+bool items_street_gang_chief_pack(player@ this)
+{
+this.give_from_string("./prefs/inventories/gang_chief.inv", true);
+this.alert("조직 두목에게 주는 작은 선물을 받았습니다.");
+this.sendsound("teamcreate");
+return true_t;
+}
+bool items_street_vehicle_pack(player@ this)
+{
+this.give_from_string("./prefs/inventories/vehicle.inv", true);
+this.alert("차량 팩을 뜯습니다.");
+this.sendsound("teamcreate");
+return true_t;
+}
+bool items_street_warp_box_pack(player@ this)
+{
+this.playsound("gift");
+this.give("warp_box", 20);
+this.give("empty_pack", 1);
+return true_t;
+}
+bool items_street_mini_warp_box_pack(player@ this)
+{
+this.playsound("gift");
+this.give("warp_box", 5);
+this.give("empty_pack", 1);
+return true_t;
+}
+bool items_street_ultra_warp_box_pack(player@ this)
+{
+this.playsound("gift");
+this.give("warp_box", 50);
+this.give("empty_pack", 1);
+return true_t;
+}
+bool items_street_check_pack(player@ this)
+{
+this.give("street_check", 5);
+this.give("empty_pack", 1);
+this.playsound("gift");
+return true_t;
+}
+bool items_street_drug_set(player@ this)
+{
+this.playsound("getultra");
+this.give("street_drug", 10);
+this.give("street_dope", 10);
+this.give("empty_pack", 1);
+return true_t;
+}
+bool items_street_drug(player@ this)
+{
+this.work(pc_street_drugging);
+this.playsound("ultrapotion");
+this.statchangetimer.force(0);
+return true_t;
+}
+bool items_electron_bat(player@ this)
+{
+if (this.firetimer.elapsed < firetime_starter) return false_t;
+this.playsound("electron_bat");
+this.firetimer.force(firetime_starter - 500);
+double hitlevel = 0, hitcount = 0;
+for (int i = this.map.weapons.length - 1; i > -1; i--)
+{
+weapon@ temp = this.map.weapons[i];
+if (temp.no_reflect) continue;
+if (temp.figure == PROJ_CONE) continue;
+if (this.distancecheck(temp.x, temp.y, temp.z) > (30 + temp.spread)) continue;
+this.energy -= (temp.ignore_helmet ? 10 : !temp.splash_name.is_empty() ? 10 : 1) * temp.spread * (temp.figure == PROJ_PARABOLA ? temp.speedtime : 1);
+if (hitlevel < temp.speedtime) hitlevel = temp.speedtime;
+hitcount++;
+temp.block_remove(false, true);
+this.map.weapons.remove_at(i);
+spawn_weapon(temp.x, temp.y, temp.z, this.facing, temp.type, this.map, this, empty, -1, temp.speedtime * electron_bat_value, temp.zspeed * electron_bat_value, round(temp.gathering_current * electron_bat_value, 0));
+}
+if (hitcount > 0)
+{
+this.playsound("electron_bat_hit");
+if (hitcount >= 5) this.add_achievement("탄막 슈팅 게임  마스터", "2500000 coin", true);
+if (hitlevel >= 5) this.add_achievement("홈런 공장장", "2500000 coin", true);
+}
+return false_t;
+}
+bool items_street_dope(player@ this)
+{
+this.playsound("health_box");
+this.power_up = true;
+this.power_up_timer.force(0);
+this.statchangetimer.force(0);
+// this.stun(4500, false, false);
+this.dope_withdrawal += 60;
+return true_t;
+}
+bool items_missile_interceptor(player@ this)
+{
+if (this.map.is_vehicle) return false_t;
+this.work(pc_intercepting);
+this.playsound("missile_interceptor_fire");
+play_dist("missile_interceptor_firedist", this.x, this.y, this.z, this.map);
+return true_t;
+}
+bool items_wood_pack(player@ this)
+{
+int wval = this.get_item_count("wood_pack");
+int rand = random(25 * wval, 50 * wval);
+this.give("wood_pack", -wval);
+this.give("empty_pack", wval);
+this.give("wood", rand);
+this.alert(rand + "개의 wood를 상자에서 꺼냅니다.");
+this.playsound("getwood");
+return false_t;
+}
+bool items_metal_pack(player@ this)
+{
+int wval = this.get_item_count("metal_pack");
+int rand = random(20 * wval, 50 * wval);
+this.give("metal_pack", -wval);
+this.give("empty_pack", wval);
+this.give("metal", rand);
+this.alert(rand + "개의 metal을 상자에서 꺼냅니다.");
+this.playsound("getmedal");
+return false_t;
+}
+bool items_robot_card(player@ this)
+{
+send_serverbox(this.peer_id, 0, -1, 0, -1, "robotcall", "어떤 로봇을 부를까요?");
+return false_t;
+}
+bool items_remote_gun_controller(player@ this)
+{
+int hasrems = 0;
+int pid = string_to_hash(this.name);
+int remgunslength = this.map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+remgun@ temp = this.map.remguns[i];
+if (temp.ownerid != pid) continue;
+if (temp.owner != this.name) continue;
+sm.add((temp.anti_air ? "대공 " : "대지 ") + temp.id + "번 remote gun, (" + temp.map.name + " 내 " + temp.x + ", " + temp.y + ", " + temp.z + ")", temp.id);
+hasrems++;
+}
+if (hasrems <= 0)
+{
+this.alert("당신 명의로 설치된 remote gun이 없습니다.");
+sm.reset();
+return false_t;
+}
+sm.add("전체 조종", "attackall");
+sm.intro = hasrems + "개의 remote gun이 확인되었습니다.";
+sm.initial_packet = "remgunidset";
+sm.send(this.peer_id);
+sm.reset();
+return false_t;
+}
+bool items_remote_gun(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+if (remgun_at(this.x, this.y, this.z, this.map))
+{
+this.alert("여기엔 이미 설치된 remote gun이 있습니다.");
+return false_t;
+}
+int amount = this.get_item_count("_338_magnum_bullet");
+if (amount > 100) amount = 100;
+if (amount <= 0)
+{
+this.alert("장전할 총알이 없습니다. _338_magnum_bullet이 필요합니다.");
+return false_t;
+}
+this.work(pc_remconnecting);
+this.give("_338_magnum_bullet", -amount);
+this.remguncount = amount;
+this.remguntype = 0;
+this.playsound("remgun_place");
+this.temp_invinsible = false;
+return true_t;
+}
+bool items_remote_gun_air(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+if (remgun_at(this.x, this.y, this.z, this.map))
+{
+this.alert("여기엔 이미 설치된 remote gun이 있습니다.");
+return false_t;
+}
+int amount = this.get_item_count("_battery");
+if (amount > 50) amount = 50;
+if (amount <= 0)
+{
+this.alert("장전할 총알이 없습니다. _battery가 필요합니다.");
+return false_t;
+}
+this.work(pc_remconnecting);
+this.give("_battery", -amount);
+this.remguncount = amount;
+this.remguntype = 1;
+this.playsound("remgun_airplace");
+this.temp_invinsible = false;
+return true_t;
+}
+bool items_remote_timebomb_controller(player@ this)
+{
+send_serverbox(this.peer_id, 2, 1, 1, 12, "rtdcode", "폭탄 암호를 입력하십시오");
+return false_t;
+}
+bool items_security_bomb(player@ this)
+{
+if (this.map.fighting == 0) return false_t;
+string tile = get_tile_at(this.x, this.y, this.z, this.map);
+if (tile.is_empty())
+{
+this.alert("하늘에 대롱대롱 매달아놓기엔 너무 육중합니다.");
+return false_t;
+}
+int slength = this.map.security_bombs.length;
+for (uint i = 0; i < slength; i++)
+{
+security_bomb@ temp = this.map.security_bombs[i];
+if (temp.x != this.x) continue;
+if (temp.y != this.y) continue;
+if (temp.z != this.z) continue;
+this.alert("이미 여기에 설치되어 있습니다. 더 설치하는 것은 전파 간섭이 발생할 수 있습니다.");
+return false_t;
+}
+this.work(pc_sbombplacing);
+this.playsound("security_bombplace");
+this.temp_invinsible = false;
+return true_t;
+}
+bool items_ultrabomb_locator(player@ this)
+{
+this.playsound("ultrabomblocator");
+string s;
+mapdata@ map = this.map;
+double range = 75 / this.weaponsight;
+if (this.map.is_vehicle)
+{
+@ map = this.map.vhc.map;
+range = this.map.vhc.sight_range;
+}
+int ultrabombslength = map.ultrabombs.length;
+for (uint i = 0; i < ultrabombslength; i++)
+{
+ultrabomb@ temp = map.ultrabombs[i];
+if (temp.hid.health <= 0) continue;
+int get_range = (this.map.is_vehicle ? this.map.vhc.distancecheck(temp.x, temp.y, temp.z) : this.distancecheck(temp.x, temp.y, temp.z));
+if (get_range > range)
+{
+if (temp.owner != this.name) continue;
+}
+s += temp.owner + "님의_" + temp.coins + "_coin이_들어간_ultrabomb m" + temp.x + ":" + temp.y + ":" + temp.z + " " + get_range + "[]";
+}
+if (s.is_empty())
+{
+this.alert("감지되는 폭발물이 없습니다.");
+return false_t;
+}
+this.sendpacket("trackset " + s);
+return false_t;
+}
+bool items_timebomb(player@ this)
+{
+send_serverbox(this.peer_id, 2, 1, 1, 6, "placetbomb", "몇 초 후에 터지게 할까요?");
+return false_t;
+}
+bool items_street_lionhearted_soldier_pack(player@ this)
+{
+this.give_from_string("./prefs/inventories/soldier.inv", true);
+this.alert("당신은 박스가 아닌 용맹한 전사의 마음을 열었습니다. 작지만 소중한 보상을 받을 것입니다.");
+this.sendsound("nbm-studios");
+return true_t;
+}
+bool items_nondeath_barrier(player@ this)
+{
+/*if (this.deathfreetimer.elapsed < 20000)
+{
+this.alert("쿨다운이 아직 남았습니다.");
+return false_t;
+}
+*/
+this.playsound("dfcon");
+this.deathfreetimer.force(0);
+this.deathfreecards = 1;
+return true_t;
+}
+bool items_s_flag(player@ this)
+{
+if (!this.map.ctf_run)
+{
+this.alert("지금은 게임 중이 아닙니다.");
+return false_t;
+}
+int ctflength = this.map.ctf_sdest.length;
+for (uint i = 0; i < ctflength; i++)
+{
+if (this.map.ctf_sdest[i].is_on_ctf(this.x, this.y, this.z))
+{
+this.alert("Nice job!");
+this.give("s_flag", -10000000);
+this.map.ctf_rlife--;
+playmap("ctfalert", this.map);
+sendmap("R팀이 1점의 체력을 잃었습니다.", this.map, 2);
+if (this.map.ctf_rlife > 0) continue;
+this.map.ctf_run = false;
+playmap("achievement_complete", this.map);
+sendmap("S팀이 이겼습니다.", this.map, 2);
+}
+}
+return false_t;
+}
+bool items_r_flag(player@ this)
+{
+if (!this.map.ctf_run)
+{
+this.alert("지금은 게임 중이 아닙니다.");
+return false_t;
+}
+int ctflength = this.map.ctf_rdest.length;
+for (uint i = 0; i < ctflength; i++)
+{
+if (this.map.ctf_rdest[i].is_on_ctf(this.x, this.y, this.z))
+{
+this.alert("Nice job!");
+this.give("r_flag", -10000000);
+this.map.ctf_slife--;
+playmap("ctfalert", this.map);
+sendmap("S팀이 1점의 체력을 잃었습니다.", this.map, 2);
+if (this.map.ctf_slife > 0) continue;
+this.map.ctf_run = false;
+playmap("achievement", this.map);
+sendmap("R팀이 이겼습니다.", this.map, 2);
+}
+}
+return false_t;
+}
+bool items_mobile_shopping_device(player@ this)
+{
+if (this.map.name == "세이프존")
+{
+this.alert("미련하군요, 매점 코 앞에서 배달 드론을 띄우려 하다니...");
+return false_t;
+}
+if (this.map.name == "서바이벌" and this.distancecheck(250, 250, 0) <= 20)
+{
+this.alert("미련하군요, 매점 코 앞에서 배달 드론을 띄우려 하다니...");
+return false_t;
+}
+mapdata@ tmap = this.map;
+if (tmap.is_vehicle) @ tmap = this.map.vhc.map;
+if (tmap.no_recall == 1)
+{
+if (tmap.name != "메인" and tmap.name != "서바이벌")
+{
+this.alert("이곳에는 배달이 불가능합니다.");
+return false_t;
+}
+}
+string[]@ list = stores.keys;
+int res = 0;
+int keyslength = list.length;
+for (uint i = 0; i < keyslength; i++)
+{
+store@ temp = get_store_handle(list[i]);
+if (temp is null) continue;
+if (temp.no_delivery) continue;
+sm.add(list[i]);
+res++;
+}
+if (res == 0)
+{
+this.alert("배달 가능한 매점이 없습니다.");
+return false_t;
+}
+sm.intro = "어디와 연결할까요?";
+sm.initial_packet = "purchaseconnect";
+sm.send(e.peer_id);
+sm.reset();
+return false_t;
+}
+bool items_item_grabber(player@ this)
+{
+if (this.weapongathering) return false_t;
+if (this.firing) return false_t;
+this.work(pc_item_grabbing);
+if (this.grabsound is null) @ this.grabsound = spawn_moving_sound("itemgrabberstart", this.x, this.y, this.z, this.map, this, 100.0, true);
+return true_t;
+}
+
+string item_grab_coin_pack(player@ this, obj@ temp)
+{
+this.give("coin", random(1000, 2000) * (this.newb == 1 ? 2 : 1), false);
+return "coin pack";
+}
+string item_grab_snack(player@ this, obj@ temp)
+{
+string[]@ keys = snackitems.keys;
+string temp_f = keys[random(0, keys.length - 1)];
+this.give("pack_of_10_" + temp_f, 1, false);
+return temp_f + " pack";
+}
+string item_grab_street_program_starter_kit(player@ this, obj@ temp)
+{
+this.give(temp.name, temp.amount, false);
+this.add_achievement("입문자 환영", "500000 coin", false);
+return "street program starter kit";
+}
+string item_grab_remote_timebomb_controller(player@ this, obj@ temp)
+{
+if (this.get_item_count("remote_timebomb_controller") > 0)
+{
+this.give("remote_timebomb", 1, false);
+return "remote timebomb";
+}
+this.give("remote_timebomb_controller", 1, false);
+return "remote timebomb controller";
+}
+string item_grab_remote_gun_controller(player@ this, obj@ temp)
+{
+if (this.get_item_count("remote_gun_controller") > 0)
+{
+this.give("remote_gun", 1, false);
+return "remote gun";
+}
+this.give("remote_gun_controller", 1, false);
+return "remote gun controller";
+}
+string item_grab_oxygen_mask(player@ this, obj@ temp)
+{
+if (this.get_item_count("oxygen_mask") > 0)
+{
+this.give("air_canister", 1, false);
+return "air canister";
+}
+this.give("oxygen_mask", 1, false);
+return "oxygen mask";
+}
+string item_grab_ammo(player@ this, obj@ temp)
+{
+int tmpint = random(20, 60) * temp.amount;
+if (this.weapon !is null)
+{
+if (this.weapon.normal_weapon)
+{
+if (!this.weapon.require_ammo.is_empty())
+{
+this.give(this.weapon.require_ammo, tmpint, false);
+return tmpint + " " + this.weapon.require_ammo;
+}
+}
+}
+string temp_a = ammolist.keys[random(0, ammolist.size - 1)];
+this.give(temp_a, tmpint, false);
+return tmpint + " " + temp_a;
+}
+string item_grab_weapon(player@ this, obj@ temp)
+{
+int random_index;
+string[]@ key = weapon_list.keys;
+weapon_data@ handle;
+do
+{
+weapon_list.get(key[random(0, weapon_list.size - 1)], @ handle);
+}
+while (!handle.normal_weapon or handle.is_add_on);
+string temp_w = handle.type;
+this.give(temp_w, 1, false);
+return temp_w;
+}
+string item_grab_vehicle(player@ this, obj@ temp)
+{
+string[]@ keys = vehicledict.keys;
+string temp_v = keys[random(0, keys.length - 1)];
+this.give(temp_v, 1, false);
+return temp_v;
+}
+string item_grab_health_pack(player@ this, obj@ temp)
+{
+if (this.health < 50000)
+{
+this.alert("자동으로 체력이 회복됩니다.");
+this.playsound("extrahealth");
+this.health += random(1000, 3000);
+this.oldhealth = this.health;
+return empty;
+}
+this.give("antibiotic", 1, false);
+return "antibiotic";
+}
+string item_grab_ultrabomb_locator(player@ this, obj@ temp)
+{
+if (this.get_item_count("ultrabomb_locator") > 0 and !temp.dropped)
+{
+this.give("ultrabomb", 1, false);
+return "ultrabomb";
+}
+this.give("ultrabomb_locator", 1, false);
+return "ultrabomb locator";
+}
+string item_grab_s_flag(player@ this, obj@ temp)
+{
+if (this.get_item_count("s_flag") > 0 or this.get_item_count("r_flag") > 0) return empty;
+this.give("s_flag", 1, false);
+return "S flag";
+}
+string item_grab_r_flag(player@ this, obj@ temp)
+{
+if (this.get_item_count("s_flag") > 0 or this.get_item_count("r_flag") > 0) return empty;
+this.give("r_flag", 1, false);
+return "R flag";
+}
+
+void combine_func_metal(player@ this)
+{
+int vslength = this.map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = this.map.vs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) > 10) continue;
+if (temp.started) continue;
+if (temp.health >= temp.maxhealth) continue;
+int amount = 1 + ((temp.maxhealth - temp.health) / 500);
+if (this.get_item_count("metal") < amount)
+{
+this.alert("최소 " + amount + "개의 metal이 필요합니다.", true);
+return;
+}
+this.give("metal", -amount);
+temp.command("repair", this);
+return;
+}
+this.alert("지금은 주변에 수리 가능한 차량이 없습니다.");
+}
+void combine_func_metal2(player@ this)
+{
+if (this.shieldshots <= 0)
+{
+this.alert("지금은 실드를 착용하고 있지 않습니다.");
+return;
+}
+int shields = 300 - this.shieldshots;
+if (shields <= 0)
+{
+this.alert("이미 실드가 단단하여 수리할 필요가 없습니다.");
+return;
+}
+int metals = (shields * 0.08) + 1;
+int amount = this.get_item_count("metal");
+if (amount <= 0)
+{
+this.alert("metal이 부족합니다.");
+return;
+}
+this.work(pc_shield_repairing);
+if (amount > metals) amount = metals;
+this.give("metal", -amount);
+this.nextshields = this.shieldshots + round(amount * 12.5, 0);
+if (this.nextshields > 300) this.nextshields = 300;
+this.shielded = false;
+this.shieldshots = 0;
+this.playsound("shieldrepair");
+}
+void combine_func_double_barrel_shotgun(player@ this)
+{
+if (!this.inventory.exists("double_barrel_shotgun"))
+{
+this.alert("그런 무기를 안 가지고 있습니다.");
+return;
+}
+if (this.ammo.exists("double_barrel_shotgun"))
+{
+this.alert("장전부터 해제해야 합니다.");
+return;
+}
+this.give("sawed_off_shotgun", 1);
+if (this.main_weapon !is null)
+{
+if (this.main_weapon.type == "double_barrel_shotgun") this.draw_weapon("sawed_off_shotgun", true);
+}
+this.give("double_barrel_shotgun", -1);
+this.alert("당신은 톱으로 double barrel shotgun의 총열과 개머리판을 짧게 자릅니다.");
+}
+void combine_func_arrow(player@ this)
+{
+int amount = this.get_item_count("_arrow");
+if (amount <= 0)
+{
+this.alert("없는 아이템으로 작업을 시작하려고요?");
+return;
+}
+int amount2 = this.get_item_count("poison_vial");
+if (amount2 <= 0)
+{
+this.alert("지금 당장은 화살로 무언가를 하기엔 부적절합니다.");
+return;
+}
+int amount3 = (amount < amount2 ? amount : amount2);
+this.give("_arrow", -amount3);
+this.give("poison_vial", -amount3);
+this.give("_poisoned_arrow", amount3);
+this.alert("당신은 두꺼운 전용 장갑을 끼고 조심스레 poison vial을 뜯습니다. 그리고 화살에 골고루 발라줍니다.");
+}

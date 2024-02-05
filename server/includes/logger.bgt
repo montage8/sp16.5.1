@@ -1,0 +1,60 @@
+dictionary logs;
+
+void log(const string& in name, const string& in what)
+{
+file@ temp = get_log_handle(name);
+if (temp is null)
+{
+file new;
+if (!new.open("./logs/" + name + ".log", "ab")) return;
+logs.set(name, @ new);
+@ temp = new;
+}
+temp.write("\r\n" + get_date() + ", " + get_time() + ": " + what);
+}
+
+const string& get_log(const string& in name)
+{
+if (!fl.open("./logs/" + name + ".log", "rb")) return empty;
+ref_string = fl.read();
+fl.close();
+return ref_string;
+}
+
+file@ get_log_handle(const string& in name)
+{
+if (!logs.exists(name)) return null;
+file@ temp;
+logs.get(name, @ temp);
+return temp;
+}
+
+void save_logs()
+{
+string[]@ lognames = logs.keys;
+int logslength = lognames.length;
+for (uint i = 0; i < logslength; i++)
+{
+file@ temp;
+if (!logs.get(lognames[i], @ temp)) continue;
+temp.close();
+if (!temp.open("./logs/" + lognames[i] + ".log", "ab")) logs.delete(lognames[i]);
+}
+}
+
+void clear_log(const string& in name)
+{
+file@ temp = get_log_handle(name);
+if (temp !is null)
+{
+temp.close();
+logs.delete(name);
+}
+file_delete("./logs/" + name + ".log");
+}
+void clear_all_logs()
+{
+logs.delete_all();
+directory_delete("./logs");
+directory_create("./logs");
+}

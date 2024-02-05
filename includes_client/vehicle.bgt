@@ -1,0 +1,213 @@
+pathfinder autopilot;
+vector[]@ auto_path_list;
+maptile@[] vmaptiles, vmapgates;
+mapzone@[] vmapzones;
+maptravel@[] vmaptravels, vautotravels;
+mapetp@[] vmapetps, entered_etps_v;
+checkpoint@[] vcheckpoints;
+dictionary vmapzone_list;
+vector vmax;
+string vcurrentzone = "미정의 지역";
+string vmapname;
+timer pathfindingtimer;
+bool v_no_coord = false;
+
+mapzone@ get_vzone_handle(const string& in id)
+{
+if (!vmapzone_list.exists(id)) return null;
+mapzone@ temp;
+vmapzone_list.get(id, @ temp);
+return temp;
+}
+
+maptile@ get_vtile_at(int x, int y, int z)
+{
+for (int i = vmapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = vmapgates[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+return temp;
+}
+for (int i = vmaptiles.length - 1; i > -1; i--)
+{
+maptile@ temp = vmaptiles[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+return temp;
+}
+return null;
+}
+
+void change_vtile(int minx, int maxx, int miny, int maxy, int minz, int maxz, const string &in type)
+{
+for (int i = vmapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = vmapgates[i];
+if (temp.minx != minx) continue;
+if (temp.maxx != maxx) continue;
+if (temp.miny != miny) continue;
+if (temp.maxy != maxy) continue;
+if (temp.minz != minz) continue;
+if (temp.maxz != maxz) continue;
+if (temp.type != type) continue;
+temp.minx += temp.plus_x;
+temp.maxx += temp.plus_x;
+temp.center_x += temp.plus_x;
+temp.miny += temp.plus_y;
+temp.maxy += temp.plus_y;
+temp.center_y += temp.plus_y;
+temp.minz += temp.plus_z;
+temp.maxz += temp.plus_z;
+temp.center_z += temp.plus_z;
+temp.plus_x *= -1;
+temp.plus_y *= -1;
+temp.plus_z *= -1;
+break;
+}
+}
+
+const string& get_vzone_at(int x, int y, int z)
+{
+for (int i = vmapzones.length - 1; i > -1; i--)
+{
+mapzone@ temp = vmapzones[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ref_string = temp.text;
+return ref_string;
+}
+return "미정의 지역";
+}
+
+maptravel@ get_vtravel_at(int x, int y, int z)
+{
+maptravel@[] list;
+for (int i = vmaptravels.length - 1; i > -1; i--)
+{
+maptravel@ temp = vmaptravels[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+list.insert_last(temp);
+}
+if (list.is_empty())  return null;
+if (list.length == 1) return list[0];
+return select_travel(list);
+}
+
+void enter_etp_v(int x, int y, int z)
+{
+int etplength = vmapetps.length;
+for (uint i = 0; i < etplength; i++)
+{
+mapetp@ temp = vmapetps[i];
+if (temp.mode == 0) continue;
+if (temp.status == 2) temp.status = -1;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+temp.status = 2;
+temp.play_count = 0;
+entered_etps_v.insert_last(temp);
+}
+}
+
+void vetploop()
+{
+for (int i = entered_etps_v.length - 1; i > -1; i--)
+{
+mapetp@ temp = entered_etps_v[i];
+if (temp.status <= 0)
+{
+temp.status = 0;
+entered_etps_v.remove_at(i);
+continue;
+}
+if (temp.cooldowntimer.elapsed < temp.cooldown) continue;
+temp.cooldowntimer.force(0);
+if (temp.status <= 1) temp.status--;
+if (temp.mode == -1)
+{
+send_reliable("xplaysource_v " + temp.sn + " " + mr.x + " " + mr.y + " " + me.z, 2);
+continue;
+}
+send_reliable("xplay_v " + temp.sn + " " + temp.minx + " " + temp.maxx + " " + temp.miny + " " + temp.maxy + " " + temp.minz + " " + temp.maxz + " " + temp.volume, 2);
+if (temp.status < 2) continue;
+temp.play_count++;
+if (temp.play_count < temp.mode) continue;
+temp.status = 0;
+temp.play_count = 0;
+entered_etps_v.remove_at(i);
+}
+}
+
+void init_vehicle()
+{
+vmaptiles.resize(0);
+vmaptravels.resize(0);
+vautotravels.resize(0);
+vmapzone_list.delete_all();
+vmapzones.resize(0);
+vmapetps.resize(0);
+entered_etps_v.resize(0);
+vcheckpoints.resize(0);
+@  mycheckpoint = null;
+vmax = vector(0, 0, 0);
+vmapname.resize(0);
+v_no_coord = false;
+}
+
+int autopilot_ground_callback(int x, int y, int parent_x, int parent_y, string user_data)
+{
+if (pathfindingtimer.elapsed > 6)
+{
+pathfindingtimer.force(0);
+sr_loop();
+key_check();
+wait(1);
+}
+maptile@ handle = get_vtile_at(x, y, vr.z);
+if (handle is null) return 10;
+if (string_left(handle.type, 4) == "wall") return 10;
+if (handle.type == "mine") return 10;
+if (handle.slidedir > -1) return 9;
+return 0;
+}
+
+int autopilot_air_callback(int x, int y, int parent_x, int parent_y, string user_data)
+{
+if (pathfindingtimer.elapsed > 6)
+{
+pathfindingtimer.force(0);
+sr_loop();
+key_check();
+wait(1);
+}
+maptile@ handle = get_vtile_at(x, y, vr.z);
+if (handle !is null)
+{
+if (string_left(handle.type, 4) == "wall") return 10;
+if (handle.type == "mine") return 10;
+if (handle.slidedir > -1) return 9;
+}
+return 0;
+}

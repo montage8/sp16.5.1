@@ -1,0 +1,19 @@
+
+mapname:운영자
+owner:jackpot
+maxx:100
+maxy:100
+maxz:100
+tile:0:100:0:100:0:0:carpet
+limit:1000000
+// tile:0:100:0:100:-5:-5:wallwoodcrate
+travelpoint:10:10:0:0:0:0:운영자:10:20:0:포탈:1:shield*55
+tile:0:100:0:100:200:200:air
+tile:0:100:0:100:199:199:wallwoodcrate
+tile:0:33:0:100:400:400:air
+tile:34:66:0:100:400:400:air
+tile:67:100:0:50:400:400:air
+tile:67:100:51:100:400:400:air
+tile:0:100:0:100:-50:-50:wallrail
+respawn:1
+fightingstate:1

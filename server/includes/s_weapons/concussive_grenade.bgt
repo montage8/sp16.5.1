@@ -1,0 +1,107 @@
+class concussive_grenade
+{
+string owner, hitn;
+timer explodetimer;
+mapdata@ map;
+int x, y, z;
+}
+void concussive_grenadeloop(mapdata@ map)
+{
+int playerslength = map.players.length;
+int objslength = map.objs.length;
+for (int i = map.concussive_grenades.length - 1; i > -1; i--)
+{
+concussive_grenade@ this = map.concussive_grenades[i];
+if (this.explodetimer.elapsed >= 2000)
+{
+play("concussive_grenade", this.x, this.y, this.z, this.map);
+play_dist("concussive_grenadedist", this.x, this.y, this.z, this.map);
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.health <= 0) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 50)
+{
+temp.should_subtract = true;
+int power = random(50, 100);
+string last_type;
+int old_power = power;
+for (int i = map.mapgates.length - 1; i > -1; i--)
+{
+maptile@ t = map.mapgates[i];
+if (!t.is_wall) continue;
+if (temp.z >= t.maxz) continue;
+if (temp.rx < t.minx) continue;
+if (temp.rx > t.maxx) continue;
+if (temp.ry < t.miny) continue;
+if (temp.ry > t.maxy) continue;
+if (temp.z >= t.minz)
+{
+power = 0;
+break;
+}
+int distance = t.minz - temp.z;
+if (distance > power) continue;
+power = distance - 1;
+last_type = t.type;
+}
+if (power > 0)
+{
+for (int i = map.maptiles.length - 1; i > -1; i--)
+{
+maptile@ t = map.maptiles[i];
+if (!t.is_wall) continue;
+if (temp.z >= t.maxz) continue;
+if (temp.rx < t.minx) continue;
+if (temp.rx > t.maxx) continue;
+if (temp.ry < t.miny) continue;
+if (temp.ry > t.maxy) continue;
+if (temp.z >= t.minz)
+{
+power = 0;
+break;
+}
+int distance = t.minz - temp.z;
+if (distance > power) continue;
+power = distance - 1;
+last_type = t.type;
+}
+}
+if (power > 0)
+{
+temp.go_to(temp.map, temp.x, temp.y, temp.z + power);
+if (old_power > power)
+{
+temp.playsound(last_type);
+temp.hit(random(power * 100, power * 150), this.hitn, true, true);
+}
+}
+}
+}
+for (uint v = 0; v < objslength; v++)
+{
+obj@ temp = map.objs[v];
+if (temp.breaking) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 50) continue;
+temp.x = random(0, map.max.x);
+temp.y = random(0, map.max.y);
+}
+map.concussive_grenades.remove_at(i);
+}
+}
+}
+void placeconcussive_grenade(int x, int y, int z, mapdata@ map, const string& in owner)
+{
+concussive_grenade bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.hitn = owner + "ÀÇ concussive grenade";
+play("concussive_grenadestart", x, y, z, map);
+map.concussive_grenades.insert_last(bomb1);
+}

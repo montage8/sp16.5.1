@@ -1,0 +1,20 @@
+
+mapname:robotland_boss
+maxx:100
+maxy:100
+maxz:100
+zone:0:100:0:100:0:100:robot land supreme level
+travelpoint:0:100:0:0:0:100:세이프존:3001:3001:30:포탈:0
+zone:0:100:0:0:0:100:여기를 통해 탈출하세요.
+travelpoint:0:100:100:100:0:100:세이프존:3001:3001:30:포탈:0
+zone:0:100:100:100:0:100:여기를 통해 탈출하세요.
+travelpoint:50:50:50:50:0:1:robotland_real_boss:50:50:0:...:0
+zone:50:50:50:50:0:1:아니, 물 속에 건물이 있습니다. 들어가볼까요?
+src:0:100:0:100:0:100:underwater
+tile:0:100:0:100:0:50:underwater
+robots:0:100:0:100:0:50:2:60000:amphibian,senseone:.:1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:50
+startingy:50
+startingz:50

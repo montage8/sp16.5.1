@@ -1,0 +1,34 @@
+int count = 0;
+timer checktimer;
+file fl;
+void main()
+{
+while (true)
+{
+wait(1);
+if (checktimer.elapsed <= 5000) continue;
+checktimer.force(0);
+if (directory_exists("./restarter_kill"))
+{
+directory_delete("./temp/shutdown");
+directory_delete("./restarter_kill");
+exit();
+}
+if (!directory_exists("./temp/shutdown"))
+{
+directory_create("./temp/shutdown");
+count = 0;
+continue;
+}
+count++;
+if (count < 3) continue;
+count = 0;
+fl.open("./server_crash.log", "ab");
+fl.write(DATE_YEAR + " / " + DATE_MONTH + "(" + DATE_MONTH_NAME + ") / " + DATE_DAY + "(" + DATE_WEEKDAY_NAME + "), " + TIME_HOUR + " : " + TIME_MINUTE + " : " + TIME_SECOND + " : " + TIME_SYSTEM_RUNNING_MILLISECONDS);
+fl.close();
+run("C:\\WINDOWS\\system32\\taskkill.exe", "/f /im server.exe", false, false);
+wait(2000);
+run("server.bat", "", false, false);
+checktimer.force(0);
+}
+}

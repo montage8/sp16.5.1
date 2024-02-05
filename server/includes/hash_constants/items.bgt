@@ -1,0 +1,4 @@
+const uint items_air = 808241670;
+const uint items_death_bringer = 2071504620;
+const uint items_toxic = 789562104;
+const uint items_heal = 417471274;

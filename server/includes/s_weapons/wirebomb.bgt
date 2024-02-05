@@ -1,0 +1,146 @@
+class wirebomb
+{
+string owner;
+mapdata@ map;
+int x, y, z;
+bool d = false;
+player@ p;
+int range = 8;
+timer scantimer;
+hittable@ hid;
+string hitn;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+void wirebombloop(mapdata@ map)
+{
+string name = "wirebomb";
+int playerslength = map.players.length;
+int vslength = map.vs.length;
+int robotslength = map.robots.length;
+for (int i = map.wirebombs.length - 1; i > -1; i--)
+{
+wirebomb@ this = map.wirebombs[i];
+if (this.scantimer.elapsed > 250)
+{
+this.scantimer.force(0);
+if (this.p is null) @ this.p = get_player_handle(this.owner);
+else
+{
+if (this.p.disconnected) @ this.p = null;
+}
+if (!this.d)
+{
+for (uint px = 0; px < playerslength; px++)
+{
+player@ temp = map.players[px];
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+if (are_teamed(this.owner, temp.name)) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= this.range) this.d = true;
+}
+for (uint vx = 0; vx < vslength;  vx++)
+{
+vehicle@ temp = map.vs[vx];
+if (are_teamed(this.owner, temp.owner)) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= this.range) this.d = true;
+}
+for (uint rx = 0; rx < robotslength; rx++)
+{
+Robot@ temp = map.robots[rx];
+if (temp.is_pawn)
+{
+if (are_teamed(this.owner, temp.owner)) continue;
+}
+if (temp.distancecheck(this.x, this.y, this.z) <= this.range) this.d = true;
+}
+}
+}
+if (this.hid.health <= 0) this.d = true;
+if (this.d)
+{
+this.hid.health = -1;
+play("wirebomb", this.x, this.y, this.z, this.map);
+play_dist("wirebombdist", this.x, this.y, this.z, this.map);
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.health <= 0) continue;
+if (temp.invinsible) continue;
+if (temp.newb == 1) continue;
+if (temp.hidden) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 10)
+{
+temp.stun(5000, true, true);
+temp.health -= random(500, 1300);
+temp.should_subtract = false;
+temp.hitby = this.hitn;
+temp.playsound("wirebombhit");
+}
+}
+int hobjslength = map.hobjs.length;
+for (uint i2 = 0; i2 < hobjslength; i2++)
+{
+hittable@ temp = map.hobjs[i2];
+if (temp.health <= 0) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 10)
+{
+temp.hit(random(500, 1500), this.hitn, name);
+}
+}
+int vslength = map.vs.length;
+for (uint i2 = 0; i2 < vslength; i2++)
+{
+vehicle@ temp = map.vs[i2];
+if (temp.health <= 0) continue;
+if (!temp.started) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 10)
+{
+temp.sendpacket("wirebomb에 맞아 엔진이 오작동합니다.", 2);
+temp.command("engine", null, true);
+}
+}
+int robotslength = map.robots.length;
+for (uint i2 = 0; i2 < robotslength; i2++)
+{
+Robot@ temp = map.robots[i2];
+if (temp.health <= 0) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 10) continue;
+temp.stun(5000);
+temp.playsound("wirebombhit");
+}
+int remgunslength = map.remguns.length;
+for (uint i2 = 0; i2 < remgunslength; i2++)
+{
+remgun@ temp = map.remguns[i2];
+if (temp.hid.health <= 0) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 10) continue;
+temp.can_fire = false;
+}
+map.wirebombs.remove_at(i);
+}
+}
+}
+void place_wirebomb(int x, int y, int z, mapdata@ map, const string& in owner, player@ p = null)
+{
+wirebomb bomb1;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.owner = owner;
+if (p !is null) @ bomb1.p = p;
+play("wirebombplace", x, y, z, map);
+bomb1.hitn = owner + "의 wirebomb";
+@ bomb1.hid = spawn_hobj(x, y, z, map, 5000, 3600000, empty, empty, "wirebomb");
+bomb1.hid.defense = 4000;
+map.wirebombs.insert_last(bomb1);
+}
+void load_wirebombs(string[]@ parsed, mapdata@ map)
+{
+if (parsed.length < 6) return;
+place_wirebomb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5]);
+}

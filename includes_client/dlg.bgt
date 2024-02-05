@@ -1,0 +1,84 @@
+void dlg(const string& in message, bool in_game = false, const string& in dlgalert = empty, const string& in dlgdismiss = empty)
+{
+if (!dlgalert.is_empty()) p.play_stationary(dlgalert, false);
+speak(message);
+for (; ; )
+{
+if (in_game) sr_loop();
+if (key_pressed(KEY_LEFT) or key_pressed(KEY_RIGHT) or key_pressed(KEY_UP) or key_pressed(KEY_DOWN))
+{
+speak(message);
+}
+if (key_pressed(KEY_RETURN) or key_pressed(KEY_ESCAPE))
+{
+break;
+}
+wait(connected ? maintime : 5);
+mouse_update();
+}
+if (!dlgdismiss.is_empty()) p.play_stationary(dlgdismiss, false);
+}
+
+void dlg_send(const string& in message, const string& in return_packet = "dlg_reply", bool in_game = false)
+{
+speak(message);
+for (; ; )
+{
+if (in_game) sr_loop();
+if (key_pressed(KEY_LEFT) or key_pressed(KEY_RIGHT) or key_pressed(KEY_UP) or key_pressed(KEY_DOWN))
+{
+speak(message);
+}
+if (key_pressed(KEY_RETURN) or key_pressed(KEY_ESCAPE))
+{
+send_reliable(return_packet + " " + keys_pressed()[0], 6);
+break;
+}
+wait(connected ? maintime : 5);
+mouse_update();
+}
+}
+
+void dlg_wait(const string& in message, int waittime)
+{
+speak(message);
+timer d;
+for (; ; )
+{
+e = n.request();
+if (key_pressed(KEY_LEFT) or key_pressed(KEY_RIGHT) or key_pressed(KEY_UP) or key_pressed(KEY_DOWN))
+{
+speak(message);
+}
+if (d.elapsed >= waittime)
+{
+break;
+}
+wait(connected ? maintime : 5);
+mouse_update();
+}
+}
+
+sound dlgaudio;
+void dlgplay(const string& in dlgsound, bool dlgfade = false, int fadespeed = 0.1, bool is_file = true)
+{
+if (is_file) sound_load(dlgaudio, dlgsound);
+else
+dlgaudio.load_from_memory(dlgsound);
+dlgaudio.play();
+for (; dlgaudio.playing; )
+{
+wait(connected ? maintime : 5);
+mouse_update();
+if (connected) sr_loop();
+if (key_pressed(KEY_RETURN))
+{
+if (dlgfade)
+{
+fade(dlgaudio, -80, fadespeed);
+}
+dlgaudio.stop();
+break;
+}
+}
+}

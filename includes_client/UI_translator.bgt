@@ -1,0 +1,40 @@
+class lang_parse
+{
+string source;
+string result;
+}
+lang_parse@[] langparsed;
+
+string translate_text(string text)
+{
+if (currentlangfile == "ÇÑ±¹¾î") return text;
+int langlength = langparsed.length;
+for (uint i = 0; i < langlength; i++)
+{
+if (string_contains(text, langparsed[i].source, 1) > -1)
+{
+lang_parse@ temp = langparsed[i];
+text = string_replace(text, temp.source, temp.result, true);
+}
+}
+return text;
+}
+
+void load_lang_data()
+{
+lngdata.resize(0);
+lngdata = file_get_contents("lang\\" + currentlangfile + ".lng");
+langparsed.resize(0);
+string[]@ list = string_split(lngdata, "\r\n", false);
+int counter = list.length;
+langparsed.reserve(counter + 1);
+for (uint i = 0; i < counter; i++)
+{
+string[]@ parsed = string_split(list[i], " = ", false);
+if (parsed.length < 2) continue;
+lang_parse lp;
+lp.source = parsed[0];
+lp.result = parsed[1];
+langparsed.insert_last(lp);
+}
+}

@@ -1,0 +1,103 @@
+bool shift_is_down = false, alt_is_down = false;
+int control_is_down = 0;
+timer forcekeytimer;
+
+class key_hold
+{
+bool status;
+short key_flag = 0;
+int key_code;
+int repeat_time;
+int setting_1;
+int setting_2;
+timer key_timer;
+key_hold(int _key_code, int _setting_1, int _setting_2)
+{
+key_code = _key_code;
+setting_1 = _setting_1;
+setting_2 = _setting_2;
+repeat_time = setting_1;
+}
+bool& pressing()
+{
+status = key_down(key_code);
+if (!status)
+{
+repeat_time = 0;
+key_timer.force(0);
+key_flag = 0;
+return false_t;
+}
+if (key_timer.elapsed >= repeat_time)
+{
+switch (key_flag)
+{
+case 0:
+key_flag = 1;
+repeat_time = setting_1;
+key_timer.force(0);
+break;
+case 1:
+repeat_time = setting_2;
+key_timer.force(0);
+break;
+}
+return true_t;
+}
+return false_t;
+}
+}
+
+class kh
+{
+bool already_installed;
+void install()
+{
+if (already_installed) return;
+if (screen_reader_is_running(1))
+{
+install_keyhook();
+already_installed = true;
+}
+}
+}
+
+void keyboard_update()
+{
+if (key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT)) shift_is_down = true;
+else shift_is_down = false;
+if (key_down(KEY_LMENU) or key_down(KEY_RMENU)) alt_is_down = true;
+else alt_is_down = false;
+if (key_down(KEY_LCONTROL)) control_is_down = 2;
+else if (key_down(KEY_RCONTROL))
+{
+if (rcontrol == 1) control_is_down = 2;
+else control_is_down = 1;
+}
+else control_is_down = 0;
+if (readerinterrupt == 0) return;
+if (shift_is_down or alt_is_down or control_is_down == 1)
+{
+if (speech_stop_level == 0) speech_stop_level = 2;
+}
+else
+{
+if (speech_stop_level == 2) stop_speech();
+if (speech_stop_level > 0) speech_stop_level = 0;
+}
+}
+
+void force_all_keys_up()
+{
+forcekeytimer.resume();
+forcekeytimer.force(0);
+for (uint i = KEY_1; i < KEY_RSHIFT; i++)
+{
+force_key_up(i);
+}
+for (uint i = KEY_HOME; i < KEY_INSERT; i++)
+{
+force_key_up(i);
+}
+force_key_up(KEY_SPACE);
+}

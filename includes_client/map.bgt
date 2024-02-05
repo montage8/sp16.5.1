@@ -1,0 +1,967 @@
+dictionary item_descriptions;
+timer maploadtimer;
+int loadingtime;
+maptravel@[] maptravels, autotravels;
+class maptravel
+{
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+string dest_map;
+int dest_x;
+int dest_y;
+int dest_z;
+string text;
+string limit;
+bool smart = false;
+bool autotravel = false;
+}
+maptravel@ get_travel_at(int x, int y, int z)
+{
+maptravel@[] list;
+for (int i = maptravels.length - 1; i > -1; i--)
+{
+maptravel@ temp = maptravels[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+list.insert_last(temp);
+}
+if (list.is_empty()) return null;
+if (list.length == 1) return list[0];
+return select_travel(list);
+}
+
+mapzone@[] mapzones(0);
+dictionary mapzone_list;
+class mapzone
+{
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+string text;
+bool trackable;
+string id;
+bool inve = false;
+
+void tell_where(int x, int y, int z, int dir)
+{
+double dx = abs(x - center_x) - size_x;
+double dy = abs(y - center_y) - size_y;
+double dz = abs(z - center_z) - size_z;
+double final = 0.0;
+if (dx > 0) final += (dx * dx);
+if (dy > 0) final += (dy * dy);
+if (dz > 0) final += (dz * dz);
+string s;
+if (final > 0.0)
+{
+if (minz > z) s += "À§¿¡, ";
+if (maxz < z) s += "¹Ø¿¡, ";
+}
+speak(s + calculate_x_y_string(calculate_x_y_angle(x, y, center_x, center_y, dir)) + ", " + round(final ** 0.5, 0) + "Ä­ ¶³¾îÁü. ");
+}
+}
+
+mapzone@ get_zone_handle(const string& in id)
+{
+if (!mapzone_list.exists(id)) return null;
+mapzone@ temp;
+mapzone_list.get(id, @ temp);
+return temp;
+}
+const string& get_zone_at(int x, int y, int z)
+{
+for (int i = mapzones.length - 1; i > -1; i--)
+{
+mapzone@ temp = mapzones[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ref_string = temp.text;
+return ref_string;
+}
+return "¹ÌÁ¤ÀÇ Áö¿ª";
+}
+
+maptravel@ create_travelpoint(string[]@ parsed)
+{
+if (parsed.length < 13) return null;
+maptravel temp;
+int tempx = string_to_number(parsed[1]);
+temp.center_x = (tempx + string_to_number(parsed[2])) * 0.5;
+temp.size_x = abs(temp.center_x - tempx);
+temp.minx = temp.center_x - temp.size_x;
+temp.maxx = temp.center_x + temp.size_x;
+int tempy = string_to_number(parsed[3]);
+temp.center_y = (tempy + string_to_number(parsed[4])) * 0.5;
+temp.size_y = abs(temp.center_y - tempy);
+temp.miny = temp.center_y - temp.size_y;
+temp.maxy = temp.center_y + temp.size_y;
+int tempz = string_to_number(parsed[5]);
+temp.center_z = (tempz + string_to_number(parsed[6])) * 0.5;
+temp.size_z = abs(temp.center_z - tempz);
+temp.minz = temp.center_z - temp.size_z;
+temp.maxz = temp.center_z + temp.size_z;
+temp.dest_map = parsed[7];
+temp.dest_x = string_to_number(parsed[8]);
+temp.dest_y = string_to_number(parsed[9]);
+temp.dest_z = string_to_number(parsed[10]);
+temp.text = parsed[11];
+int tempflag = string_to_number(parsed[12]);
+if (tempflag & 1 > 0) temp.smart = true;
+if (tempflag & 2 > 0) temp.autotravel = true;
+if (parsed.length > 13) temp.limit = parsed[13];
+return temp;
+}
+mapzone@ create_zone(string[]@ parsed)
+{
+if (parsed.length < 8) return null;
+mapzone temp;
+int tempx = string_to_number(parsed[1]);
+temp.center_x = (tempx + string_to_number(parsed[2])) * 0.5;
+temp.size_x = abs(temp.center_x - tempx);
+temp.minx = temp.center_x - temp.size_x;
+temp.maxx = temp.center_x + temp.size_x;
+int tempy = string_to_number(parsed[3]);
+temp.center_y = (tempy + string_to_number(parsed[4])) * 0.5;
+temp.size_y = abs(temp.center_y - tempy);
+temp.miny = temp.center_y - temp.size_y;
+temp.maxy = temp.center_y + temp.size_y;
+int tempz = string_to_number(parsed[5]);
+temp.center_z = (tempz + string_to_number(parsed[6])) * 0.5;
+temp.size_z = abs(temp.center_z - tempz);
+temp.minz = temp.center_z - temp.size_z;
+temp.maxz = temp.center_z + temp.size_z;
+temp.text = parsed[7];
+temp.trackable = (parsed.length > 8 ? true : false);
+return temp;
+}
+
+maptile@[] maptiles, mapgates;
+class maptile
+{
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+string type;
+int plus_x = 0, plus_y = 0, plus_z = 0;
+bool hazard = false;
+int slidetime = 0;
+int slidedir = -1;
+}
+
+const string& get_tile_at(int x, int y, int z, bool camera = false)
+{
+for (int i = sources.length - 1; i > -1; i--)
+{
+source@ temp = sources[i];
+if (temp.id < 0) continue;
+if (temp.tile.is_empty()) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ref_string = temp.tile;
+return ref_string;
+}
+if (camera)
+{
+for (int i = mapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = mapgates[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+if (temp.hazard) return "¹ÌÁöÀÇ ÇÃ·¡Æû";
+ref_string = temp.type;
+return ref_string;
+}
+for (int i = maptiles.length - 1; i > -1; i--)
+{
+maptile@ temp = maptiles[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+if (temp.hazard) return "¹ÌÁöÀÇ ÇÃ·¡Æû";
+ref_string = temp.type;
+return ref_string;
+}
+}
+else
+{
+for (int i = mapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = mapgates[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ref_string = temp.type;
+return ref_string;
+}
+for (int i = maptiles.length - 1; i > -1; i--)
+{
+maptile@ temp = maptiles[i];
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+ref_string = temp.type;
+return ref_string;
+}
+}
+return empty;
+}
+
+maptile@ get_tile_handle_at(int x, int y, int z, bool check_obj = true)
+{
+bool fallable = false;
+if (check_obj)
+{
+for (int i = sources.length - 1; i > -1; i--)
+{
+source@ temp = sources[i];
+if (temp.id < 0) continue;
+if (temp.tile.is_empty()) continue;
+if (temp.minz > z) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+fallable = true;
+if (temp.maxz < z) continue;
+maptile new;
+new.type = temp.tile;
+return new;
+}
+}
+for (int i = mapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = mapgates[i];
+if (temp.minz > z) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+fallable = true;
+if (temp.maxz < z) continue;
+return temp;
+}
+for (int i = maptiles.length - 1; i > -1; i--)
+{
+maptile@ temp = maptiles[i];
+if (temp.minz > z) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+fallable = true;
+if (temp.maxz < z) continue;
+return temp;
+}
+return fallable ? maptile() : null;
+}
+
+void change_tile(int minx, int maxx, int miny, int maxy, int minz, int maxz, const string &in type)
+{
+for (int i = mapgates.length - 1; i > -1; i--)
+{
+maptile@ temp = mapgates[i];
+if (temp.minx != minx) continue;
+if (temp.maxx != maxx) continue;
+if (temp.miny != miny) continue;
+if (temp.maxy != maxy) continue;
+if (temp.minz != minz) continue;
+if (temp.maxz != maxz) continue;
+if (temp.type != type) continue;
+temp.minx += temp.plus_x;
+temp.maxx += temp.plus_x;
+temp.center_x += temp.plus_x;
+temp.miny += temp.plus_y;
+temp.maxy += temp.plus_y;
+temp.center_y += temp.plus_y;
+temp.minz += temp.plus_z;
+temp.maxz += temp.plus_z;
+temp.center_z += temp.plus_z;
+temp.plus_x *= -1;
+temp.plus_y *= -1;
+temp.plus_z *= -1;
+reserve_tilecheck = 2;
+break;
+}
+}
+
+mapetp@[] mapetps, entered_etps;
+class mapetp
+{
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+string sn;
+int cooldown;
+timer cooldowntimer;
+int mode = 0;
+int status = 0;
+int play_count = 0;
+int sound_id = -1;
+double volume = 100.0;
+}
+
+void etploop()
+{
+for (int i = entered_etps.length - 1; i > -1; i--)
+{
+mapetp@ temp = entered_etps[i];
+if (temp.status <= 0)
+{
+temp.status = 0;
+entered_etps.remove_at(i);
+continue;
+}
+if (temp.cooldowntimer.elapsed < temp.cooldown) continue;
+temp.cooldowntimer.force(0);
+if (temp.status <= 1) temp.status--;
+sourcepool.play_3d(temp.sn + ".ogg", temp.minx, temp.miny, temp.minz, false, false, 0, abs(temp.maxx - temp.minx), 0, abs(temp.maxy - temp.miny), 0, abs(temp.maxz - temp.minz), 0, 0, (temp.volume - 100));
+if (temp.mode == -1)
+{
+send_reliable("xplaysource " + temp.sn + " " + mr.x + " " + mr.y + " " + me.z, 2);
+continue;
+}
+send_reliable("xplay " + temp.sn + " " + temp.minx + " " + temp.maxx + " " + temp.miny + " " + temp.maxy + " " + temp.minz + " " + temp.maxz + " " + temp.volume, 2);
+if (temp.status < 2) continue;
+temp.play_count++;
+if (temp.play_count < temp.mode) continue;
+temp.status = 0;
+temp.play_count = 0;
+entered_etps.remove_at(i);
+}
+}
+void play_etp(int x, int y, int z, const string& in name = empty)
+{
+int etplength = mapetps.length;
+if (name.is_empty())
+{
+for (uint i = 0; i < etplength; i++)
+{
+mapetp@ temp = mapetps[i];
+if (temp.mode > 0) continue;
+if (temp.cooldowntimer.elapsed < temp.cooldown) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+temp.cooldowntimer.force(0);
+sourcepool.play_3d(temp.sn + ".ogg", temp.minx, temp.miny, temp.minz, false, false, 0, abs(temp.maxx - temp.minx), 0, abs(temp.maxy - temp.miny), 0, abs(temp.maxz - temp.minz), 0, 0, (temp.volume - 100));
+send_reliable("xplay " + temp.sn + " " + temp.minx + " " + temp.maxx + " " + temp.miny + " " + temp.maxy + " " + temp.minz + " " + temp.maxz + " " + temp.volume, 2);
+}
+return;
+}
+for (uint i = 0; i < etplength; i++)
+{
+mapetp@ temp = mapetps[i];
+if (temp.mode >= 0) continue;
+if (temp.status == 2) continue;
+if (temp.sn != name) continue;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+if (temp.status <= 0) entered_etps.insert_last(temp);
+temp.status = 1;
+}
+}
+void enter_etp(int x, int y, int z)
+{
+int etplength = mapetps.length;
+for (uint i = 0; i < etplength; i++)
+{
+mapetp@ temp = mapetps[i];
+if (temp.mode == 0) continue;
+if (temp.status == 2) temp.status = -1;
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+temp.status = 2;
+temp.play_count = 0;
+entered_etps.insert_last(temp);
+}
+}
+mapetp@ create_etp(string[]@ parsed)
+{
+if (parsed.length < 10) return null;
+mapetp temp;
+int tempx = string_to_number(parsed[1]);
+temp.center_x = (tempx + string_to_number(parsed[2])) * 0.5;
+temp.size_x = abs(temp.center_x - tempx);
+temp.minx = temp.center_x - temp.size_x;
+temp.maxx = temp.center_x + temp.size_x;
+int tempy = string_to_number(parsed[3]);
+temp.center_y = (tempy + string_to_number(parsed[4])) * 0.5;
+temp.size_y = abs(temp.center_y - tempy);
+temp.miny = temp.center_y - temp.size_y;
+temp.maxy = temp.center_y + temp.size_y;
+int tempz = string_to_number(parsed[5]);
+temp.center_z = (tempz + string_to_number(parsed[6])) * 0.5;
+temp.size_z = abs(temp.center_z - tempz);
+temp.minz = temp.center_z - temp.size_z;
+temp.maxz = temp.center_z + temp.size_z;
+temp.sn = parsed[7];
+temp.cooldown = string_to_number(parsed[8]);
+temp.mode = string_to_number(parsed[9]);
+if (parsed.length > 10) temp.volume = string_to_number(parsed[10]);
+return temp;
+}
+
+checkpoint@ mycheckpoint;
+checkpoint@[] checkpoints;
+class checkpoint
+{
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+bool once = false;
+}
+void set_checkpoint(int x, int y, int z, bool inv = false)
+{
+int cpl = (inv ? vcheckpoints.length : checkpoints.length);
+for (uint i = 0; i < cpl; i++)
+{
+checkpoint@ temp = (inv ? vcheckpoints[i] : checkpoints[i]);
+if (temp.minx > x) continue;
+if (temp.maxx < x) continue;
+if (temp.miny > y) continue;
+if (temp.maxy < y) continue;
+if (temp.minz > z) continue;
+if (temp.maxz < z) continue;
+if (mycheckpoint !is null)
+{
+if (temp is mycheckpoint) continue;
+if (abs(temp.center_x - mycheckpoint.center_x) <= temp.size_x + mycheckpoint.size_x and abs(temp.center_y - mycheckpoint.center_y) <= temp.size_y + mycheckpoint.size_y and abs(temp.center_z - mycheckpoint.center_z) <= temp.size_z + mycheckpoint.size_z) continue;
+p.play_stationary("checkpoint.ogg", false);
+}
+@ mycheckpoint = temp;
+if (invehicle) send_reliable("checkpointset " + round(vv.x, 0) + " " + round(vv.y, 0) + " " + round(vv.z, 0), 0);
+else send_reliable("checkpointset " + x + " " + y + " " + z, 0);
+break;
+}
+}
+
+void spawn_checkpoint(int minx, int maxx, int miny, int maxy, int minz, int maxz, bool once = false, bool v = false)
+{
+checkpoint ss;
+ss.center_x = (minx + maxx) * 0.5;
+ss.size_x = abs(ss.center_x - minx);
+ss.minx = ss.center_x - ss.size_x;
+ss.maxx = ss.center_x + ss.size_x;
+ss.center_y = (miny + maxy) * 0.5;
+ss.size_y = abs(ss.center_y - miny);
+ss.miny = ss.center_y - ss.size_y;
+ss.maxy = ss.center_y + ss.size_y;
+ss.center_z = (minz + maxz) * 0.5;
+ss.size_z = abs(ss.center_z - minz);
+ss.minz = ss.center_z - ss.size_z;
+ss.maxz = ss.center_z + ss.size_z;
+ss.once = once;
+if (v) vcheckpoints.insert_last(ss);
+else checkpoints.insert_last(ss);
+}
+void spawn_hobj(int x, int y, int z, const string& in soundfile, int id, const string& in tile = empty)
+{
+source ss;
+ss.center_x = x;
+ss.minx = x;
+ss.maxx = x;
+ss.center_y = y;
+ss.miny = y;
+ss.maxy = y;
+ss.center_z = z;
+ss.minz = z;
+ss.maxz = z;
+if (soundfile != "nosound")
+{
+ss.soundfile = soundfile + ".ogg";
+ss.source_sound = sourcepool.play_3d(ss.soundfile, x, y, z, true);
+}
+ss.id = id;
+ss.tile = tile;
+sources.insert_last(ss);
+}
+
+void update_hobj(int id, int x, int y, int z, const string& in tile = empty)
+{
+if (id < 0) return;
+for (int i = sources.length - 1; i > -1; i--)
+{
+source@ temp = sources[i];
+if (temp.id != id) continue;
+temp.center_x = x;
+temp.minx = x;
+temp.maxx = x;
+temp.center_y = y;
+temp.miny = y;
+temp.maxy = y;
+temp.center_z = z;
+temp.minz = z;
+temp.maxz = z;
+if (temp.source_sound > -1) sourcepool.update_sound_3d(temp.source_sound, x, y, z);
+temp.tile = tile;
+}
+}
+
+mapswitch@[] mapswitchs;
+class mapswitch
+{
+int minx, maxx, miny, maxy, minz, maxz;
+int tminx, tmaxx, tminy, tmaxy, tminz, tmaxz;
+int cooldown = 1000;
+string name;
+string press;
+string limit;
+timer presstimer;
+}
+
+maptile@ create_platform(string[]@ parsed)
+{
+if (parsed.length < 8) return null;
+maptile temp;
+int tempx = string_to_number(parsed[1]);
+temp.center_x = (tempx + string_to_number(parsed[2])) * 0.5;
+temp.size_x = abs(temp.center_x - tempx);
+temp.minx = temp.center_x - temp.size_x;
+temp.maxx = temp.center_x + temp.size_x;
+int tempy = string_to_number(parsed[3]);
+temp.center_y = (tempy + string_to_number(parsed[4])) * 0.5;
+temp.size_y = abs(temp.center_y - tempy);
+temp.miny = temp.center_y - temp.size_y;
+temp.maxy = temp.center_y + temp.size_y;
+int tempz = string_to_number(parsed[5]);
+temp.center_z = (tempz + string_to_number(parsed[6])) * 0.5;
+temp.size_z = abs(temp.center_z - tempz);
+temp.minz = temp.center_z - temp.size_z;
+temp.maxz = temp.center_z + temp.size_z;
+temp.type = parsed[7];
+if (parsed.length > 9)
+{
+temp.slidedir = string_to_number(parsed[8]);
+temp.slidetime = string_to_number(parsed[9]);
+}
+if (parsed.length > 10 or parsed.length == 9) temp.hazard = true;
+return temp;
+}
+void create_gate(int minx, int maxx, int miny, int maxy, int minz, int maxz, string type, int plus_x, int plus_y, int plus_z, int slt = 0, int sld = -1, bool haz = false, bool v = false)
+{
+maptile temp;
+temp.center_x = (minx + maxx) * 0.5;
+temp.size_x = abs(temp.center_x - minx);
+temp.minx = temp.center_x - temp.size_x;
+temp.maxx = temp.center_x + temp.size_x;
+temp.center_y = (miny + maxy) * 0.5;
+temp.size_y = abs(temp.center_y - miny);
+temp.miny = temp.center_y - temp.size_y;
+temp.maxy = temp.center_y + temp.size_y;
+temp.center_z = (minz + maxz) * 0.5;
+temp.size_z = abs(temp.center_z - minz);
+temp.minz = temp.center_z - temp.size_z;
+temp.maxz = temp.center_z + temp.size_z;
+temp.type = type;
+temp.plus_x = plus_x;
+temp.plus_y = plus_y;
+temp.plus_z = plus_z;
+temp.plus_y = plus_y;
+temp.plus_z = plus_z;
+temp.slidetime = slt;
+temp.slidedir = sld;
+temp.hazard = haz;
+if (v) vmapgates.insert_last(temp);
+else mapgates.insert_last(temp);
+}
+mapswitch@ create_switch(string[]@ parsed)
+{
+if (parsed.length < 16) return null;
+mapswitch temp;
+temp.minx = string_to_number(parsed[1]);
+temp.maxx = string_to_number(parsed[2]);
+temp.miny = string_to_number(parsed[3]);
+temp.maxy = string_to_number(parsed[4]);
+temp.minz = string_to_number(parsed[5]);
+temp.maxz = string_to_number(parsed[6]);
+temp.tminx = string_to_number(parsed[7]);
+temp.tmaxx = string_to_number(parsed[8]);
+temp.tminy = string_to_number(parsed[9]);
+temp.tmaxy = string_to_number(parsed[10]);
+temp.tminz = string_to_number(parsed[11]);
+temp.tmaxz = string_to_number(parsed[12]);
+temp.cooldown = string_to_number(parsed[13]);
+if (temp.cooldown < 200) temp.cooldown = 200;
+temp.name = parsed[14];
+temp.press = parsed[15];
+if (parsed.length > 16) temp.limit = parsed[16];
+return temp;
+}
+
+void clear_map()
+{
+maptiles.resize(0);
+mapswitchs.resize(0);
+mapzones.resize(0);
+maptravels.resize(0);
+autotravels.resize(0);
+mapzone_list.delete_all();
+checkpoints.resize(0);
+@ mycheckpoint = null;
+item_descriptions.delete_all();
+mapetps.resize(0);
+entered_etps.resize(0);
+no_coord = false;
+no_seethrough = false;
+min.z = 0;
+max.z = 0;
+}
+
+bool in_map = false;
+void load_map(const string& in mdata)
+{
+maploadtimer.force(0);
+in_map = false;
+destroy_all_sources();
+destroy_all_doors();
+map_preload.delete_all();
+sbs.resize(0);
+bound_default_volume = 50;
+new_bound_default_volume = 50;
+clear_map();
+garbage_collect();
+mapstring = mdata;
+@ ldata = string_split(mdata, "\r\n", false);
+string delim = ":";
+int ldatalength = ldata.length;
+for (uint i = 0; i < ldatalength; i++)
+{
+string[]@ parsed = string_split(ldata[i], delim, true);
+if (parsed.length < 2) continue;
+map_hash@ func;
+if (!map_handles.get(parsed[0], @ func)) continue;
+func(parsed);
+}
+if (new_bound_default_volume != bound_default_volume) bound_default_volume = new_bound_default_volume;
+if (!pan_changed and old_pan != 1.0)
+{
+new_pan = 1.0;
+old_pan = 1.0;
+pan_step_update(old_pan * weaponsight);
+}
+else pan_changed = false;
+load_src();
+msound_map_update();
+in_map = true;
+p.sound_boundary_update();
+distpool.sound_boundary_update();
+mpool.sound_boundary_update();
+ambloop();
+loadingtime = maploadtimer.elapsed;
+sourcechange = true;
+reserve_tilecheck = 2;
+}
+
+void add_map_data(const string& in mdata)
+{
+int sbslength = sbs.length;
+mapstring += mdata;
+string[]@ ndata = string_split(mdata, "\r\n", false);
+string delim = ":";
+int ndatalength = ndata.length;
+ldata.reserve(ldata.length + ndatalength);
+for (uint i = 0; i < ndatalength; i++)
+{
+ldata.insert_last(ndata[i]);
+string[]@ parsed = string_split(ndata[i], delim, true);
+if (parsed.length < 2) continue;
+map_hash@ func;
+if (!map_handles.get(parsed[0], @ func)) continue;
+func(parsed);
+}
+pan_changed = false;
+load_src(true);
+if (sbslength == sbs.length and bound_default_volume == new_bound_default_volume) load_src(true);
+else
+{
+bound_default_volume = new_bound_default_volume;
+load_src();
+@ my_sb = get_sound_boundary_names(me.x, me.y, me.z);
+p.sound_boundary_update(my_sb);
+sourcepool.sound_boundary_update(my_sb);
+distpool.sound_boundary_update(my_sb);
+mpool.sound_boundary_update(my_sb);
+ambloop();
+}
+reserve_tilecheck = 2;
+}
+
+string[]@[] srctemp, ambtemp;
+void load_src(bool update_now = false)
+{
+int srclength = srctemp.length;
+for (uint i = 0; i < srclength; i++)
+{
+string[]@ parsed = srctemp[i];
+double volume = 100.0;
+if (parsed.length > 8) volume = string_to_number(parsed[8]);
+spawn_source(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], false, -1, volume);
+}
+int amblength = ambtemp.length;
+for (uint i = 0; i < amblength; i++)
+{
+string[]@ parsed = ambtemp[i];
+int volume = 100.0;
+if (parsed.length > 8) volume = string_to_number(parsed[8]);
+create_amb(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], volume, (update_now ? -2 : -1));
+}
+srctemp.resize(0);
+ambtemp.resize(0);
+}
+
+funcdef void map_hash(string[]@ parsed);
+dictionary map_handles;
+dictionary vmap_handles;
+
+void install_map_hash()
+{
+map_handles.set("tile", @ map_hash_tile);
+map_handles.set("switch", @ map_hash_switch);
+map_handles.set("zone", @ map_hash_zone);
+map_handles.set("travelpoint", @ map_hash_travelpoint);
+map_handles.set("etp", @ map_hash_etp);
+vmap_handles.set("tile", @ vmap_hash_tile);
+vmap_handles.set("zone", @ vmap_hash_zone);
+vmap_handles.set("travelpoint", @ vmap_hash_travelpoint);
+vmap_handles.set("etp", @ vmap_hash_etp);
+map_handles.set("door", @ map_hash_door);
+map_handles.set("src", @ map_hash_src);
+map_handles.set("amb", @ map_hash_amb);
+map_handles.set("sb", @ map_hash_sb);
+map_handles.set("mapname", @ map_hash_mapname);
+map_handles.set("maxx", @ map_hash_maxx);
+map_handles.set("maxy", @ map_hash_maxy);
+map_handles.set("no_coord", @ map_hash_no_coord);
+map_handles.set("no_seethrough", @ map_hash_no_seethrough);
+vmap_handles.set("mapname", @ vmap_hash_mapname);
+vmap_handles.set("maxx", @ vmap_hash_maxx);
+vmap_handles.set("maxy", @ vmap_hash_maxy);
+vmap_handles.set("no_coord", @ vmap_hash_no_coord);
+map_handles.set("x", @ map_hash_x);
+map_handles.set("y", @ map_hash_y);
+map_handles.set("z", @ map_hash_z);
+map_handles.set("pan", @ map_hash_pan);
+map_handles.set("bd", @ map_hash_bd);
+map_handles.set("idscr", @ map_hash_idscr);
+vmap_handles.set("idscr", @ map_hash_idscr);
+map_handles.set("checkpoint", @ map_hash_checkpoint);
+vmap_handles.set("checkpoint", @ vmap_hash_checkpoint);
+}
+
+void map_hash_travelpoint(string[]@ parsed)
+{
+maptravel@ temp = create_travelpoint(parsed);
+if (temp is null) return;
+if (temp.autotravel) autotravels.insert_last(temp);
+else maptravels.insert_last(temp);
+}
+
+void map_hash_etp(string[]@ parsed)
+{
+mapetp@ temp = create_etp(parsed);
+if (temp !is null) mapetps.insert_last(temp);
+}
+
+void map_hash_tile(string[]@ parsed)
+{
+maptile@ temp = create_platform(parsed);
+if (temp is null) return;
+if (max.z < temp.maxz) max.z = temp.maxz;
+if (min.z > temp.minz) min.z = temp.minz;
+maptiles.insert_last(temp);
+}
+
+void map_hash_switch(string[]@ parsed)
+{
+mapswitch@ temp = create_switch(parsed);
+if (temp !is null) mapswitchs.insert_last(temp);
+}
+
+void map_hash_zone(string[]@ parsed)
+{
+mapzone@ temp = create_zone(parsed);
+if (temp is null) return;
+string id;
+do
+{
+id = randomstring(8);
+}
+while (mapzone_list.exists(id));
+temp.id = id;
+mapzones.insert_last(temp);
+mapzone_list.set(id, @ temp);
+}
+
+void vmap_hash_travelpoint(string[]@ parsed)
+{
+maptravel@ temp = create_travelpoint(parsed);
+if (temp is null) return;
+if (temp.autotravel) vautotravels.insert_last(temp);
+else vmaptravels.insert_last(temp);
+}
+
+void vmap_hash_etp(string[]@ parsed)
+{
+mapetp@ temp = create_etp(parsed);
+if (temp !is null) vmapetps.insert_last(temp);
+}
+
+void vmap_hash_tile(string[]@ parsed)
+{
+maptile@ temp = create_platform(parsed);
+if (temp !is null) vmaptiles.insert_last(temp);
+}
+
+void vmap_hash_zone(string[]@ parsed)
+{
+mapzone@ temp = create_zone(parsed);
+if (temp is null) return;
+string id;
+do
+{
+id = randomstring(8);
+}
+while (vmapzone_list.exists(id));
+temp.id = id;
+temp.inve = true;
+vmapzones.insert_last(temp);
+vmapzone_list.set(id, @ temp);
+}
+
+void map_hash_door(string[]@ parsed)
+{
+if (parsed.length < 15) return;
+if (parsed.length > 17) spawn_door(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), string_to_number(parsed[7]), string_to_number(parsed[8]), string_to_number(parsed[9]), parsed[10], string_to_number(parsed[11]), string_to_number(parsed[12]), parsed[13], parsed[14], parsed[15], string_to_number(parsed[16]), string_to_number(parsed[17]), (parsed.length > 18 ? parsed[18] : empty));
+else spawn_door(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), string_to_number(parsed[7]), string_to_number(parsed[8]), string_to_number(parsed[9]), parsed[10], string_to_number(parsed[11]), string_to_number(parsed[12]), parsed[13], string_to_number(parsed[14]), (parsed.length > 15 ? parsed[15] : empty));
+}
+
+void map_hash_src(string[]@ parsed)
+{
+if (parsed.length < 8) return;
+srctemp.insert_last(parsed);
+}
+
+void map_hash_amb(string[]@ parsed)
+{
+if (parsed.length < 8) return;
+ambtemp.insert_last(parsed);
+}
+
+void map_hash_sb(string[]@ parsed)
+{
+if (parsed.length < 8) return;
+spawn_sound_boundary(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), parsed[7], (parsed.length > 8 ? string_to_number(parsed[8]) : 0), (parsed.length > 9 ? string_to_number(parsed[9]) : 0), (parsed.length > 10 ? string_to_number(parsed[10]) : 0));
+}
+
+void map_hash_idscr(string[]@ parsed)
+{
+if (parsed.length < 3) return;
+item_descriptions.set(parsed[1], parsed[2]);
+}
+
+void map_hash_checkpoint(string[]@ parsed)
+{
+if (parsed.length < 7) return;
+spawn_checkpoint(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), (parsed.length > 7), false);
+}
+void vmap_hash_checkpoint(string[]@ parsed)
+{
+if (parsed.length < 7) return;
+spawn_checkpoint(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), string_to_number(parsed[5]), string_to_number(parsed[6]), (parsed.length > 7), true);
+}
+
+void map_hash_mapname(string[]@ parsed)
+{
+mapname = parsed[1];
+}
+void map_hash_maxx(string[]@ parsed)
+{
+max.x = string_to_number(parsed[1]);
+}
+void map_hash_maxy(string[]@ parsed)
+{
+max.y = string_to_number(parsed[1]);
+}
+void map_hash_no_coord(string[]@ parsed)
+{
+no_coord = (string_to_number(parsed[1]) == 1 ? true : false);
+}
+void map_hash_no_seethrough(string[]@ parsed)
+{
+no_seethrough = (string_to_number(parsed[1]) == 1 ? true : false);
+}
+void vmap_hash_mapname(string[]@ parsed)
+{
+vmapname = parsed[1];
+}
+void vmap_hash_maxx(string[]@ parsed)
+{
+vmax.x = string_to_number(parsed[1]);
+}
+void vmap_hash_maxy(string[]@ parsed)
+{
+vmax.y = string_to_number(parsed[1]);
+}
+void vmap_hash_no_coord(string[]@ parsed)
+{
+v_no_coord = (string_to_number(parsed[1]) == 1 ? true : false);
+}
+void map_hash_x(string[]@ parsed)
+{
+me.x = string_to_number(parsed[1]);
+mr.x = round(me.x, 0);
+}
+void map_hash_y(string[]@ parsed)
+{
+me.y = string_to_number(parsed[1]);
+mr.y = round(me.y, 0);
+}
+void map_hash_z(string[]@ parsed)
+{
+me.z = string_to_number(parsed[1]);
+}
+void map_hash_pan(string[]@ parsed)
+{
+pan_changed = true;
+new_pan = string_to_number(parsed[1]);
+if (new_pan == old_pan) return;
+old_pan = new_pan;
+pan_step_update(old_pan * weaponsight);
+}
+void map_hash_bd(string[]@ parsed)
+{
+new_bound_default_volume = string_to_number(parsed[1]);
+if (new_bound_default_volume <= 0 or new_bound_default_volume >= 50) new_bound_default_volume = 50;
+}

@@ -1,0 +1,1753 @@
+#include "./vehicles/aircraft.bgt"
+#include "./vehicles/drone.bgt"
+#include "./vehicles/pro_mac.bgt"
+#include "./vehicles/tank.bgt"
+#include "./vehicles/dogan_slx.bgt"
+#include "./vehicles/truck.bgt"
+#include "./vehicles/armored_tank.bgt"
+#include "./vehicles/police_car.bgt"
+#include "./vehicles/police_car_super.bgt"
+#include "./vehicles/motor_cycle.bgt"
+
+funcdef vehicle@ vehicle_func();
+dictionary vehicledict, vehiclemap;
+funcdef bool vif (vehicle@ this, vehicle_interior@ vi);
+enum vsdoing
+{
+VS_NONE, VS_REPAIR, VS_START, VS_STOP
+}
+int repair = 5500;
+enum vehicleinteriorname
+{
+INTERIOR_STEERING, INTERIOR_DOOR, INTERIOR_WEAPON, INTERIOR_LOCKER
+}
+dictionary vehicles;
+
+class vehicle_interior
+{
+int x;
+int y;
+int z;
+uint type;
+double minimum_speed = 0;
+int pretime = 1;
+timer pretimer;
+int reusetime = 1;
+timer reusetimer;
+int looptime = 1;
+timer looptimer;
+bool working = false;
+bool looping = false;
+vif@ prework;
+vif@ work;
+vif@ loop;
+player@ user;
+int dir = 0;
+int current_ammo = 0, max_ammo = 0;
+string require_ammo;
+vehicle@ targetv;
+int targetx = -1, targety = -1, targetz = -1;
+timer chargetimer;
+bool charge = false, reserve_stop = false;
+}
+
+class vehicle
+{
+bool kill_admin = false;
+double x, y, z, fuel = 100.0;
+int rx, ry, rz;
+int facing, oldfacing, maxhealth = 10000, health = -1, weight = 1000;
+int doing = VS_NONE;
+bool autopilot = false, autotravel = false;
+bool self_destruct = false;
+string type, hitn, autopilot_data, hitby = "없음";
+msound@ mid, mid_int, sirenid, sirenid_int;
+int fueltime, movetime, vfueltime, speedchangetime, falldist, sirenmode = 0, soundtime = 0;
+int vsdie, vsstart = 7250, vsstop = 1444, vsspawn = 4000;
+timer movetimer, fueltimer, soundtimer, falltimer, speedchangetimer;
+bool started = false, flying = false, hovering = false, lowfuel = false, extra_engine_sound = false;
+double pitch, vfuelspeed, vfuelpitch, speed = 0.0, oldspeed = 0.0, minspeed = 1.0, maxspeed = 2.0, speedchange = 0.0, accelpower = 0.01, decelpower = 0.01, breakpower = 0.03, groundlimit = 1.0;
+string owner;
+mapdata@ map;
+mapdata@ inside;
+vehicle_interior[] interiors;
+string id;
+string ctile;
+int defense = 0, maxpassengers = 4, accumulated_damage = 0, maxsiren = 0, nose = 0, nosechange = 0, sight_range = 100, handle_mode = 1;
+double oldx, oldy, oldz;
+maptile@ ct;
+bool reserve_fallcheck = false, speedchanging = false, rider_hit = false, in_smoke = false, ct_changed = false;
+timer missilewarntimer;
+int alarmmode = 1, missile_range = 0;
+double default_pitch = 100.0, gear1_minpitch = 100.0, gear1_maxpitch = 150.0;
+int slidetime = 0, slidedir = -1;
+timer slidetimer, smoketimer;
+player@ p;
+int hit_percent = 50, explode_min = 5000, explode_max = 10000;
+dictionary@ noitems;
+minilocker locker;
+stickybomb@[] stickybombs;
+double missile_intercept_fuel = 0.3;
+int userfacing = 0;
+bool lock = false;
+player@[] followed_players;
+int onwall = 0;
+
+// Internal properties
+
+void command(const string& in cmd, player@ pilot, bool force = false)
+{
+if (!force)
+{
+if (soundtimer.elapsed < soundtime) return;
+if (updatingsvr) return;
+}
+string[]@ parsed = string_split(cmd, " ", false);
+uint cmdnum = string_to_hash(parsed[0]);
+switch (cmdnum)
+{
+case vhs_enter:
+{
+if (lock) return;
+if (pilot is null) return;
+if (pilot.disconnected) return;
+if (pilot.name != this.owner)
+{
+player@ too = get_player_handle(this.owner);
+if (too is null) return;
+if (!too.trust.exists(pilot.name))
+{
+if (!are_teamed(too, pilot)) return;
+}
+if (this.p !is null)
+{
+pilot.alert("이미 누군가가 타고 있습니다.");
+return;
+}
+if (this.inside !is null)
+{
+if (get_passengers() >= maxpassengers)
+{
+pilot.alert("이미 정원이 가득 찼습니다.");
+return;
+}
+}
+}
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+if (this.noitems !is null)
+{
+if (pilot.main_weapon !is null)
+{
+if (this.noitems.exists(pilot.main_weapon.type)) pilot.draw_weapon("fists", true);
+}
+}
+if (this.inside is null)
+{
+if (pilot.name == this.owner and this.p !is null) this.command("escape", this.p);
+@ pilot.ride = this;
+@ this.p = pilot;
+pilot.x = this.x;
+pilot.y = this.y;
+pilot.z = this.z;
+userfacing = 0;
+pilot.facing = this.facing + this.userfacing;
+pilot.facing += (pilot.facing < 0 ? 360 : pilot.facing >= 360 ? -360 : 0);
+sendpacket("move " + this.x + " " + this.y + " " + this.z + " " + pilot.facing);
+if (mid !is null) mid.change_owner(pilot);
+if (sirenid !is null) sirenid.change_owner(pilot);
+pilot.sendpacket("start_ride");
+}
+else pilot.go_to(this.inside, this.inside.starting.x, this.inside.starting.y, this.inside.starting.z, false);
+pilot.playsound(this.type + "_spawn"); // inside
+}
+break; case vhs_repair:
+{
+if (started)
+{
+if (pilot !is null) pilot.alert("안전한 수리를 위해 차량의 시동을 꺼야 합니다.");
+return;
+}
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+if (pilot !is null) pilot.alert("잠시만 기다리세요.");
+soundtime = repair;
+soundtimer.force(0);
+playsound("vehicle_repair", true, false);
+doing = VS_REPAIR;
+}
+break; case vhs_userturnleft:
+{
+if (parsed.length < 2) return;
+if (pilot is null) return;
+if (pilot !is p) return;
+if (pilot.disconnected) return;
+userfacing -= abs(string_to_number(parsed[1]) % 180);
+if (userfacing < -90) userfacing = -90;
+p.facing = this.facing + this.userfacing;
+p.facing += (p.facing < 0 ? 360 : p.facing >= 360 ? -360 : 0);
+sendpacket("facing " + p.facing);
+if (!force) return;
+}
+break; case vhs_userturnright:
+{
+if (parsed.length < 2) return;
+if (pilot is null) return;
+if (pilot !is p) return;
+if (pilot.disconnected) return;
+userfacing += abs(string_to_number(parsed[1]) % 180);
+if (userfacing > 90) userfacing = 90;
+p.facing = this.facing + this.userfacing;
+p.facing += (p.facing < 0 ? 360 : p.facing >= 360 ? -360 : 0);
+sendpacket("facing " + p.facing);
+if (!force) return;
+}
+break; case vhs_usersnapleft:
+{
+if (parsed.length < 2) return;
+if (pilot is null) return;
+if (pilot !is p) return;
+if (pilot.disconnected) return;
+if (userfacing == -90) return;
+pilot.sendsound("turn");
+if (userfacing <= -45)
+{
+userfacing = -90;
+pilot.alert("서쪽");
+}
+else if (userfacing <= 0)
+{
+userfacing = -45;
+pilot.alert("북서쪽");
+}
+else if (userfacing <= 45)
+{
+userfacing = 0;
+pilot.alert("북쪽");
+}
+else
+{
+userfacing = 45;
+pilot.alert("북동쪽");
+}
+p.facing = this.facing + this.userfacing;
+p.facing += (p.facing < 0 ? 360 : p.facing >= 360 ? -360 : 0);
+sendpacket("facing " + p.facing);
+}
+break; case vhs_usersnapright:
+{
+if (parsed.length < 2) return;
+if (pilot is null) return;
+if (pilot !is p) return;
+if (pilot.disconnected) return;
+if (userfacing == 90) return;
+pilot.sendsound("turn");
+if (userfacing >= 45)
+{
+userfacing = 90;
+pilot.alert("동쪽");
+}
+else if (userfacing >= 0)
+{
+userfacing = 45;
+pilot.alert("북동쪽");
+}
+else if (userfacing >= -45)
+{
+userfacing = 0;
+pilot.alert("북쪽");
+}
+else
+{
+userfacing = -45;
+pilot.alert("북서쪽");
+}
+p.facing = this.facing + this.userfacing;
+p.facing += (p.facing < 0 ? 360 : p.facing >= 360 ? -360 : 0);
+sendpacket("facing " + p.facing);
+}
+break; case vhs_turnleft:
+{
+if (parsed.length < 2) return;
+if (!started) return;
+facing = turnleft(facing, abs(string_to_number(parsed[1]) % 360));
+if (!force) return;
+}
+break; case vhs_turnright:
+{
+if (parsed.length < 2) return;
+if (!started) return;
+facing = turnright(facing, abs(string_to_number(parsed[1]) % 360));
+if (!force) return;
+}
+break; case vhs_escape:
+{
+if (!force)
+{
+if (lock) return;
+if (pilot is null) return;
+if (pilot.disconnected) return;
+if (inside is null)
+{
+if (pilot !is p) return;
+}
+}
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+if (inside is null)
+{
+if (this.p !is null)
+{
+this.p.sendpacket("goodfuel");
+this.p.sendpacket("stop_ride");
+@ this.p.ride = null;
+@ this.p = null;
+if (mid !is null) mid.change_owner(null);
+if (sirenid !is null) sirenid.change_owner(null);
+}
+}
+else pilot.go_to(this.map, this.rx, this.ry, this.rz, false);
+if (!force and pilot !is null) pilot.playsound(type + "_unspawn", true); // ouside
+}
+break; case vhs_gethandle:
+{
+if (pilot is null) return;
+if (pilot.disconnected) return;
+pilot.sendpacket("vespawning " + this.type);
+}
+break; case vhs_relhandle:
+{
+if (pilot is null) return;
+if (pilot.disconnected) return;
+pilot.sendpacket("veunspawn");
+}
+}
+if (fuel <= 0) return;
+if (pilot !is null and parsed.length < 3) pilot.sendsound(type + "_command");
+switch (cmdnum)
+{
+case vhs_engine:
+{
+if (speed > 0)
+{
+if (!force and started)
+{
+if (speedchanging) speedchangestop();
+speedchange = -breakpower;
+speedsoundupdate();
+speedchanging = true;
+speedchangetimer.force(0);
+return;
+}
+}
+if (started)
+{
+doing = VS_STOP;
+if (mid !is null) @ mid = mid.destroy();
+if (this.mid_int !is null) @ mid_int = mid_int.destroy();
+sendpacket("goodfuel");
+soundtime = vsstop;
+soundtimer.force(0);
+playsound(type + "_stop");
+started = false;
+if (speed > 0.0) command("speedbreak", null);
+}
+else
+{
+doing = VS_START;
+lowfuel = false;
+soundtime = vsstart;
+soundtimer.force(0);
+playsound(type + "_start");
+}
+}
+break; case vhs_fireweapon:
+{
+if (this.map.fighting == 0) return;
+if (parsed.length < 2) return;
+int index = string_to_number(parsed[1]);
+vehicle_interior@ temp = interiors[index];
+if (temp.working) return;
+if ((temp.minimum_speed == 0 ? !started : this.speed < temp.minimum_speed)) return;
+if (temp.reusetimer.elapsed < temp.reusetime) return;
+temp.pretimer.force(0);
+@ temp.user = pilot;
+if (!temp.prework(this, temp))
+{
+@ temp.user = null;
+return;
+}
+temp.working = true;
+if (pilot !is null) pilot.temp_invinsible = false;
+}
+break; case vhs_speedup:
+{
+if (!started) return;
+if (speed >= maxspeed) return;
+if (speedchanging) speedchangestop();
+speedchange = accelpower;
+speedsoundupdate();
+speedchanging = true;
+speedchangetimer.force(0);
+}
+break; case vhs_speeddown:
+{
+if (!started) return;
+if (speed <= 0.0)
+{
+facing += 180;
+if (facing > 359) facing -= 360;
+playsound(type + "_turn", true, false);
+return;
+}
+if (speedchanging) speedchangestop();
+speedchange = -decelpower;
+speedsoundupdate();
+speedchanging = true;
+speedchangetimer.force(0);
+}
+break; case vhs_speedstop:
+{
+if (!started) return;
+if (speedchanging) speedchangestop();
+}
+break; case vhs_facing:
+{
+if (pilot !is null) pilot.alert(facing + "도, 플레이어 " + pilot.facing + "도");
+}
+break; case vhs_zfacing:
+{
+if (pilot !is null) pilot.alert((flying ? "기수 " + nose + "도" : nosechange > 0 ? "올라가는 중" : nosechange < 0 ? "내려가는 중" : "없음") + ", " + pilot.zfacing + "도");
+}
+break; case vhs_speed:
+{
+if (!started) return;
+if (pilot !is null) pilot.alert("초당 " + round(speed, 2) + "칸 이동중, RPM " + round(pitch * vfuelpitch * 60, 2));
+}
+break; case vhs_snapleft:
+{
+if (!started) return;
+facing = snapleft(facing);
+if (pilot !is null) pilot.alert(dir_to_string(getdir(facing)));
+playsound(type + "_turn", true, false);
+}
+break; case vhs_snapright:
+{
+if (!started) return;
+facing = snapright(facing);
+if (pilot !is null) pilot.alert(dir_to_string(getdir(facing)));
+playsound(type + "_turn", true, false);
+}
+break; case vhs_climb:
+{
+if (!started) return;
+nosechange = 1;
+if (!flying) onwall = 0;
+}
+break; case vhs_descend:
+{
+if (!started) return;
+nosechange = -1;
+if (!flying) onwall = 0;
+}
+break; case vhs_zmovestop:
+{
+if (!started) return;
+nosechange = 0;
+}
+break; case vhs_leveling:
+{
+if (!started) return;
+if (!flying) return;
+if (nose == 0) return;
+nosechange = 2;
+}
+break; case vhs_siren:
+{
+if (!started) return;
+if (maxsiren < 1)
+{
+if (pilot !is null) pilot.alert("경적이나 사이렌을 울릴 장치가 없습니다.");
+return;
+}
+vsiren();
+}
+break; case vhs_autopilot:
+{
+if (pilot is null) return;
+if (pilot.disconnected) return;
+if (!autopilot) return;
+if (parsed.length < 5)
+{
+if (autopilot_data.is_empty())
+{
+pilot.sendpacket("autopilot " + ((flying or hovering) ? "air" : "ground") + (pilot.tracking_type == 0 ? empty : " " + pilot.trackx + " " + pilot.tracky));
+}
+else
+{
+autopilot_data.resize(0);
+pilot.alert("자동조정을 끕니다.");
+if (autotravel) command("mapmove", pilot);
+}
+return;
+}
+autotravel = (string_to_number(parsed[1]) == 1);
+this.x = string_to_number(parsed[2]);
+this.y = string_to_number(parsed[3]);
+autopilot_data = parsed[4];
+}
+break;
+}
+}
+ 
+string entervehicle()
+{
+return "entervehicle " + this.x + " " + this.y + " " + this.z + " " + this.facing + " " + this.type;
+}
+
+int get_passengers()
+{
+int pls = this.followed_players.length;
+int plen = this.inside.players.length;
+for (uint i = 0; i < plen; i++)
+{
+if (this.inside.players[i].following is null) pls++;
+}
+return pls;
+}
+
+void sendpacket(const string& in packet, int chan = 0)
+{
+if (p !is null)
+{
+n.send_reliable(p.peer_id, string_encrypt(packet, pcps), chan);
+return;
+}
+if (inside is null) return;
+int l = inside.players.length;
+if (l == 0) return;
+string mess = string_encrypt(packet, pcps);
+for (uint i=0; i < l; i++)
+{
+n.send_reliable(inside.players[i].peer_id, mess, chan);
+}
+}
+
+void hit(int damage, const string& in hb, bool direct = false, bool super_hit = false)
+{
+if (!super_hit)
+{
+if (p !is null)
+{
+if (rider_hit)
+{
+rider_hit = false;
+return;
+}
+}
+}
+damage -= defense;
+if (damage <= 0)
+{
+this.playsound("h" + random(1, 6), false);
+play("hnd" + random(1, 3), this.x, this.y, this.z, this.map);
+return;
+}
+this.hitby = hb; // Don't use colon.
+if (direct)
+{
+this.health -= damage;
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+return;
+}
+this.accumulated_damage += damage;
+}
+
+void playsound(const string& in sound, bool ext = true, bool alt = true)
+{
+string em;
+string im;
+if (alt)
+{
+if (ext)
+{
+em = "_ext";
+im = "_int";
+}
+}
+if (inside is null)
+{
+if (p is null)
+{
+play(sound + em, x, y, z, map);
+return;
+}
+if (ext) p.playsound(sound + em, false);
+p.sendsound(sound + em);
+return;
+}
+if (ext) play(sound + em, x, y, z, map);
+playmap(sound + im, this.inside);
+}
+
+void fallcheck()
+{
+if (falltimer.elapsed < 100) return;
+falltimer.force(0);
+reserve_fallcheck = false;
+if (ct is null and this.z < 0)
+{
+fallplay(falldist);
+this.z = 0;
+falldist = 0;
+return;
+}
+if (ct !is null and !ct.type.is_empty())
+{
+ctile = ct.type;
+if (ctile == "mine")
+{
+this.health = -1;
+this.hitby = "소거의 지뢰";
+return;
+}
+if (ctile != "air") fallplay(falldist);
+slidetimer.force(0);
+slidetime = ct.slidetime;
+slidedir = ct.slidedir;
+falldist = 0;
+return;
+}
+z--;
+falldist++;
+ctile.resize(0);
+}
+
+void fallplay(int falldist)
+{
+if (falldist < 1) return;
+int dam = falldist * (falldist + 1) * (maxhealth >> 9);
+hit(dam, "internal:gravity_v", true);
+if (dam < health and dam > this.defense) this.playsound("explode_impact_vehicle", true, true); 
+}
+
+void moveact(bool mapchanged = false)
+{
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+this.rz = round(this.z, 0);
+autopilot_data.resize(0);
+onwall = 0;
+oldx = x;
+oldy = y;
+oldz = z;
+if (mid !is null)
+{
+if (mapchanged) @ mid = mid.change_map(map, x, y, z);
+else mid.update(x, y, z);
+}
+if (sirenid !is null)
+{
+if (mapchanged) @ sirenid = sirenid.change_map(map, x, y, z);
+else sirenid.update(x, y, z);
+}
+if (inside is null)
+{
+if (p !is null)
+{
+p.go_to(this.map, this.x, this.y, this.z, true, false, false, true);
+}
+}
+else
+{
+sendmap(entervehicle(), this.inside, 0);
+if (mapchanged) sendmap("vdata " + map.rawdata, this.inside, 0);
+}
+@ this.ct = get_tile_handle_at(rx, ry, rz, this.map);
+if (ct is null)
+{
+ctile.resize(0);
+slidetime = 0;
+slidedir = -1;
+reserve_fallcheck = true;
+}
+else
+{
+if (ct.type.is_empty())
+{
+ctile.resize(0);
+slidetime = 0;
+slidedir = -1;
+if (!hovering)
+{
+if (!started or (flying ? speed < minspeed : true)) reserve_fallcheck = true;
+}
+}
+else
+{
+if (ct.type == "mine")
+{
+this.health = -1;
+this.hitby = "소거의 지뢰";
+}
+if (slidedir == -1) slidetimer.force(0);
+ctile = ct.type;
+slidetime = ct.slidetime;
+slidedir = ct.slidedir;
+step_mine(rx, ry, rz, this.map, this.owner);
+if (falldist != 0) reserve_fallcheck = true;
+}
+}
+if (reserve_fallcheck) this.fallcheck();
+}
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+bool& is_available(string[]@ parsed)
+{
+string limit = parsed[0];
+int playerslength = this.inside.players.length;
+int followedlength = this.followed_players.length;
+if (string_is_digits(limit))
+{
+double num = string_to_number(limit);
+for (uint i = 0; i < playerslength; i++)
+{
+player@ pl = this.inside.players[i];
+if (pl.following !is null) continue;
+if (pl.exp >= num) continue;
+sendmap("speak 경험이 부족한 사람이 있어 그곳으로 갈 수 없습니다.", this.inside, 0);
+return false_t;
+}
+for (uint i = 0; i < followedlength; i++)
+{
+player@ pl = this.followed_players[i];
+if (pl.exp >= num) continue;
+sendmap("speak 경험이 부족한 사람이 있어 그곳으로 갈 수 없습니다.", this.inside, 0);
+return false_t;
+}
+return true_t;
+}
+int amount = 1;
+bool all_consume = false;
+if (parsed.length > 1)
+{
+if (parsed[1] == "a") all_consume = true;
+else amount = string_to_number(parsed[1]);
+}
+if (amount == 0) amount = 1;
+bool pass = true;
+pld@[] list;
+int total = 0;
+list.reserve(playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+player@ pl = this.inside.players[i];
+if (pl.following !is null) continue;
+if (pl.a.exists(limit)) continue;
+pass = false;
+int current = pl.get_item_count(limit);
+total += current;
+if (!all_consume and total >= abs(amount))
+{
+current -= (total - abs(amount));
+pld new;
+new.value = current;
+@ new.handle = pl;
+list.insert_last(new);
+break;
+}
+pld new;
+new.value = current;
+@ new.handle = pl;
+list.insert_last(new);
+}
+for (uint i = 0; i < followedlength; i++)
+{
+player@ pl = this.followed_players[i];
+if (pl.a.exists(limit)) continue;
+pass = false;
+int current = pl.get_item_count(limit);
+total += current;
+if (!all_consume and total >= abs(amount))
+{
+current -= (total - abs(amount));
+pld new;
+new.value = current;
+@ new.handle = pl;
+list.insert_last(new);
+break;
+}
+pld new;
+new.value = current;
+@ new.handle = pl;
+list.insert_last(new);
+}
+if (pass) return true_t;
+if (total < 1 or (!all_consume and total < abs(amount)))
+{
+sendmap("speak 자격이 없는 사람이 있어 그곳으로 갈 수 없습니다.", this.inside, 0);
+return false_t;
+}
+if (amount < 0 or all_consume)
+{
+int listlength = list.length;
+for (uint i = 0; i < listlength; i++)
+{
+int res = list[i].value;
+if (res > 0) list[i].handle.give(limit, -res);
+}
+}
+return true_t;
+}
+
+void removecheck(bool safely = false)
+{
+if (!stickybombs.is_empty()) stickybombloop(stickybombs);
+if (inside is null)
+{
+if (p !is null)
+{
+@ p.ride = null;
+p.sendpacket("goodfuel");
+p.sendpacket("stop_ride");
+if (!safely)
+{
+p.hitby = "internal:vehicle:" + type;
+destroy(p, hitby == "internal:gravity_v");
+}
+}
+}
+else
+{
+int playerslength = inside.players.length;
+this.map.players.reserve(this.map.players.length + playerslength);
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = inside.players[i];
+temp.go_to(this.map, this.rx, this.ry, this.rz, false);
+this.map.players.insert_last(temp);
+temp.sendsound(type + "_die");
+if (temp.following !is null) continue;
+if (safely) continue;
+temp.hitby = "internal:vehicle:" + type;
+destroy(temp, hitby == "internal:gravity_v");
+}
+}
+if (mid !is null) mid.destroy();
+if (sirenid !is null) sirenid.destroy();
+vehicles.delete(this.id);
+}
+
+int find_interior(int x, int y, int z)
+{
+int interiorlength = interiors.length;
+for (uint i = 0; i < interiorlength; i++)
+{
+vehicle_interior@ temp = interiors[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return i;
+}
+return -1;
+}
+
+bool& create_structure()
+{
+if (!vehiclemap.exists(this.type)) return false_t;
+mapdata new;
+if (!vehiclemap.get(this.type, new)) return false_t;
+new.name = this.owner + "의_" + this.type;
+@ new.vhc = this;
+@ this.inside = new;
+return true_t;
+}
+
+bool& missile_is_near()
+{
+int missileslength = map.missiles.length;
+for (uint i = 0; i < missileslength; i++)
+{
+missile@ temp = map.missiles[i];
+if (temp.owner !is null)
+{
+if ((this.inside is null ? this.p is temp.owner : this.inside.players.find_by_reference(temp.owner) > -1)) continue;
+}
+int get_range = this.distancecheck(temp.x, temp.y, temp.z);
+if (get_range > missile_range) continue;
+return true_t;
+}
+return false_t;
+}
+
+// Local properties
+
+void destroy(player@ pilot, bool hardfall)
+{
+if (hardfall or self_destruct)
+{
+pilot.health = -1;
+return;
+}
+int damage = random(explode_min, explode_max);
+if (pilot.wear_text.exists("safety_helmet")) damage *= (this.p is null ? 0.75 : 0.33);
+pilot.health -= damage;
+}
+
+void fuelzero()
+{
+}
+
+void moving_attack()
+{
+}
+
+void start()
+{
+if (extra_engine_sound)
+{
+@ mid = spawn_moving_sound(this.type + "_idle_ext", x, y, z, map, p, default_pitch, true);
+this.pitch = default_pitch;
+if (this.inside !is null) @ mid_int = spawn_moving_sound(this.type + "_idle_int", this.inside, p, default_pitch);
+}
+else
+{
+@ mid = spawn_moving_sound(this.type + "_engine_ext", x, y, z, map, p, gear1_minpitch, true);
+this.pitch = gear1_minpitch;
+if (inside !is null) @ mid_int = spawn_moving_sound(this.type + "_engine_int", this.inside, p, gear1_minpitch);
+}
+}
+
+bool& speedcheck()
+{
+if (!started) return true_t;
+bool go_update = true;
+if (speedchanging) go_update = false;
+if (extra_engine_sound)
+{
+if (speed > oldspeed and oldspeed <= 0.0 and speed > 0.0)
+{
+if (mid !is null) mid.update(x, y, z, gear1_minpitch, this.type + "_drive_ext");
+if (mid_int !is null) mid_int.update(gear1_minpitch, this.type + "_drive_int");
+this.pitch = gear1_minpitch;
+go_update = true;
+}
+else if (speed < oldspeed and speed <= 0.0 and oldspeed > 0.0)
+{
+if (mid !is null) mid.update(x, y, z, default_pitch, this.type + "_idle_ext");
+if (mid_int !is null) mid_int.update(default_pitch, this.type + "_idle_int");
+this.pitch = default_pitch;
+return true_t;
+}
+}
+if (!go_update) return false_t;
+speedsoundupdate();
+return true_t;
+}
+
+void speedsoundupdate()
+{
+if (mid is null) return;
+if (inside !is null)
+{
+if (mid_int is null) return;
+}
+if (extra_engine_sound and speed == 0.0) return;
+double level, dest;
+bool flag = false;
+if (speedchange > 0.0)
+{
+level = (gear1_maxpitch - gear1_minpitch) / (log(0.5) / log(1 - ((speedchange / maxspeed) * 0.5)));
+dest = gear1_maxpitch;
+}
+else
+{
+flag = true;
+level = (exponent(log(gear1_maxpitch * (100 / gear1_minpitch) * 0.01) / (maxspeed / abs(speedchange))) - 1) * -100;
+dest = gear1_minpitch;
+}
+mid.set_bend(level, 2, dest, flag);
+if (mid_int !is null) mid_int.set_bend(level, 2, dest, flag);
+}
+
+void speedchangestop()
+{
+speedchange = 0.0;
+speedchanging = false;
+if (mid is null) return;
+if (inside !is null)
+{
+if (mid_int is null) return;
+}
+this.pitch = mid.remove_bend(true);
+if (mid_int !is null) mid_int.remove_bend(true);
+}
+
+void vsiren()
+{
+if (sirenmode < 1)
+{
+sirenmode = 1;
+@ sirenid = spawn_moving_sound(this.type + "_siren1", x, y, z, map, p, 100.0, true);
+if (inside !is null) @ sirenid_int = spawn_moving_sound(this.type + "_siren1_int", this.inside, p, 100.0);
+return;
+}
+if (sirenmode >= maxsiren)
+{
+sirenmode = 0;
+if (sirenid !is null) @ sirenid = sirenid.destroy();
+if (sirenid_int !is null) @ sirenid_int = sirenid_int.destroy();
+return;
+}
+sirenmode++;
+if (sirenid !is null) sirenid.update(x, y, z, -1, this.type + "_siren" + sirenmode);
+if (sirenid_int !is null) sirenid_int.update(-1, this.type + "_siren" + sirenmode + "_int");
+}
+}
+
+void spawn_vehicle(const string& in type, player@ temp)
+{
+if (temp is null) return;
+if (!vehicledict.exists(type)) return;
+vehicle this;
+if (!vehicledict.get(type, this)) return;
+if (this.maxpassengers >= 0)
+{
+if (!this.create_structure()) return;
+}
+do
+{
+this.id = randomstring(8);
+}
+while (vehicles.exists(this.id));
+this.health = this.maxhealth;
+this.fueltime = this.vfueltime;
+this.owner = temp.name;
+this.x = temp.x;
+this.y = temp.y;
+this.z = temp.z;
+this.rx = round(temp.x, 0);
+this.ry = round(temp.y, 0);
+this.rz = round(temp.z, 0);
+this.oldx = this.x;
+this.oldy = this.y;
+this.oldz = this.z;
+this.facing = temp.facing;
+this.oldfacing = this.facing;
+@ this.map = temp.map;
+this.hitn = this.owner + "의 " + type;
+this.locker.owner = this.owner;
+@ this.locker.vhc = this;
+@ this.ct = get_tile_handle_at(this.rx, this.ry, this.rz, this.map);
+if (this.ct is null) this.reserve_fallcheck = true;
+else
+{
+if (!this.hovering and this.ct.type.is_empty()) this.reserve_fallcheck = true;
+else
+{
+if (this.ct.type == "mine")
+{
+this.health = -1;
+this.hitby = "소거의 지뢰";
+}
+this.ctile = this.ct.type;
+this.slidetime = this.ct.slidetime;
+this.slidedir = this.ct.slidedir;
+}
+}
+if (this.reserve_fallcheck) this.fallcheck();
+this.map.vs.insert_last(this);
+vehicles.set(this.id, @ this);
+}
+
+void vloop(mapdata@ map)
+{
+for (int i = map.vs.length - 1; i > -1; i--)
+{
+vehicle@ this = map.vs[i];
+if (this.health <= 0)
+{
+play_dist(this.type + "_diedist", this.x, this.y, this.z, this.map, 0.1);
+this.playsound(this.type + (this.hitby == "internal:gravity_v" ? "_fall" : "_die"), true, false);
+if (!this.kill_admin)
+{
+string[]@ parsed_data = string_split(this.hitby, "의 ", true);
+string hb = parsed_data[0];
+achloop(hb, this);
+send(0, "playerdeath " + destmsg(this.owner + "의 " + this.type, this.hitby, get_zone_at(this.x, this.y, this.z, this.map)), 0);
+}
+this.removecheck();
+map.vs.remove_at(i);
+continue;
+}
+
+if (this.map !is map)
+{
+this.map.vs.insert_last(this);
+map.vs.remove_at(i);
+continue;
+}
+bool active = false;
+if (this.inside !is null)
+{
+if (!this.inside.players.is_empty())
+{
+map.active_vehicles++;
+active = true;
+}
+}
+
+if (this.accumulated_damage > 0)
+{
+this.health -= this.accumulated_damage;
+this.accumulated_damage = 0;
+if (this.health > 0)
+{
+this.playsound("h" + random(1, 6), false);
+play("h_ext" + random(1, 3), this.x, this.y, this.z, this.map);
+}
+if (!this.stickybombs.is_empty()) stickybombloop(this.stickybombs);
+}
+
+if (this.doing != VS_NONE)
+{
+if (this.soundtimer.elapsed >= this.soundtime)
+{
+switch (this.doing)
+{
+case VS_REPAIR:
+{
+this.health = this.maxhealth;
+this.sendpacket("speak 차량 수리를 완료했습니다.");
+}
+break;
+case VS_STOP:
+{
+if (this.sirenmode == 0) break;
+if (this.sirenid !is null) @ this.sirenid = this.sirenid.destroy();
+if (this.sirenid_int !is null) @ this.sirenid_int = this.sirenid_int.destroy();
+this.sirenmode = 0;
+}
+break;
+case VS_START:
+{
+this.started = true;
+this.start();
+this.fueltime = (this.vfueltime - (this.pitch * this.vfuelpitch) - (this.speed * this.vfuelspeed));
+}
+break;
+default:
+break;
+}
+this.doing = VS_NONE;
+}
+}
+else if (active)
+{
+if (this.alarmmode > 0)
+{
+if (this.missilewarntimer.elapsed > 1000)
+{
+this.missilewarntimer.force(0);
+if (this.missile_is_near()) this.playsound("missilewarn", false);
+}
+}
+int interiorlength = this.interiors.length;
+for (uint i = 0; i < interiorlength; i++)
+{
+vehicle_interior@ temp = this.interiors[i];
+if (temp.looping)
+{
+if (temp.looptimer.elapsed >= temp.looptime)
+{
+temp.looptimer.force(0);
+if (!this.started)
+{
+temp.looping = false;
+@ temp.user = null;
+continue;
+}
+if (!temp.loop(this, temp))
+{
+temp.looping = false;
+@ temp.user = null;
+continue;
+}
+}
+}
+if (!temp.working) continue;
+if (temp.pretimer.elapsed < temp.pretime) continue;
+temp.reusetimer.force(0);
+if (!temp.work(this, temp)) continue;
+temp.working = false;
+if (!temp.looping) @ temp.user = null;
+}
+}
+
+if (this.started)
+{
+if (this.fueltimer.elapsed >= this.fueltime)
+{
+this.fueltimer.force(0);
+this.fuel = round(this.fuel - 0.01, 2);
+}
+if (this.fuel <= 0)
+{
+this.sendpacket("goodfuel");
+if (this.mid_int !is null) @ this.mid_int = this.mid_int.destroy();
+if (this.mid !is null) @ this.mid = this.mid.destroy();
+this.playsound(this.type + "_stop");
+this.started = false;
+if (this.speed > 0.0)
+{
+this.speedchange = -this.breakpower;
+this.speedchanging = true;
+}
+if (this.sirenid !is null) @ this.sirenid = this.sirenid.destroy();
+if (this.sirenid_int !is null) @ this.sirenid_int = this.sirenid_int.destroy();
+this.fuelzero();
+}
+else if (this.fuel <= 2.5)
+{
+if (!this.lowfuel)
+{
+this.lowfuel = true;
+this.sendpacket("lowfuel");
+}
+}
+
+if (this.speed > 0.0)
+{
+if (this.movetimer.elapsed >= this.movetime)
+{
+this.movetimer.force(0);
+this.moving_attack();
+if (!this.stickybombs.is_empty()) stickybombloop(this.stickybombs);
+if (!this.autopilot_data.is_empty())
+{
+int asize = this.autopilot_data.size - 1;
+int dir = character_to_ascii(this.autopilot_data[asize]);
+this.autopilot_data.resize(asize);
+switch (dir)
+{
+case ascii_0: {this.y++;}
+break; case ascii_1: {this.x++;}
+break; case ascii_2: {this.y--;}
+break; case ascii_3: {this.x--;}
+break; case ascii_4: {this.z++;}
+break; case ascii_5: {this.z--;}
+break; case ascii_6: {this.x++; this.y++;}
+break; case ascii_7: {this.x--; this.y++;}
+break; case ascii_8: {this.x++; this.y--;}
+break; case ascii_9: {this.x--; this.y--;}
+break; case ascii_plus: {this.command("speedup", null);}
+break; case ascii_dash: {this.command("speeddown", null);}
+break; case ascii_equals: {this.command("speedstop", null);}
+break; case ascii_under_bar: {this.command("speedbreak", null);}
+break; case ascii_star: {this.command("mapmove", null, true);}
+break; case ascii_less_than: {this.command("snapleft", null);}
+break; case ascii_greater_than: {this.command("snapright", null);}
+break;
+}
+if (asize == 0)
+{
+if (this.autotravel)
+{
+this.rx = round(this.x, 0);
+this.ry = round(this.y, 0);
+this.rz = round(this.z, 0);
+if (active) this.inside.players[0].sendpacket("vtravelcheck");
+else if (this.p !is null) this.p.sendpacket("vtravelcheck");
+}
+}
+}
+else
+{
+if (this.flying)
+{
+if (this.nosechange == 1)
+{
+if (this.nose >= 55) this.nosechange = 0;
+else
+{
+this.nose++;
+this.onwall = 0;
+}
+}
+else if (this.nosechange == -1)
+{
+if (this.nose <= -55) this.nosechange = 0;
+else
+{
+this.nose--;
+this.onwall = 0;
+}
+}
+else if (this.nosechange == 2)
+{
+if (this.nose == 0) this.nosechange = 0;
+else
+{
+if (this.nose > 0) this.nose--;
+else if (this.nose < 0) this.nose++;
+this.onwall = 0;
+}
+}
+if (this.onwall == 0)
+{
+int rn = this.nose;
+if (rn < 0) rn += 360;
+vector m = move_global(this.x, this.y, this.z, this.facing, 0, rn);
+if (m.x < 0)
+{
+m.x = 0;
+this.onwall = 2;
+}
+else if (m.x > this.map.max.x)
+{
+m.x = this.map.max.x;
+this.onwall = 2;
+}
+if (m.y < 0)
+{
+m.y = 0;
+this.onwall = 2;
+}
+else if (m.y > this.map.max.y)
+{
+m.y = this.map.max.y;
+this.onwall = 2;
+}
+maptile@ tt = get_tile_handle_at(round(m.x, 0), round(m.y, 0), round(m.z, 0), this.map);
+if (tt !is null)
+{
+if (tt.is_wall) this.onwall = 2;
+else if (tt.type.is_empty() or this.speed <= this.groundlimit)
+{
+this.x = m.x;
+this.y = m.y;
+this.z = m.z;
+if (this.ct !is null)
+{
+if (this.ct.type.is_empty() and !tt.type.is_empty()) this.playsound(this.type + "_land", true, true);
+}
+@ this.ct = tt;
+this.ct_changed = true;
+}
+}
+}
+}
+else if (this.onwall == 0)
+{
+bool nosechanged = false;
+if (this.nosechange != 0)
+{
+double tz = this.z + this.nosechange;
+maptile@ tt = get_tile_handle_at(this.rx, this.ry, tz, this.map);
+if (tt !is null)
+{
+if (!tt.is_wall and (!tt.type.is_empty() or this.hovering))
+{
+this.z = tz;
+nosechanged = true;
+@ this.ct = tt;
+this.ct_changed = true;
+}
+}
+}
+if (!nosechanged)
+{
+vector m = move_global(this.x, this.y, this.z, this.facing);
+if (m.x < 0)
+{
+m.x = 0;
+this.onwall = 2;
+}
+else if (m.x > this.map.max.x)
+{
+m.x = this.map.max.x;
+this.onwall = 2;
+}
+if (m.y < 0)
+{
+m.y = 0;
+this.onwall = 2;
+}
+else if (m.y > this.map.max.y)
+{
+m.y = this.map.max.y;
+this.onwall = 2;
+}
+maptile@ tt = get_tile_handle_at(round(m.x, 0), round(m.y, 0), this.z, this.map);
+if (tt !is null)
+{
+if (tt.is_wall) this.onwall = 2;
+else if (!tt.type.is_empty() or this.hovering)
+{
+this.x = m.x;
+this.y = m.y;
+@ this.ct = tt;
+this.ct_changed = true;
+}
+}
+}
+}
+}
+}
+}
+}
+
+if (this.speedchange != 0.0)
+{
+if (this.speedchangetimer.elapsed >= this.speedchangetime)
+{
+this.speed += (this.speedchange < 0.0 ? (this.speedchange * this.speedchangetimer.elapsed) : -percent_pro((this.maxspeed * 2) - this.speed, (this.speedchange / this.maxspeed) * -50, this.speedchangetimer.elapsed));
+if (this.speed > 0.0) this.movetime = 1000 / this.speed;
+this.speedchangetimer.force(0);
+}
+}
+
+bool changed = false;
+if (this.x != this.oldx)
+{
+this.oldx = this.x;
+this.rx = round(this.x, 0);
+changed = true;
+}
+if (this.y != this.oldy)
+{
+this.oldy = this.y;
+this.ry = round(this.y, 0);
+changed = true;
+}
+if (this.z != this.oldz)
+{
+this.oldz = this.z;
+this.rz = round(this.z, 0);
+changed = true;
+}
+if (this.facing != this.oldfacing)
+{
+if (this.started)
+{
+double fu = 0.005 * (1 - (this.speed / this.maxspeed));
+int amount = abs(this.facing - this.oldfacing);
+this.fuel -= fu * amount;
+}
+this.oldfacing = this.facing;
+this.onwall = 0;
+if (this.p !is null)
+{
+this.p.facing = this.facing + this.userfacing;
+this.p.facing += (this.p.facing < 0 ? 360 : this.p.facing >= 360 ? -360 : 0);
+if (!changed) this.sendpacket("facing " + this.p.facing);
+}
+else
+{
+if (!changed) this.sendpacket("vefacing " + this.facing);
+}
+}
+
+if (changed)
+{
+if (this.onwall > 0) this.onwall--;
+if (this.mid !is null) this.mid.update(this.x, this.y, this.z);
+if (this.sirenid !is null) this.sirenid.update(this.x, this.y, this.z);
+if (this.p !is null)
+{
+this.p.x = this.x;
+this.p.y = this.y;
+this.p.z = this.z;
+this.sendpacket("move " + this.x + " " + this.y + " " + this.z + " " + this.p.facing);
+}
+else this.sendpacket(this.entervehicle());
+if (this.ct_changed) this.ct_changed = false;
+else @ this.ct = get_tile_handle_at(this.rx, this.ry, this.rz, this.map);
+if (this.ct is null)
+{
+this.ctile.resize(0);
+this.slidetime = 0;
+this.slidedir = -1;
+this.reserve_fallcheck = true;
+}
+else
+{
+if (this.ct.type.is_empty())
+{
+this.ctile.resize(0);
+this.slidetime = 0;
+this.slidedir = -1;
+if (!this.hovering)
+{
+if (!this.started or (this.flying ? this.speed < this.minspeed : true)) this.reserve_fallcheck = true;
+}
+}
+else
+{
+if (this.ct.type == "mine")
+{
+this.health = -1;
+this.hitby = "소거의 지뢰";
+}
+if (this.slidedir == -1) this.slidetimer.force(0);
+this.ctile = this.ct.type;
+this.slidetime = this.ct.slidetime;
+this.slidedir = this.ct.slidedir;
+step_mine(this.rx, this.ry, this.rz, this.map, this.owner);
+if (this.falldist != 0) this.reserve_fallcheck = true;
+}
+}
+}
+if (this.speed != this.oldspeed)
+{
+bool ud = this.speedcheck();
+if (this.speed <= 0.0)
+{
+this.speed = 0.0;
+if (this.speedchange < 0.0) this.speedchangestop();
+}
+else if (this.speed >= this.maxspeed)
+{
+this.speed = this.maxspeed;
+if (this.speedchange > 0.0) this.speedchangestop();
+}
+this.oldspeed = this.speed;
+if (this.started)
+{
+if (!ud)
+{
+if (this.mid !is null) this.pitch = this.mid.pitch;
+}
+this.fueltime = (this.vfueltime - (this.pitch * this.vfuelpitch) - (this.speed * this.vfuelspeed));
+}
+if (this.flying)
+{
+if (this.speed < this.minspeed) this.reserve_fallcheck = true;
+else
+{
+this.falldist = 0;
+this.reserve_fallcheck = false;
+}
+}
+}
+if (this.lowfuel)
+{
+if (this.fuel > 2.5)
+{
+this.lowfuel = false;
+this.sendpacket("goodfuel");
+}
+}
+
+if (this.in_smoke)
+{
+if (this.smoketimer.elapsed >= 510) this.in_smoke = false;
+}
+if (this.reserve_fallcheck) this.fallcheck();
+if (this.slidedir >= 0 and this.falldist == 0)
+{
+if (this.slidetimer.elapsed >= this.slidetime)
+{
+this.slidetimer.force(0);
+switch (this.slidedir)
+{
+case 0: {this.y++; }
+break; case 1: {this.x++; }
+break; case 2: {this.y--; }
+break; case 3: {this.x--; }
+break; case 4: {this.z++; }
+break; case 5: {this.z--; }
+break; case 6: {this.x++; this.y++; }
+break; case 7: {this.x--; this.y++; }
+break; case 8: {this.x++; this.y--; }
+break; case 9: {this.x--; this.y--; }
+break;
+}
+if (this.x < 0 or this.x > this.map.max.x or this.y < 0 or this.y > this.map.max.y)
+{
+this.slidedir = -1;
+this.x = this.oldx;
+this.y = this.oldy;
+}
+}
+}
+if (this.inside !is null) this.inside.loop();
+}
+}
+
+vehicle@ find_vehicle(int x, int y, int z, mapdata@ map)
+{
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.rx != x) continue;
+if (temp.ry != y) continue;
+if (temp.rz != z) continue;
+return temp;
+}
+return null;
+}
+
+vehicle@ get_vehicle_handle(const string& in id)
+{
+if (!vehicles.exists(id)) return null;
+vehicle@ temp;
+vehicles.get(id, @ temp);
+return temp;
+}
+
+void install_vehicle_hash()
+{
+vehicledict.set("aircraft", spawn_aircraft());
+vehicledict.set("drone", spawn_drone());
+vehicledict.set("pro_mac", spawn_pro_mac());
+vehicledict.set("armored_tank", spawn_armored_tank());
+vehicledict.set("dogan_slx", spawn_dogan_slx());
+vehicledict.set("police_car", spawn_police_car());
+vehicledict.set("police_car_super", spawn_police_car_super());
+vehicledict.set("tank", spawn_tank());
+vehicledict.set("truck", spawn_truck());
+vehicledict.set("motor_cycle", spawn_motor_cycle());
+string[]@ names = vehicledict.keys;
+int vehiclelength = names.length;
+for (uint i = 0; i < vehiclelength; i++)
+{
+string raw = file_get_contents("./prefs/vehicle_maps/" + names[i] + ".vhc");
+if (raw.is_empty()) continue;
+mapdata new;
+new.is_vehicle = true;
+new.internal_load(raw, false, false);
+vehiclemap.set(names[i], new);
+}
+}
+
+void load_vehicles()
+{
+if (!fl.open("./prefs/save.vehicle", "rb")) return;
+string[]@ data = string_split(fl.read(), "~", false);
+fl.close();
+int datalength = data.length;
+for (uint j = 0; j < datalength; j++)
+{
+int index = string_contains(data[j], "type:", 1);
+if (index < 0) continue; // Type must goes first.
+if (index > 0) data[j] = string_trim_left(data[j], index);
+string[]@ sdata = string_split(data[j], "\r\n", true);
+string[]@ parsed = string_split(sdata[0], ":", false);
+if (parsed.length < 2) continue;
+if (!vehicledict.exists(parsed[1])) continue;
+vehicle new;
+if (!vehicledict.get(parsed[1], new)) continue;
+string[] invvalues;
+int sdatalength = sdata.length;
+for (uint i = 1; i < sdatalength; i++)
+{
+@ parsed = string_split(sdata[i], ":", false);
+if (parsed.length < 2) continue;
+switch (string_to_hash(parsed[0]))
+{
+case vhs_id: new.id = parsed[1];
+break; case vhs_fuel: new.fuel = string_to_number(parsed[1]);
+break; case vhs_map: @ new.map = get_map_handle(parsed[1]);
+break; case vhs_x:
+{
+new.x = string_to_number(parsed[1]);
+new.rx = round(new.x, 0);
+new.oldx = new.x;
+}
+break; case vhs_y:
+{
+new.y = string_to_number(parsed[1]);
+new.ry = round(new.y, 0);
+new.oldy = new.y;
+}
+break; case vhs_z:
+{
+new.z = string_to_number(parsed[1]);
+new.rz = round(new.z, 0);
+new.oldz = new.z;
+}
+break; case vhs_facing:
+{
+new.facing = string_to_number(parsed[1]);
+new.oldfacing = new.facing;
+}
+break; case vhs_owner: new.owner = parsed[1];
+break; case vhs_health: new.health = string_to_number(parsed[1]);
+break; case vhs_inventory: invvalues = string_split(parsed[1], ";", false);
+}
+}
+if (new.id.is_empty()) continue;
+if (new.map is null) continue;
+if (new.maxpassengers > -1)
+{
+if (!new.create_structure()) continue;
+}
+new.fueltime = new.vfueltime;
+new.hitn = new.owner + "의 " + new.type;
+new.locker.owner = new.owner;
+@ new.locker.vhc = new;
+bool su = false;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ parsed = string_split(invvalues[i], "=", false);
+if (parsed.length < 2) continue;
+su = true;
+new.locker.give(parsed[0], string_to_number(parsed[1]), false);
+}
+if (su) new.locker.update_inv();
+@ new.ct = get_tile_handle_at(new.rx, new.ry, new.rz, new.map);
+if (new.ct is null) new.reserve_fallcheck = true;
+else
+{
+if (!new.hovering and new.ct.type.is_empty()) new.reserve_fallcheck = true;
+else
+{
+if (new.ct.type == "mine")
+{
+new.health = -1;
+new.hitby = "소거의 지뢰";
+}
+new.ctile = new.ct.type;
+new.slidetime = new.ct.slidetime;
+new.slidedir = new.ct.slidedir;
+}
+}
+if (new.reserve_fallcheck) new.fallcheck();
+new.map.vs.insert_last(new);
+vehicles.set(new.id, @ new);
+}
+}
+
+void save_vehicles()
+{
+string sf;
+int maplength = maps.length;
+for (uint j = 0; j < maplength; j++)
+{
+mapdata@ map = maps[j];
+int vlength = map.vs.length;
+for (uint i = 0; i < vlength; i++)
+{
+vehicle@ this = map.vs[i];
+sf += "type:" + this.type + "\r\n";
+sf += "id:" + this.id + "\r\n";
+sf += "map:" + map.name + "\r\n";
+sf += "x:" + this.x + "\r\n";
+sf += "y:" + this.y + "\r\n";
+sf += "z:" + this.z + "\r\n";
+sf += "facing:" + this.facing + "\r\n";
+sf += "owner:" + this.owner + "\r\n";
+sf += "fuel:" + this.fuel + "\r\n";
+sf += "health:" + this.health + "\r\n";
+if (!this.locker.inventory.is_empty()) sf += "inventory:" + this.locker.invstring + "\r\n";
+sf += "~\r\n";
+}
+}
+fl.open("./prefs/save.vehicle", "wb");
+fl.write(sf);
+fl.close();
+}

@@ -1,0 +1,161 @@
+class vending_item
+{
+string name;
+uint price;
+}
+class vending_machine
+{
+int x, y, z;
+string description;
+mapdata@ map;
+string dropitem;
+vending_item@[] vending_items;
+int coins;
+timer droptimer;
+bool droppingitem = false;
+void command(const string& in c, int peer)
+{
+string[]@ parsed = string_split(c, " ", false);
+if (parsed[0] == "[SPCE]")
+{
+string vlist;
+vplay("beeplist");
+int vendingitemslength = vending_items.length;
+for (uint i = 0; i < vendingitemslength; i++)
+{
+vending_item@ temp = vending_items[i];
+vlist += i + 1 + ": " + temp.name + ", " + temp.price + " coin.\r\n";
+}
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress vendingbuy", vlist);
+}
+else if (parsed[0] == "r")
+{
+vplay("button");
+if (coins <= 0)
+{
+vplay("beeperror");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "회수한 돈이 없습니다.");
+return;
+}
+vplay("return");
+int rand = random(5, 8);
+spawn_timeitem(x, y + rand, z, map, "coin", coins, 500);
+coins = 0;
+}
+else if (parsed[0] == "vendingbuy")
+{
+if (parsed.length < 2) return;
+if (!string_is_digits(parsed[1]))
+{
+vplay("beeperror");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "취소되었습니다.\r\not원하시는 버튼을 누르세요.");
+return;
+}
+int vindex = string_to_number(parsed[1]) - 1;
+if (vindex < 0 or vindex >= vending_items.length)
+{
+vplay("beeperror");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "입력이 바르지 않습니다.\r\not원하시는 버튼을 누르세요.");
+return;
+}
+vending_item@ temp = vending_items[vindex];
+if (coins < temp.price)
+{
+vplay("beeperror");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "자판기에 삽입한 돈이 부족합니다.\r\not원하시는 버튼을 누르세요.");
+return;
+}
+vplay("beepsuccess");
+send(peer, "완료!", 0);
+dropitem = temp.name;
+coins -= temp.price;
+vplay("work");
+droptimer.force(0);
+droppingitem = true;
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "품목을 보려면 스페이스, 자판기에 넣은 coin을 보려면 C, 넣은 coin을 회수하려면 R을 누르세요.");
+}
+else if (parsed[0] == "c")
+{
+vplay("button");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", coins + " coin이 들어 있습니다.\r\not원하시는 버튼을 누르세요.");
+}
+else
+{
+vplay("beeperror");
+send_serverbox(peer, 1, -1, 1, 1, "vendingpress", "입력이 바르지 않습니다.");
+}
+}
+void add_item(const string& in item, int price)
+{
+vending_item new;
+new.name = item;
+new.price = price;
+vending_items.insert_last(new);
+}
+void vplay(const string& in s)
+{
+string sendpacket = string_encrypt("play_3ds vending" + s + " " + this.x + " " + this.y + " " + this.z, pcps);
+int range = 75 / this.map.pan_step;
+int playerslength = map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, sendpacket, 0);
+}
+}
+}
+void vendingloop(mapdata@ map)
+{
+for (int i = map.vending_machines.length - 1; i > -1; i--)
+{
+vending_machine@ this = map.vending_machines[i];
+if (this.droppingitem)
+{
+if (this.droptimer.elapsed >= 3550)
+{
+this.droppingitem = false;
+this.vplay("drop");
+spawn_timeitem(this.x + random(-5, 5), this.y + random(-5, 5), this.z, this.map, this.dropitem, 1, 900);
+}
+}
+}
+}
+vending_machine@ find_vending_machine(int x, int y, int z, mapdata@ map)
+{
+for (int i = map.vending_machines.length - 1; i > -1; i--)
+{
+vending_machine@ temp = map.vending_machines[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return temp;
+}
+return null;
+}
+void insert_prices(vending_machine@ vnt, const string& in itemlist)
+{
+string[]@ items = string_split(itemlist, ",", false);
+int itemslength = items.length;
+vnt.vending_items.reserve(vnt.vending_items.length + itemslength);
+for (uint i = 0; i < itemslength; i++)
+{
+string[]@ parsed = string_split(items[i], ";", false);
+if (parsed.length < 2) continue;
+vending_item new;
+new.name = parsed[0];
+new.price = string_to_number(parsed[1]);
+vnt.vending_items.insert_last(new);
+}
+}
+void spawn_vending_machine(int x, int y, int z, mapdata@ map, const string& in description, const string& in itemlist)
+{
+vending_machine v;
+v.x = x;
+v.y = y;
+v.z = z;
+@ v.map = map;
+v.description = description;
+insert_prices(v, itemlist);
+map.vending_machines.insert_last(v);
+}

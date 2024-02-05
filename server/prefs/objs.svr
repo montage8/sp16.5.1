@@ -1,0 +1,7 @@
+ammo,objgetammo,objammo,800
+weapon,objgetweapon,objweapon,700
+snack,objgetsnack,objsnack,600
+coin_pack,objgetcoin,objcoin,600
+coin,objgetcoin,objcoin,600
+s_flag,flag_get,flag2,21000
+r_flag,flag_get,flag2,21000

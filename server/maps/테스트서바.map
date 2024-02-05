@@ -1,0 +1,9 @@
+mapname:테스트서바
+owner:jackpot
+maxx:100
+maxy:100
+survival:1
+fightingstate:0
+tile:0:100:0:100:0:0:0
+starting_items:meat;15,health_drink;15
+respawn:2

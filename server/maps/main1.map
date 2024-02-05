@@ -1,0 +1,15 @@
+
+mapname:main1
+owner:goojoonpyo2382
+maxx:500
+maxy:500
+survival:0
+tile:0:500:251:500:0:0:grass
+src:0:500:0:500:0:500:birds36:100
+fightingstate:1
+public:0
+src:0:500:0:500:0:500:birds:100
+tile:0:500:0:250:0:0:dirt
+
+zone:0:500:0:250:0:500:±¤¾ß
+zone:0:500:251:500:0:500:½£

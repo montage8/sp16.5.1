@@ -1,0 +1,164 @@
+int hour = TIME_HOUR, minute = TIME_MINUTE, day = DATE_DAY, month = DATE_MONTH, year = DATE_YEAR;
+string seconds;
+string included;
+string included2;
+string time;
+string date;
+string ampm;
+int hour2;
+
+const string& get_date(bool include_weekday = false, bool numerical = true)
+{
+date = (include_weekday ? DATE_WEEKDAY_NAME + ", " : empty) + (numerical ? DATE_MONTH + "-" + DATE_DAY + "-" + DATE_YEAR : DATE_MONTH_NAME + " " + DATE_DAY + ", " + DATE_YEAR);
+return date;
+}
+const string& get_time(bool twelvehour = true, bool include_seconds = true)
+{
+time.resize(0);
+included = (TIME_MINUTE < 10 ? "0" : empty);
+included2 = (TIME_SECOND < 10 ? "0" : empty);
+ampm = (TIME_HOUR < 12 ? "오전" : "오후");
+hour2 = (TIME_HOUR == 0 ? 12 : TIME_HOUR <= 12 ? TIME_HOUR : TIME_HOUR - 12);
+seconds = TIME_SECOND;
+time = (twelvehour ? ampm + " " + hour2 : TIME_HOUR) + ":" + included + TIME_MINUTE + (include_seconds ? ":" + included2 + seconds : empty);
+return time;
+}
+
+const string& get_day()
+{
+switch (day)
+{
+case 1:
+return "월요일";
+case 2:
+return "화요일";
+case 3:
+return "수요일";
+case 4:
+return "목요일";
+case 5:
+return "금요일";
+case 6:
+return "토요일";
+case 7:
+return "일요일";
+default:
+break;
+}
+return "없음";
+}
+
+const string& convert_month(int m)
+{
+switch (m)
+{
+case 1:
+return "1월";
+case 2:
+return "2월";
+case 3:
+return "3월";
+case 4:
+return "4월";
+case 5:
+return "5월";
+case 6:
+return "6월";
+case 7:
+return "7월";
+case 8:
+return "8월";
+case 9:
+return "9월";
+case 10:
+return "10월";
+case 11:
+return "11월";
+case 12:
+return "12월";
+default:
+break;
+}
+return "0월";
+}
+
+string gettime()
+{
+int newhour = (hour == 0 ? 12 : hour <= 12 ? hour : hour - 12);
+string ampm = (hour < 12 ? "오전" : "오후");
+string newminute = (minute < 10 ? "0" + minute : minute);
+return ampm + " " + newhour + ":" + newminute + ", " + year + " " + convert_month(month) + " " + day;
+}
+
+void timeloop()
+{
+if (timetimer.elapsed > timetime)
+{
+timetimer.force(0);
+minute++;
+}
+if (minute > 59)
+{
+if (gnstart_auto == 1) gnstart(true);
+minute = 0;
+hour++;
+}
+if (hour > 23)
+{
+hour = 0;
+minute = 0;
+day++;
+if (day > 31)
+{
+day = 1;
+month++;
+if (month > 12)
+{
+month = 1;
+year++;
+}
+}
+}
+}
+
+string ms_to_readable_time(double ms)
+{
+if (ms <= 0) return "0초";
+ms /= 1000;
+uint seconds = ms % 60;
+ms /= 60;
+uint minutes = ms % 60;
+ms /= 60;
+uint hours = ms % 24;
+ms /= 24;
+uint days = ms % 7;
+uint weeks = ms / 7;
+string ret;
+if (weeks > 0)
+{
+ret += weeks + "주, ";
+}
+if (days > 0)
+{
+ret += days + "일";
+}
+if (days > 0 and (hours > 0 or minutes > 0 or seconds > 0))
+ret += ", ";
+if (hours > 0)
+{
+ret += hours + "시간";
+}
+if (hours > 0 and (minutes > 0 or seconds > 0))
+ret += ", ";
+if (minutes > 0)
+{
+ret += minutes + "분";
+}
+if (minutes > 0 and seconds > 0)
+ret += ", ";
+if (seconds > 0)
+{
+ret += seconds + "초";
+}
+return ret;
+}

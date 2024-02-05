@@ -1,0 +1,235 @@
+const double pi = 3.1415926535897932384626433832795;
+const int north = 0;
+const int northeast = 45;
+const int east = 90;
+const int southeast = 135;
+const int south = 180;
+const int southwest = 225;
+const int west = 270;
+const int northwest = 315;
+const int half_up = 45;
+const int streight_up = 90;
+const int half_down = 135;
+const int streight_down = 180;
+double theta;
+vector move(double x, double y, double z, int deg, int dir = 0, int zdeg = 0, int zdir = 0)
+{
+if (dir != 0)
+{
+int d2 = deg + dir;
+if (d2 >= 360)
+{
+d2 -= 360;
+}
+deg = d2;
+}
+if (zdir != 0)
+{
+int d2 = zdeg + zdir;
+if (d2 >= 360)
+{
+d2 -= 360;
+}
+zdeg = d2;
+}
+double px = sine_theta[deg];
+double py = cosine_theta[deg];
+double pz = 0;
+if (zdeg > 0)
+{
+pz = sine_theta[zdeg];
+px *= cosine_theta[zdeg];
+py *= cosine_theta[zdeg];
+}
+vector r(x + px, y + py, z + pz);
+return r;
+}
+int getdir(int facing)
+{
+facing /= 45;
+switch (facing)
+{
+case 0:
+return north;
+case 1:
+return northeast;
+case 2:
+return east;
+case 3:
+return southeast;
+case 4:
+return south;
+case 5:
+return southwest;
+case 6:
+return west;
+case 7:
+return northwest;
+}
+return north;
+}
+int snapleft(int deg)
+{
+if (deg <= 0) return 315;
+deg--;
+deg /= 45;
+return deg * 45;
+}
+int snapright(int deg)
+{
+if (deg >= 315) return 0;
+deg = 1 + (deg / 45);
+return deg * 45;
+}
+int turnleft(int deg, int inc = 1)
+{
+int d = deg - inc;
+if (d < 0)
+d += 360;
+return d;
+}
+int turnright(int deg, int inc = 1)
+{
+int d = deg + inc;
+if (d >= 360)
+d -= 360;
+return d;
+}
+const string& dir_to_string(int direction)
+{
+switch (direction)
+{
+case northwest: return "북서쪽";
+case west: return "서쪽";
+case southwest: return "남서쪽";
+case south: return "남쪽";
+case southeast: return "남동쪽";
+case east: return "동쪽";
+case northeast: return "북동쪽";
+case north: return "북쪽";
+default: break;
+}
+ref_string = direction;
+return ref_string;
+}
+int get_2d_distance(double x1, double y1, double x2, double y2)
+{
+return round(((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)) ** 0.5, 0);
+}
+int get_3d_distance(double x1, double y1, double z1, double x2, double y2, double z2)
+{
+return round(((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1)) ** 0.5, 0);
+}
+int calculate_x_y_angle(double x1, double y1, double x2, double y2, int deg)
+{
+double x = x2 - x1;
+double y = y2 - y1;
+if (x == 0)
+{
+if (y == 0) return 0;
+else x += 0.0000000000001;
+}
+else
+{
+if (y == 0) y += 0.0000000000001;
+}
+double rad = arc_tangent(y / x);
+double arctan = rad / pi * 180;
+double fdeg;
+if (x > 0)
+{
+fdeg = 90 - arctan;
+}
+else if (x < 0)
+{
+fdeg = 270 - arctan;
+}
+if (x == 0)
+{
+if (y > 0)
+{
+fdeg = 0;
+}
+else if (y < 0)
+{
+fdeg = 180;
+}
+}
+fdeg = round(fdeg - deg, 0);
+if (fdeg < 0) fdeg += 360;
+if (fdeg > 359) fdeg -= 360;
+return fdeg;
+}
+const string& calculate_x_y_string(int deg)
+{
+switch (deg)
+{
+case 0:
+return "12시";
+case 30:
+return "1시";
+case 60:
+return "2시";
+case 90:
+return "3시";
+case 120:
+return "4시";
+case 150:
+return "5시";
+case 180:
+return "6시";
+case 210:
+return "7시";
+case 240:
+return "8시";
+case 270:
+return "9시";
+case 300:
+return "10시";
+case 330:
+return "11시";
+case 360:
+return "12시";
+default: break;
+}
+int degtemp = deg / 30;
+switch (degtemp)
+{
+case 0:
+return "12시에서 1시 사이";
+case 1:
+return "1시에서 2시 사이";
+case 2:
+return "2시에서 3시 사이";
+case 3:
+return "3시에서 4시 사이";
+case 4:
+return "4시에서 5시 사이";
+case 5:
+return "5시에서 6시 사이";
+case 6:
+return "6시에서 7시 사이";
+case 7:
+return "7시에서 8시 사이";
+case 8:
+return "8시에서 9시 사이";
+case 9:
+return "9시에서 10시 사이";
+case 10:
+return "10시에서 11시 사이";
+case 11:
+return "11시에서 12시 사이";
+default: break;
+}
+return empty;
+}
+bool& get_total_distance(double sx, double sy, double sz, double tx, double ty, double tz, int mindist = 20)
+{
+if (sx > tx + mindist) return false_t;
+if (sx < tx - mindist) return false_t;
+if (sy > ty + mindist) return false_t;
+if (sy < ty - mindist) return false_t;
+if (sz > tz + mindist) return false_t;
+if (sz < tz - mindist) return false_t;
+return true_t;
+}

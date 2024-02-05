@@ -1,0 +1,18 @@
+
+mapname:robotland1
+maxx:128
+maxy:128
+maxz:128
+zone:0:128:0:128:0:128:robot land powerful level
+travelpoint:0:128:0:0:0:128:세이프존:3001:3001:30:포탈:0
+zone:0:128:0:0:0:128:여기를 통해 탈출하세요.
+travelpoint:0:128:128:128:0:128:세이프존:3001:3001:30:포탈:0
+zone:0:128:128:128:0:128:여기를 통해 탈출하세요.
+src:0:128:0:128:0:128:world2
+tile:0:128:0:128:0:0:grass2
+robots:0:128:0:128:0:0:8:500:cyborg,fitter,manager,monster,moth,prisonguard,storekeeper,wolf:.:1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:64
+startingy:64
+startingz:0

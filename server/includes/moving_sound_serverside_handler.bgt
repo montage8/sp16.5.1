@@ -1,0 +1,239 @@
+enum stationarymodes
+{
+STATIONARY_NONE, STATIONARY_OWNER, STATIONARY_ALL
+}
+dictionary msounds;
+class msound
+{
+bool remove = false;
+string id, soundloop;
+player@ owner;
+uint owner_hash = 0;
+double x, y, z;
+double pitch;
+mapdata@ map;
+double bend_size = 0, bend_time = 1, bend_limit = 0;
+timer bend_timer;
+bool bend_to_percent = false;
+string benddata;
+int stationary_mode = STATIONARY_NONE;
+double volume = 1;
+
+void send(bool send_pitch, bool send_volume = false)
+{
+sendmap("createmsound " + this.id + " " + this.soundloop + " " + this.x + " " + this.y + " " + this.z + (send_pitch ? " " + this.pitch : empty) + (send_volume ? " " + this.volume : empty), this.map, 4, this.owner);
+if (bend_size != 0.0) sendmap("updatemsoundbend " + this.id + " " + this.benddata, this.map, 4, (stationary_mode == STATIONARY_OWNER ? null : this.owner));
+}
+
+void send(player &inout temp)
+{
+temp.sendpacket("createmsound " + this.id + " " + this.soundloop + " " + this.x + " " + this.y + " " + this.z + " " + this.pitch + " " + volume, 4);
+if (bend_size != 0.0) temp.sendpacket("updatemsoundbend " + this.id + " " + this.benddata, 4);
+}
+
+void send_stationary(bool send_pitch, bool send_volume = false)
+{
+sendmap("createmsoundstationary " + this.id + " " + this.soundloop + " " + (send_pitch ? " " + this.pitch : empty) + (send_volume ? " " + this.volume : empty), this.map, 4, this.owner);
+if (bend_size != 0.0) sendmap("updatemsoundbend " + this.id + " " + this.benddata, this.map, 4, (stationary_mode == STATIONARY_OWNER ? null : this.owner));
+}
+
+void send_stationary(player &inout temp)
+{
+temp.sendpacket("createmsoundstationary " + this.id + " " + this.soundloop + " " + this.pitch + " " + (stationary_mode <= STATIONARY_OWNER ? 100 : this.volume), 4);
+if (bend_size != 0.0) temp.sendpacket("updatemsoundbend " + this.id + " " + this.benddata, 4);
+}
+
+void set_volume(double v)
+{
+this.volume = v;
+sendmap("updatemsoundvolume " + this.id + " " + this.volume, this.map, 4, this.owner);
+}
+
+void set_bend(double c1, double c2, double c3, bool btp = true)
+{
+bend_size = c1;
+bend_time = c2;
+bend_limit = c3;
+bend_to_percent = btp;
+benddata = c1 + " " + c2 + " " + c3 + (btp ? " true" : empty);
+sendmap("updatemsoundbend " + this.id + " " + this.benddata, this.map, 4, (stationary_mode == STATIONARY_OWNER ? null : this.owner));
+bend_timer.force(0);
+}
+
+double remove_bend(bool synchronization = true)
+{
+sendmap("msoundbendstop " + this.id + (synchronization ? " " + pitch : empty), this.map, 4, (stationary_mode == STATIONARY_OWNER ? null : this.owner));
+this.bend_size = 0.0;
+this.benddata.resize(0);
+return this.pitch;
+}
+
+void update(double x, double y, double z, double pitch = -1, const string& in loop = empty)
+{
+this.x = x;
+this.y = y;
+this.z = z;
+if (pitch != -1) this.pitch = pitch;
+if (!loop.is_empty()) this.soundloop = loop;
+this.send(pitch > -1);
+}
+
+void update(double pitch = -1, const string& in loop = empty)
+{
+if (pitch != -1) this.pitch = pitch;
+if (!loop.is_empty()) this.soundloop = loop;
+if (stationary_mode == STATIONARY_ALL) this.send_stationary(pitch > -1);
+else this.send(pitch > -1);
+}
+
+void change_owner(player@ owner = null)
+{
+if (this.owner is owner) return;
+if (this.owner !is null)
+{
+this.owner.sendpacket("destroymsound " + id, 4);
+if (this.stationary_mode == STATIONARY_ALL) this.send_stationary(this.owner);
+else this.send(this.owner);
+}
+if (owner !is null)
+{
+owner.sendpacket("destroymsound " + id, 4);
+if (this.stationary_mode == STATIONARY_OWNER) this.send_stationary(owner);
+}
+@ this.owner = owner;
+}
+
+msound@ change_map(mapdata &inout nmap, double nx, double ny, double nz)
+{
+destroy();
+msound m1;
+do
+{
+m1.id = randomstring();
+}
+while (msounds.exists(m1.id));
+m1.soundloop = this.soundloop;
+m1.x = nx;
+m1.y = ny;
+m1.z = nz;
+@ m1.map = nmap;
+@ m1.owner = this.owner;
+m1.pitch = this.pitch;
+m1.volume = this.volume;
+m1.stationary_mode = this.stationary_mode;
+if (this.stationary_mode == STATIONARY_ALL) m1.send_stationary(true, true);
+else
+{
+if (this.stationary_mode == STATIONARY_OWNER)
+{
+if (owner !is null)
+{
+if (nmap is this.owner.map) m1.send_stationary(this.owner);
+}
+}
+m1.send(true, true);
+}
+if (!this.benddata.is_empty())
+{
+m1.bend_size = this.bend_size;
+m1.bend_time = this.bend_time;
+m1.bend_limit = this.bend_limit;
+m1.bend_to_percent = this.bend_to_percent;
+m1.benddata = this.benddata;
+sendmap("updatemsoundbend " + m1.id + " " + m1.benddata, nmap, 4, (m1.stationary_mode == STATIONARY_OWNER ? null : m1.owner));
+}
+nmap.msounds.insert_last(m1);
+msounds.set(m1.id, @ m1);
+return m1;
+}
+
+msound@ destroy()
+{
+sendmap("destroymsound " + this.id, this.map, 4);
+this.remove = true;
+msounds.delete(this.id);
+return null;
+}
+}
+
+msound@ spawn_moving_sound(const string& in loop, double x, double y, double z, mapdata@ map, player@ owner = null, double pitch = 100, bool owner_stationary = false)
+{
+msound m1;
+do
+{
+m1.id = randomstring();
+}
+while (msounds.exists(m1.id));
+m1.soundloop = loop;
+m1.x = x;
+m1.y = y;
+m1.z = z;
+@ m1.map = map;
+@ m1.owner = owner;
+m1.pitch = pitch;
+if (owner_stationary)
+{
+m1.stationary_mode = STATIONARY_OWNER;
+if (owner !is null)
+{
+if (map is owner.map) m1.send_stationary(owner);
+}
+}
+m1.send(true);
+map.msounds.insert_last(m1);
+msounds.set(m1.id, @ m1);
+return m1;
+}
+
+msound@ spawn_moving_sound(const string& in loop, mapdata@ map, player@ owner = null, double pitch = 100)
+{
+msound m1;
+do
+{
+m1.id = randomstring();
+}
+while (msounds.exists(m1.id));
+m1.stationary_mode = STATIONARY_ALL;
+m1.soundloop = loop;
+@ m1.map = map;
+@ m1.owner = owner;
+m1.pitch = pitch;
+m1.volume = 100;
+m1.send_stationary(true);
+map.msounds.insert_last(m1);
+msounds.set(m1.id, @ m1);
+return m1;
+}
+
+msound@ get_moving_sound_handle(const string& in id)
+{
+if (!msounds.exists(id)) return null;
+msound@ temp;
+msounds.get(id, @ temp);
+return temp;
+}
+
+void msoundloop(mapdata@ map)
+{
+for (int i = map.msounds.length - 1; i > -1; i--)
+{
+msound@ this = map.msounds[i];
+if (this.remove)
+{
+map.msounds.remove_at(i);
+continue;
+}
+if (this.bend_size == 0.0) continue;
+if (this.bend_timer.elapsed < this.bend_time) continue;
+this.pitch += (this.bend_to_percent ? percent_pro(this.pitch, this.bend_size, this.bend_timer.elapsed) : (this.bend_size * this.bend_timer.elapsed));
+this.bend_timer.force(0);
+if (this.bend_limit > 0)
+{
+if ((this.bend_size > 0 ? this.pitch >= this.bend_limit : this.pitch <= this.bend_limit))
+{
+this.pitch = this.bend_limit;
+this.remove_bend();
+}
+}
+}
+}

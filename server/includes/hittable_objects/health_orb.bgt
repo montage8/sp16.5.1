@@ -1,0 +1,58 @@
+class health_orb : hittable
+{
+timer affecttimer;
+void loop()
+{
+if (this.health <= 0) return;
+if (this.affecttimer.elapsed < 400) return;
+this.affecttimer.force(0);
+int hobjslength = map.hobjs.length;
+for (uint i = 0; i < hobjslength; i++)
+{
+hittable@ temp = map.hobjs[i];
+if (temp is this) continue;
+if (temp.distancecheck(x, y, z) > 8) continue;
+if (temp.name == this.name) temp.hit(2000000000, "°úºÎÇÏ", "health_orb");
+}
+int playerslength = map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(x, y, z) <= 5)
+{
+temp.health += (10.0 - (temp.health * 9.0 / temp.maxhealth)) * 160.0;
+}
+}
+}
+void onkill()
+{
+play("health_orb_shot", x, y, z, map);
+}
+void onstop()
+{
+play("health_orb_stop", this.x, this.y, this.z, this.map);
+}
+}
+void spawn_horb(int x, int y, int z, mapdata@ map)
+{
+int id;
+do
+{
+id = (1073741824 * random(0, 1)) + (32768 * random(0, 32767)) + random(0, 32767);
+}
+while (hobjs.exists(id));
+health_orb h1;
+h1.x = x;
+h1.y = y;
+h1.z = z;
+@ h1.map = map;
+h1.name = "health_orb";
+h1.health = 1;
+h1.lifetime = 30000;
+h1.sound = "health_orb_loop";
+h1.id = id;
+play("health_orb_start", x, y, z, map);
+@ h1.mid = spawn_moving_sound("health_orb_loop", x, y, z, map);
+map.hobjs.insert_last(h1);
+hobjs.set(id, @ h1);
+}

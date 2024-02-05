@@ -1,0 +1,11 @@
+
+mapname:미니게임
+owner:jackpot
+maxx:32767
+maxy:32767
+maxz:32767
+tile:0:32767:0:32767:0:0:carpet
+public:0
+zone:0:32767:0:32767:0:32767:미니게임 존
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:item_grabber
+fightingstate:1

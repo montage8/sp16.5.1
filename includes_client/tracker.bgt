@@ -1,0 +1,679 @@
+char_data@[] charlist;
+int tracking_menu_sort_mode = 0;
+class char_data
+{
+string name;
+string id;
+int initial = 0;
+double value = 0;
+int opCmp(char_data@ o)
+{
+switch (tracking_menu_sort_mode)
+{
+case 1:
+{
+if (o.initial == initial) break;
+if (o.initial == ascii_p) return -1; 
+if (initial == ascii_p) return 1; 
+}
+break;
+case 2:
+{
+if (o.initial == initial) break;
+if (o.initial == ascii_v) return -1; 
+if (initial == ascii_v) return 1; 
+}
+break;
+case 3:
+{
+if (o.initial == initial) break;
+if (o.initial == ascii_r) return -1; 
+if (initial == ascii_r) return 1; 
+}
+break;
+default:
+break;
+}
+if (o.value < value) return -1;
+if (o.value > value) return 1;
+return 0;
+}
+}
+
+void playermenu(char_data@[]@ players)
+{
+int playerslength = players.length;
+string[] initial;
+initial.reserve(playerslength);
+string tempname;
+for (uint i = 0; i < playerslength; i++)
+{
+tempname = players[i].id;
+int length = tempname.size;
+if (length <= 1)
+{
+initial.insert_last(tempname);
+continue;
+}
+if (character_to_ascii(tempname) < 128)
+{
+initial.insert_last(tempname[0]);
+continue;
+}
+initial.insert_last(tempname[0] + tempname[1]);
+}
+string cl;
+if (!characters.is_empty()) speech_stop_level = 1;
+int counter = -1;
+for (; ; )
+{
+wait(connected ? maintime : 5);
+mouse_update();
+keyboard_update();
+sr_loop();
+cl = input_characters();
+if (!cl.is_empty())
+{
+speech_stop_level = 1;
+int cllength = cl.size;
+if (cllength > 2) cl.resize(2);
+bool find = false;
+if (counter < 0) counter = 0;
+for (uint i = counter; i < playerslength; i++)
+{
+if (i == counter) continue;
+if (initial[i] == cl)
+{
+counter = i;
+speak(players[counter].id);
+find = true;
+break;
+}
+}
+if (!find)
+{
+for (uint i = 0; i < playerslength; i++)
+{
+if (i == counter) continue;
+if (initial[i] == cl)
+{
+counter = i;
+speak(players[counter].id);
+find = true;
+break;
+}
+}
+}
+if (!find)
+{
+speak("아무것도 없습니다.");
+}
+}
+if (key_pressed(KEY_UP) or key_pressed(KEY_LEFT))
+{
+counter--;
+if (counter < 0) counter = playerslength - 1;
+speak(players[counter].name);
+}
+else if (key_pressed(KEY_DOWN) or key_pressed(KEY_RIGHT))
+{
+counter++;
+if (counter >= playerslength) counter = 0;
+speak(players[counter].name);
+}
+if (key_pressed(KEY_HOME))
+{
+counter = 0;
+speak(players[counter].name);
+}
+else if (key_pressed(KEY_END))
+{
+counter = playerslength - 1;
+speak(players[counter].name);
+}
+if (key_pressed(KEY_ESCAPE))
+{
+speak("창을 닫습니다.");
+return;
+}
+if (counter < 0) {}
+else if (counter > playerslength - 1) {}
+else if (players[counter].id.is_empty()) {}
+else
+{
+char_data@ temp = players[counter];
+if (key_pressed(KEY_RETURN))
+{
+string message = input_box_pro(temp.id + "님에게 보낼 메시지를 입력하세요.");
+if (!message.is_empty()) send_reliable("/이야기 " + temp.id + " " + message, 1);
+return;
+}
+else if (key_pressed(KEY_F1))
+{
+speak(temp.id + " 클립보드로 복사됨");
+clipboard_copy_text(temp.id);
+}
+else if (key_pressed(KEY_F2))
+{
+speak(temp.name + " 클립보드로 복사됨");
+clipboard_copy_text(temp.name);
+}
+else if (key_pressed(KEY_F5))
+{
+send_reliable("myinfo " + temp.id, 5);
+}
+else if (key_pressed(KEY_F6))
+{
+send_reliable("/신뢰 " + temp.id, 1);
+}
+else if (key_pressed(KEY_F7))
+{
+send_reliable("/손절 " + temp.id, 1);
+}
+else if (key_pressed(KEY_F8))
+{
+send_reliable("/관전 " + temp.id, 1);
+}
+}
+}
+}
+
+void tracking_menu(const string& in mess)
+{
+charlist.resize(0);
+m.reset(true, true);
+m.wrap = true;
+m.set_callback(tracking_menu_loop, empty);
+if (sidescrolling == 1) m.enable_left_and_right = true;
+else m.enable_up_and_down = true;
+string[]@ lines = string_split(mess, "[]", true);
+int lineslength = lines.length;
+charlist.reserve(lineslength);
+for (uint i = 0; i < lineslength; i++)
+{
+string[]@ parsed = string_split(lines[i], " ", false);
+if (parsed.length != 3) continue;
+char_data new;
+new.name = parsed[0];
+new.id = parsed[1];
+new.initial = character_to_ascii(new.id);
+new.value = string_to_number(parsed[2]);
+charlist.insert_last(new);
+}
+int tracks = charlist.length;
+if (tracks > 0)
+{
+charlist.sort_descending();
+for (uint i = 0; i < tracks; i++)
+{
+char_data@ temp = charlist[i];
+m.add_item_tts(temp.name + ", " + round(temp.value, 0) + "칸 떨어짐.", temp.id);
+}
+}
+m.add_item_tts("좌표 수동 입력", "m");
+m.add_item_tts("추적 중단", "ss");
+int mres = m.run(tracks + "개의 물체 발견.", true);
+if (mres == -5)
+{
+tracking_menu(mess);
+return;
+}
+if (mres < 1)
+{
+speak("창을 닫습니다.");
+return;
+}
+string result = m.get_item_name(mres);
+if (result == "m")
+{
+string dx = input_box_pro("X 좌표를 입력하세요.");
+if (dx.is_empty()) return;
+dx = string_to_number(dx);
+string dy = input_box_pro("Y 좌표를 입력하세요.");
+if (dy.is_empty()) return;
+dy = string_to_number(dy);
+string dz = input_box_pro("Z 좌표를  입력하세요.");
+if (dz.is_empty()) return;
+dz = string_to_number(dz);
+result += dx + ":" + dy + ":" + dz;
+}
+send_reliable("track " + result, 4);
+}
+
+int tracking_menu_loop(dynamic_menu_pro@ m, string data)
+{
+if (key_pressed(KEY_F5))
+{
+tracking_menu_sort_mode = 1;
+speak("플레이어를 맨 위로 올립니다.");
+return -5;
+}
+if (key_pressed(KEY_F6))
+{
+tracking_menu_sort_mode = 2;
+speak("차량을 맨 위로 올립니다.");
+return -5;
+}
+if (key_pressed(KEY_F7))
+{
+tracking_menu_sort_mode = 3;
+speak("로봇을 맨 위로 올립니다.");
+return -5;
+}
+if (key_pressed(KEY_F8))
+{
+tracking_menu_sort_mode = 0;
+speak("우선순위 없이 거리 순으로 봅니다.");
+return -5;
+}
+return 0;
+}
+
+void tell_where(double mx, double my, double mz, double x, double y, double z, int fac, const string& in targetn = empty, bool include_locations = false, bool precise = false)
+{
+string mess;
+if (!targetn.is_empty()) mess += targetn + ": ";
+if (precise)
+{
+if (trackprecise == 1) mess += "좌우 " + calculate_x_y_angle(mx, my, x, y, fac) + "도, ";
+else mess += calculate_x_y_string(calculate_x_y_angle(mx, my, x, y, fac)) + " 방향, ";
+double dl = get_2d_distance(mx, my, x, y);
+double rz = z - mz;
+int zd = calculate_x_y_angle(0, 0, rz, dl, 0);
+mess += "상하 " + (zd > 180 ? zd - 360 : zd) + "도, ";
+}
+else
+{
+if (z > mz) mess += "위에, ";
+else if (z < mz) mess += "밑에, ";
+mess += calculate_x_y_string(calculate_x_y_angle(mx, my, x, y, fac)) + " 방향, ";
+}
+mess += get_3d_distance(mx, my, mz, x, y, z) + "칸 떨어짐, ";
+if (include_locations)
+{
+double qx = round(x, 0);
+double qy = round(y, 0);
+double qz = round(z, 0);
+mess += "위치 " + get_zone_at(qx, qy, qz) + ", 좌표 " + qx + " " + qy + " " + qz;
+}
+speak(mess);
+}
+
+tone_synth tps;
+class tps_item
+{
+double range;
+int mindeg;
+int maxdeg;
+uint deg; // absolute
+double volume;
+int type;
+int opCmp(tps_item@ o)
+{
+if (tps_sort_mode == 1)
+{
+if (o.range < range) return -1;
+if (o.range > range) return 1;
+if (o.deg < deg) return -1;
+if (o.deg > deg) return 1;
+return 0;
+}
+else if (tps_sort_mode == 2)
+{
+if (o.deg < deg) return -1;
+if (o.deg > deg) return 1;
+if (o.range < range) return -1;
+if (o.range > range) return 1;
+return 0;
+}
+return 0;
+}
+}
+tps_item@[] tps_items;
+int tps_sort_mode = 1; // 1 is range, 2 is deg
+int tps_slot = 1;
+string tps_filename = DIRECTORY_APPDATA + "/sr/tracking";
+sound@ tps_player;
+int tps_pan = 25;
+
+void tracking_play(double px, double py, double pz, double tx, double ty, double tz, int fac)
+{
+if (tps_items.is_empty()) return;
+double range = get_3d_distance(px, py, pz, tx, ty, tz);
+if (fac < 0) fac += 360 + (abs(fac / 360)) * 360;
+if (fac > 359) fac -= (abs(fac / 360)) * 360;
+int deg = calculate_x_y_angle(px, py, tx, ty, fac);
+int type = 0;
+double volume = 0;
+for (int i = tps_items.length - 1; i > -1; i--)
+{
+tps_item@ temp = tps_items[i];
+if (range > temp.range) continue;
+if (temp.mindeg > temp.maxdeg)
+{
+if (deg < temp.mindeg and deg > temp.maxdeg) continue;
+}
+else if (temp.mindeg < temp.maxdeg)
+{
+if (deg < temp.mindeg or deg > temp.maxdeg) continue;
+}
+else
+{
+if (temp.mindeg != deg) continue;
+}
+type = temp.type;
+volume = temp.volume;
+}
+if (type == 0) return;
+if (volume == 0) return;
+double length = get_2d_distance(px, py, tx, ty);
+double rz = tz - pz;
+double zdeg = calculate_x_y_angle(0, 0, rz, length, 0);
+zdeg += 90;
+if (zdeg >= 360) zdeg -= 360;
+double hz = round(110 * (2 ** (zdeg / 45)), 0);
+double pan = round(sine_theta[deg] * tps_pan, 2);
+tps.reset();
+tps.volume = volume - 100;
+tps.pan = pan;
+tps.waveform_type = type;
+tps.freq_ms(hz, 50);
+tps.set_edge_fades(1, 1);
+@ tps_player = tps.write_wave_sound();
+tps_player.play();
+}
+
+const string& waveform_to_text(uint id)
+{
+switch (id)
+{
+case 1: return "sawtooth";
+case 2: return "square";
+case 3: return "sine";
+case 4: return "triangle";
+}
+return empty;
+}
+
+int select_waveform()
+{
+setupmenu(false, true);
+m.add_item_tts("sawtooth");
+m.add_item_tts("square");
+m.add_item_tts("sine");
+m.add_item_tts("triangle");
+int mres = m.run("웨이브폼 선택", true);
+return mres;
+}
+
+void tracking_sound_editor(int mres = 0)
+{
+setupmenu(false, true);
+m.multi_checking = true;
+m.enable_onetouch_navigation = 1;
+m.speak_letter = false;
+m.set_callback(tsloop, empty);
+m.add_item_tts("추적 사운드 새로 만들기", "cr", empty, true, true);
+m.add_item_tts("패닝, " + tps_pan + ". 엔터를 눌러 변경할 수 있습니다.", "pan", empty, true, true);
+string[] list;
+int tpss = tps_items.length;
+for (uint i = 0; i < tpss; i++)
+{
+tps_item@ temp = tps_items[i];
+m.add_item_tts("범위 " + temp.range + ", 왼쪽 끝 각도 " + temp.mindeg + ", 오른쪽 끝 각도 " + temp.maxdeg + ", 웨이브폼 " + waveform_to_text(temp.type) + ", 음량 " + temp.volume, i);
+list.insert_last(i);
+}
+mres = m.run("추적 사운드 편집기", true, mres);
+if (mres < 1)
+{
+if (mres == -5) tracking_sound_editor();
+else speak("창을 닫습니다.");
+return;
+}
+if (mres == 1)
+{
+double range = string_to_number(input_box_pro("범위를 입력하세요."));
+if (range <= 0) 
+{
+speak("취소되었습니다.");
+tracking_sound_editor();
+return;
+}
+int ld = string_to_number(input_box_pro("왼쪽 끝 각도를 0에서 359 사이의 숫자로 입력하세요."));
+if (ld < 0) ld += 360 + (abs(ld / 360)) * 360;
+if (ld > 359) ld -= (abs(ld / 360)) * 360;
+int rd = string_to_number(input_box_pro("오른쪽 끝 각도를 0에서 359 사이의 숫자로 입력하세요."));
+if (rd < 0) rd += 360 + (abs(rd / 360)) * 360;
+if (rd > 359) rd -= (abs(rd / 360)) * 360;
+double vol = string_to_number(input_box_pro("볼륨 크기를 1에서 100 사이의 숫자로 입력하세요."));
+if (vol < 1 or vol > 100) 
+{
+speak("취소되었습니다.");
+tracking_sound_editor();
+return;
+}
+int type = select_waveform();
+if (type < 1 or type > 4)
+{
+speak("취소되었습니다.");
+tracking_sound_editor();
+return;
+}
+tps_item new;
+new.mindeg = ld;
+new.maxdeg = rd;
+new.volume = vol;
+new.range = range;
+new.type = type;
+new.deg = new.maxdeg - (new.mindeg > new.maxdeg ? new.mindeg - 360 : new.mindeg);
+tps_items.insert_last(new);
+tps_save();
+speak("완료.");
+tracking_sound_editor(1);
+return;
+}
+if (mres == 2)
+{
+int pan = string_to_number(input_box_pro("패닝을 1에서 100 사이의 숫자로 입력하세요.", tps_pan));
+if (pan <= 0 or pan > 100) 
+{
+speak("취소되었습니다.");
+tracking_sound_editor();
+return;
+}
+tps_pan = pan;
+tps_save();
+speak("저장되었습니다.");
+tracking_sound_editor(3);
+return;
+}
+int[]@ selected = m.get_checked_item_index(-2);
+int checknum = selected.length;
+bool success = swap_array(list, selected, mres - 3);
+if (success)
+{
+tps_item@[] cop;
+for (uint i = 0; i < tpss; i++)
+{
+cop.insert_last(tps_items[string_to_number(list[i])]);
+}
+tps_items = cop;
+tps_save();
+}
+tracking_sound_editor(mres);
+}
+
+int tsloop(dynamic_menu_pro@ m, string data)
+{
+tps_item@[] temps;
+for (uint i = KEY_1; i <= KEY_0; i++)
+{
+if (!key_pressed(i)) continue;
+tps_slot = i - 1;
+string[]@ se = m.get_checked_item_list();
+if (!se.is_empty())
+{
+int selength = se.length;
+for (uint i = 0; i < selength; i++)
+{
+temps.insert_last(tps_items[string_to_number(se[i])]);
+}
+}
+tps_items.resize(0);
+tps_load();
+if (!temps.is_empty())
+{
+tps_items = temps;
+tps_save();
+speak((i - 1) + "번 슬롯으로 선택한 항목을 복사합니다.");
+}
+else speak((i - 1) + "번 슬롯을 엽니다.");
+return -5;
+}
+if (key_pressed(KEY_F7))
+{
+tps_sort_mode = 1;
+tps_items.sort_descending();
+tps_save();
+speak("범위별로 자동 정렬합니다.");
+return -5;
+}
+if (key_pressed(KEY_F8))
+{
+tps_sort_mode = 2;
+tps_items.sort_descending();
+tps_save();
+speak("각도별로 자동 정렬합니다.");
+return -5;
+}
+if (m.menu_position < 3) return 0;
+if (key_pressed(KEY_DELETE))
+{
+int[]@ se = m.get_checked_item_index(-2);
+if (se.is_empty())
+{
+tps_items.remove_at(m.menu_position - 3);
+tps_save();
+}
+else
+{
+se.sort_descending();
+int selength = se.length;
+for (uint i = 0; i < selength; i++)
+{
+tps_items.remove_at(se[i]);
+}
+}
+speak("삭제되었습니다.");
+return -5;
+}
+int number = 0;
+if (key_pressed(KEY_F1)) number = 1;
+else if (key_pressed(KEY_F2)) number = 2;
+else if (key_pressed(KEY_F3)) number = 3;
+else if (key_pressed(KEY_F4)) number = 4;
+else if (key_pressed(KEY_F5)) number = 5;
+if (number < 1 or number > 5) return 0;
+tps_item@ temp = tps_items[m.menu_position - 3];
+switch (number)
+{
+case 1:
+{
+double range = string_to_number(input_box_pro("범위를 입력하세요.", temp.range));
+if (range <= 0) 
+{
+speak("취소되었습니다.");
+break;
+}
+temp.range = range;
+tps_save();
+speak("완료.");
+}
+break;
+case 2:
+{
+int ld = string_to_number(input_box_pro("왼쪽 끝 각도를 0에서 359 사이의 숫자로 입력하세요.", temp.mindeg));
+if (ld < 0) ld += 360 + (abs(ld / 360)) * 360;
+if (ld > 359) ld -= (abs(ld / 360)) * 360;
+temp.mindeg = ld;
+temp.deg = temp.maxdeg - (temp.mindeg > temp.maxdeg ? temp.mindeg - 360 : temp.mindeg);
+tps_save();
+speak("완료.");
+}
+break;
+case 3:
+{
+int rd = string_to_number(input_box_pro("오른쪽 끝 각도를 0에서 359 사이의 숫자로 입력하세요.", temp.maxdeg));
+if (rd < 0) rd += 360 + (abs(rd / 360)) * 360;
+if (rd > 359) rd -= (abs(rd / 360)) * 360;
+temp.maxdeg = rd;
+temp.deg = temp.maxdeg - (temp.mindeg > temp.maxdeg ? temp.mindeg - 360 : temp.mindeg);
+tps_save();
+speak("완료.");
+}
+break;
+case 4:
+{
+double vol = string_to_number(input_box_pro("볼륨 크기를 1에서 100 사이의 숫자로 입력하세요.", temp.volume));
+if (vol < 1 or vol > 100) 
+{
+speak("취소되었습니다.");
+break;
+}
+temp.volume = vol;
+tps_save();
+speak("완료.");
+}
+break;
+case 5:
+{
+temp.type++;
+if (temp.type > 4) temp.type = 1;
+tps_save();
+speak(waveform_to_text(temp.type));
+}
+break;
+}
+return m.menu_position;
+}
+
+void tps_save()
+{
+string data = tps_pan + "\r\n";
+int tpss = tps_items.length;
+for (uint i = 0; i < tpss; i++)
+{
+tps_item@ temp = tps_items[i];
+data += temp.range + " " + temp.mindeg + " " + temp.maxdeg + " " + temp.volume + " " + temp.type + "\r\n";
+}
+fl.open(tps_filename + tps_slot + ".txt", "wb");
+fl.write(data);
+fl.close();
+}
+
+void tps_load()
+{
+tps_pan = 25;
+tps_items.resize(0);
+if (!fl.open(tps_filename + tps_slot + ".txt", "rb")) return;
+string data = fl.read();
+fl.close();
+if (data.is_empty()) return;
+string[]@ lines = string_split(data, "\r\n", false);
+tps_pan = string_to_number(lines[0]);
+int lineslength = lines.length;
+tps_items.reserve(lineslength);
+for (uint i = 1; i < lineslength; i++)
+{
+string[]@ params = string_split(lines[i], " ", false);
+if (params.length < 5) continue;
+tps_item new;
+new.range = string_to_number(params[0]);
+new.mindeg = string_to_number(params[1]);
+new.maxdeg = string_to_number(params[2]);
+new.deg = new.maxdeg - (new.mindeg > new.maxdeg ? new.mindeg - 360 : new.mindeg);
+new.type = string_to_number(params[4]);
+new.volume = string_to_number(params[3]);
+tps_items.insert_last(new);
+}
+}

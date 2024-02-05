@@ -1,0 +1,287 @@
+class shipment
+{
+mapdata@ map;
+msound@ loopsound;
+double x, y, z;
+int starttime = 10174;
+int takeofftime = 3667;
+double targetx, targety, targetz;
+timer mtimer;
+int mtime = 300;
+timer takeofftimer;
+timer startstoptimer;
+int mode = 1;
+int oldmode = 0;
+bool started = false, takeoff = false;
+bool arrived = false;
+string inv;
+int cash;
+bool stopping = false;
+player@ owner;
+
+void playsound(const string& in sndname)
+{
+int l = map.players.length;
+if (l == 0) return;
+string sendpacket = string_encrypt("play_3ds delivery_" + sndname + " " + this.x + " " + this.y + " " + this.z, pcps);
+int range = 75 / this.map.pan_step;
+for (uint i = 0; i < l; i++)
+{
+player@ temp = map.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, sendpacket, 0);
+}
+}
+}
+
+void shipmentloop(mapdata@ map)
+{
+for (int i = map.shipments.length - 1; i > -1; i--)
+{
+shipment@ this = map.shipments[i];
+if (this.oldmode != this.mode)
+{
+this.playsound("modeswitch");
+this.oldmode = this.mode;
+}
+switch (this.mode)
+{
+case 1:
+{
+if (this.started)
+{
+this.mode = 2;
+break;
+}
+if (this.startstoptimer.elapsed < this.starttime) break;
+this.started = true;
+this.playsound("takeoff");
+}
+break;
+case 2:
+{
+if (!this.started)
+{
+this.mode = 1;
+break;
+}
+if (this.takeofftimer.elapsed < this.takeofftime) break;
+this.mode = 3;
+@ this.loopsound = spawn_moving_sound("delivery_loop", this.x, this.y, this.z, this.map);
+}
+break;
+case 3:
+{
+if (!this.started)
+{
+this.mode = 1;
+break;
+}
+if (this.mtimer.elapsed < 40) break;
+this.mtimer.force(0);
+if (this.x < this.targetx) this.x++;
+else if (this.x > this.targetx) this.x--;
+if (this.y < this.targety) this.y++;
+else if (this.y > this.targety) this.y--;
+if (this.z < this.targetz) this.z++;
+else if (this.z > this.targetz) this.z--;
+if (this.loopsound !is null) this.loopsound.update(this.x, this.y, this.z);
+if (this.x == this.targetx and this.y == this.targety and this.z == this.targetz) this.arrived = true;
+if (!this.arrived) break;
+this.playsound("stop");
+this.startstoptimer.force(0);
+this.stopping = true;
+this.mode = 4;
+if (this.loopsound !is null) @ this.loopsound = this.loopsound.destroy();
+}
+break;
+case 4:
+{
+if (!this.stopping)
+{
+this.mode = 3;
+break;
+}
+if (this.startstoptimer.elapsed < 2998) break;
+this.stopping = false;
+this.mode = 0;
+this.playsound("drop");
+int vslength = map.vs.length;
+for (uint j = 0; j < vslength; j++)
+{
+vehicle@ temp = map.vs[j];
+if (temp.inside is null) continue;
+if (temp.distancecheck(this.x, this.y, this.z) > 3) continue;
+temp.playsound("delivery_drop_int", false);
+}
+if (!this.inv.is_empty())
+{
+string newid = new_shipment_item(this.inv);
+spawn_timeitem(this.x, this.y, this.z, this.map, "shipment_" + newid, 1, 2998);
+}
+if (this.owner !is null)
+{
+this.owner.sendsound("store_order_complete");
+if (this.cash > 0) this.owner.give("coin", this.cash);
+}
+map.shipments.remove_at(i);
+}
+}
+}
+}
+
+void spawn_shipment(int tx, int ty, int tz, mapdata@ m, player@ p, const string& in i, int amount = 0, bool is_start_position = true)
+{
+shipment sh1;
+sh1.inv = i;
+@ sh1.owner = p;
+@ sh1.map = m;
+double range = 100 / m.pan_step;
+if (is_start_position)
+{
+sh1.targetx = tx;
+sh1.targety = ty;
+sh1.targetz = tz;
+sh1.x = (random(1, 2) == 1 ? m.max.x + range : 0 - range);
+sh1.y = (random(1, 2) == 1 ? m.max.y + range : 0 - range);
+sh1.z = 0;
+}
+else
+{
+sh1.x = tx;
+sh1.y = ty;
+sh1.z = tz;
+sh1.targetx = (random(1, 2) == 1 ? m.max.x + range : 0 - range);
+sh1.targety = (random(1, 2) == 1 ? m.max.y + range : 0 - range);
+sh1.targetz = 0;
+}
+sh1.cash = amount;
+sh1.playsound("start");
+m.shipments.insert_last(sh1);
+}
+
+void spawn_shipment(int tx, int ty, int tz, int x, int y, int z, mapdata@ m, player@ p, const string& in i, int amount = 0)
+{
+shipment sh1;
+@ sh1.owner = p;
+sh1.targetx = tx;
+sh1.targety = ty;
+sh1.targetz = tz;
+sh1.inv = i;
+@ sh1.map = m;
+sh1.x = x;
+sh1.y = y;
+sh1.z = z;
+sh1.cash = amount;
+sh1.playsound("start");
+m.shipments.insert_last(sh1);
+}
+
+dictionary shipment_items;
+class shipment_item
+{
+string oldinv;
+string id;
+
+string list_contents()
+{
+if (oldinv.is_empty())
+{
+return "없음";
+}
+string[]@ invvalues = string_split(oldinv, "\r\n", false);
+string ret;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ inv2 = string_split(invvalues[i], "=", false);
+if (inv2.length < 2) continue;
+if (i > 0) ret += ", ";
+ret += inv2[1] + " " + inv2[0];
+}
+return ret;
+}
+
+void give_to(const string& in who)
+{
+player@ pl = get_player_handle(who);
+if (pl is null) return;
+if (oldinv.is_empty())
+{
+pl.alert("비어있습니다.");
+return;
+}
+if (string_contains(oldinv, "=", 1) < 0)
+{
+pl.alert("젠장, 함정입니다.");
+spawn_splash(pl.x, pl.y, pl.z, pl.map, pl.name, oldinv);
+return;
+}
+string[]@ invvalues = string_split(oldinv, "\r\n", false);
+bool su = false;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ inv2 = string_split(invvalues[i], "=", false);
+if (inv2.length < 2) continue;
+su = true;
+pl.give(inv2[0], string_to_number(inv2[1]), false);
+}
+if (su) pl.update_inv();
+shipment_items.delete(id);
+}
+}
+
+shipment_item@ get_shipment_item_handle(const string& in the_id)
+{
+if (!shipment_items.exists(the_id)) return null;
+shipment_item@ temp;
+shipment_items.get(the_id, @ temp);
+return temp;
+}
+
+string new_shipment_item(const string& in inv)
+{
+shipment_item i1;
+i1.oldinv = inv;
+do
+{
+i1.id = randomstring(8);
+}
+while (shipment_items.exists(i1.id));
+shipment_items.set(i1.id, @ i1);
+return i1.id;
+}
+
+void save_shipments()
+{
+string data;
+string[]@ shipment_keys = shipment_items.keys;
+int shipment_item = shipment_items.size;
+for (uint i = 0; i < shipment_item; i++)
+{
+shipment_item@ hand;
+if (!shipment_items.get(shipment_keys[i], @ hand)) continue;
+data += hand.id + "+++" + hand.oldinv + "[]";
+}
+fl.open("./prefs/shipments.svr", "wb");
+fl.write(data);
+fl.close();
+}
+
+void load_shipments()
+{
+if (!fl.open("./prefs/shipments.svr", "rb")) return;
+string[]@ data = string_split(fl.read(), "[]", true);
+fl.close();
+int thingslength = data.length;
+for (uint i = 0; i < thingslength; i++)
+{
+string[]@ parsed = string_split(data[i], "+++", true);
+if (parsed.length < 2) continue;
+shipment_item new;
+new.id = parsed[0];
+new.oldinv = parsed[1];
+shipment_items.set(parsed[0], @ new);
+}
+}

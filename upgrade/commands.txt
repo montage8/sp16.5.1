@@ -1,0 +1,4 @@
+exe
+cl upgrade.c /I "d:\b3\vcpkg\installed\x64-windows-static\include" /Fe"upgrade.exe" /link /LIBPATH:"d:\b3\vcpkg\installed\x64-windows-static\lib" libcurl.lib Ws2_32.lib Wldap32.lib Crypt32.lib Normaliz.lib Advapi32.lib zlib.lib
+dll
+cl upgrade1.c /I "d:\b3\vcpkg\installed\x64-windows-static\include" /Fe"upgrade1.dll" /LD /link /LIBPATH:"d:\b3\vcpkg\installed\x64-windows-static\lib" libcurl.lib Ws2_32.lib Wldap32.lib Crypt32.lib Normaliz.lib Advapi32.lib zlib.lib

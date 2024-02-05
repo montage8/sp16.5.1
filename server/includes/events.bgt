@@ -1,0 +1,288 @@
+bool vote_started = false;
+dictionary voted_players, voted_computers, voted_ptc, voted_ctp;
+timer electimer;
+double electime = 0;
+string vote_rawdata;
+bool vote_cid_authenticate = false;
+string votereward;
+
+void load_vote_backups()
+{
+if (fl.open("./votes/cid.bak", "rb"))
+{
+voted_computers = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./votes/id.bak", "rb"))
+{
+voted_players = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./votes/ctp.bak", "rb"))
+{
+voted_ctp = deserialize(fl.read());
+fl.close();
+}
+if (fl.open("./votes/ptc.bak", "rb"))
+{
+voted_ptc = deserialize(fl.read());
+fl.close();
+}
+}
+
+void stop_vote(bool clear = true)
+{
+if (voted_players.is_empty() and voted_computers.is_empty())
+{
+send(0, "notify 투표를 마감합니다. 아무도 투표한 사람이 없었습니다.", 0);
+reset_vote(clear);
+return;
+}
+send(0, "notify 투표를 " + (electimer.elapsed < electime ? "조기 " : empty) + "마감합니다. 결과는 잠시 후에 공개될 예정입니다.", 0);
+fl.open("./votes/result.txt", "wb");
+fl.write(dictionary_to_text((voted_players.is_empty() ? voted_computers : voted_players), "\r\n", true, empty));
+fl.close();
+reset_vote(clear);
+}
+
+void reset_vote(bool clear = true)
+{
+votereward.resize(0);
+voted_players.delete_all();
+voted_computers.delete_all();
+voted_ptc.delete_all();
+voted_ctp.delete_all();
+vote_rawdata.resize(0);
+electime = 0;
+vote_cid_authenticate = false;
+if (clear)
+{
+file_delete("./votes/cid.bak");
+file_delete("./votes/id.bak");
+file_delete("./votes/ptc.bak");
+file_delete("./votes/ctp.bak");
+}
+vote_started = false;
+}
+
+int auctiontime = 30000;
+string auctionwho, auctionwho2, auctionwhotemp;
+bool auctionbidder;
+bool auction;
+string auctionitem;
+int auctionamount;
+int auctionbid, auctionbidtemp;
+timer auctiontimer;
+
+void auction_reset()
+{
+auction = false;
+auctionitem.resize(0);
+auctionbidder = false;
+auctionamount = 0;
+auctionbid = 0;
+auctionbidtemp = 0;
+auctionwho.resize(0);
+auctionwho2.resize(0);
+auctionwhotemp.resize(0);
+}
+
+void auctionloop()
+{
+if (!auction) return;
+if (auctiontimer.elapsed < auctiontime) return;
+if (!auctionbidder)
+{
+send(0, "입찰자가 없어 아이템이 주인에게 돌아갑니다.", 2);
+auction_reset();
+return;
+}
+player@ temp1 = get_player_handle(auctionwho);
+player@ temp2 = get_player_handle(auctionwho2);
+if (temp1 is null or temp2 is null)
+{
+send(0, "일부 플레이어가 서버에 없어 경매를 진행할 수 없습니다.", 2);
+auction_reset();
+return;
+}
+if (auctionbid < 0)
+{
+send(0, "입찰가를 누군가가 음수로 불렀습니다. 불법 경매를 강제 취소합니다.", 2);
+auction_reset();
+return;
+}
+if (temp1.get_item_count(auctionitem) < auctionamount)
+{
+send(0, "경매인은 더 이상 매물을 가지고 있지 않습니다. 경매를 취소합니다.", 2);
+auction_reset();
+return;
+}
+if (temp2.get_item_count("coin") < auctionbid)
+{
+send(0, "입찰자가 돈이 부족하여 경매를 진행할 수 없습니다.", 2);
+auction_reset();
+return;
+}
+temp2.give("coin", -auctionbid);
+temp2.give(auctionitem, auctionamount);
+temp1.give(auctionitem, -auctionamount);
+temp1.give("coin", auctionbid);
+send(0, "play_s auctionwon", 0);
+send(0, temp2.name + "님이 매물을 삽니다.", 2);
+auction_reset();
+}
+
+double gntarget = random(1, 99);
+int[]  guessthenumber_guesses;
+player@[] gnplayers;
+int guessthenumber_minutes = 0;
+timer guessthenumbertimer, gnstarttimer;
+int gnstart_auto = 1;
+int guessthenumber_active = 0;
+
+void gnstart(bool automatic = false)
+{
+if (guessthenumber_active == 1) return;
+if (automatic)
+{
+if (players.length < 5) return;
+}
+gnreset();
+guessthenumber_active = 1;
+send(0, "숫자 맞추기 게임이 시작됩니다. /숫자 명령어를 이용하여 게임에 참가할 수 있으며, 1에서 99 사이의 숫자만 가능합니다. 가장 목표 숫자에 가까운 사람이 이깁니다. 행운을 빕니다.", 2);
+send(0, "play_s gnstart", 0);
+}
+
+void gngameloop()
+{
+if (guessthenumber_active == 0) return;
+if (guessthenumbertimer.elapsed > 60000)
+{
+guessthenumbertimer.force(0);
+guessthenumber_minutes++;
+}
+if (guessthenumber_minutes < 2) return;
+string result = "아무도 게임에 참가하지 않았습니다.";
+if (!guessthenumber_guesses.is_empty())
+{
+int bestnum = get_closest_value(gntarget, guessthenumber_guesses, true);
+if (bestnum > -1)
+{
+player@ wp = gnplayers[bestnum];
+result = wp.name + "님이 이겼습니다.\r\n 가장 가까운 정답은 " + guessthenumber_guesses[bestnum] + "이며, 올바른 정답은 " + gntarget + "입니다. 제출된 숫자: " + convert_to_list(guessthenumber_guesses);
+wp.give("street_check", (guessthenumber_guesses[bestnum] == gntarget ? 10 : 1));
+}
+}
+guessthenumber_active = 0;
+gnreset();
+send(0, "play_s gnfinished", 0);
+send(0, result, 2);
+}
+
+void gnreset()
+{
+guessthenumber_guesses.resize(0);
+gnplayers.resize(0);
+guessthenumber_minutes = 0;
+guessthenumbertimer.force(0);
+gntarget = random(1, 99);
+}
+
+int giftx = random(0, 500);
+int gifty = random(0, 500);
+int giftz = random(0, 5);
+int giftskyx = random(100, 500);
+int giftskyy = random(100, 500);
+int giftskyz = 1000;
+timer gifttimer;
+int gifting = 0;
+string[] gifts;
+
+const string find_gift(player@ temp)
+{
+if (temp.map.name == "메인")
+{
+int dist = temp.distancecheck(giftx, gifty, giftz);
+return (dist < 1 ? "볼 것도 없군요. 엔터를 누르세요." : dist + "칸 떨어져 있습니다.");
+}
+if (temp.map.name == "필멸의산")
+{
+if (temp.get_item_count("_ancient_street_rifle") < 1)
+{
+return "선물은 메인 맵에서만 찾을 수 있습니다.";
+}
+if (temp.get_item_count("_ancient_street_armor") < 1)
+{
+return "선물은 메인 맵에서만 찾을 수 있습니다.";
+}
+return temp.distancecheck(giftskyx, giftskyy, giftskyz) + "칸 떨어져 있습니다.";
+}
+return "선물은 메인 맵에서만 찾을 수 있습니다.";
+}
+
+void givegift(player@ gifted = null)
+{
+string gift = gifts[random(0, gifts.length - 1)];
+if (gifted !is null)
+{
+send(0, "랜덤 선물의 위치가 바뀝니다.", 2);
+gifted.playsound("gift");
+gifted.alert("선물을 찾았습니다.");
+gifted.give(gift, 1);
+}
+else
+{
+int gifted = random(0, players.length - 1);
+player@ temp = players[gifted];
+temp.alert("서버 접속자들에게 " + gift + " 하나를 나눠줍니다.", true);
+send(0, "서버 접속자들에게 " + gift + " 하나를 나눠줍니다. 추첨인은 " + temp.name + "님입니다.", 2);
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+players[i].give(gift, (i == gifted ? 2 : 1));
+}
+}
+
+void lastmanloop(mapdata@ map, player@ this, bool instant = false)
+{
+if (!map.lastman_standing.exists(this.name)) return;
+int life = 0;
+if (!map.lastman_standing.get(this.name, life)) return;
+if (instant) life = 0;
+else life--;
+if (life <= 0)
+{
+this.alert("라스트맨 스탠딩에서 탈락했습니다. 당신의 순위는 " + map.lastman_standing.size + "입니다.", true);
+map.lastman_standing.delete(this.name);
+if (map.lastman_standing.size == 0) return;
+if (map.lastman_standing.size >= 2)
+{
+playmap("ctfalert", map);
+sendmap(this.name + "님이 라스트맨 스탠딩에서 탈락합니다. 남은 인원 " + map.lastman_standing.size, map, 2);
+return;
+}
+playmap("achievement_complete", map);
+sendmap(map.lastman_standing.keys[0] + "님은 최후의 생존자입니다.", map, 2);
+map.lastman_standing.delete_all();
+return;
+}
+map.lastman_standing.set(this.name, life);
+this.alert("남은 목숨은 " + life + "개입니다.", true);
+}
+
+void throw_flag(mapdata@ map, vehicle@ v, player@ this)
+{
+int fget = this.get_item_count("s_flag");
+if (fget > 0)
+{
+this.give("s_flag", -fget);
+if (v is null) spawn_obj(this.x, this.y, this.z, map, "s_flag", 1, true);
+else spawn_obj(v.x, v.y, v.z, map, "s_flag", 1, true);
+}
+fget = this.get_item_count("r_flag");
+if (fget > 0)
+{
+this.give("r_flag", -fget);
+if (v is null) spawn_obj(this.x, this.y, this.z, map, "r_flag", 1, true);
+else spawn_obj(v.x, v.y, v.z, map, "r_flag", 1, true);
+}
+}

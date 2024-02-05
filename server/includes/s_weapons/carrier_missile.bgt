@@ -1,0 +1,220 @@
+class carrier_missile
+{
+int x;
+int y;
+int z;
+int targetx;
+int targety;
+int targetz;
+int item_amount = 1;
+string item;
+mapdata@ map;
+player@ owner;
+timer lifetimer;
+timer mtimer;
+bool act = false;
+bool sendback = false;
+int mtime = 60;
+msound@ mid;
+int user_value = 0;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+
+void deploy(const string& in ite)
+{
+if (!carrierdict.exists(ite))
+{
+act = false;
+this.owner.alert(ite + " 아이템은 설치가 지원되지 않습니다.");
+return;
+}
+deploy_hash@ func;
+if (!carrierdict.get(ite, @ func))
+{
+act = false;
+this.owner.alert("알 수 없는 오류가 발생했습니다. 개발자에게 문의 바랍니다.");
+return;
+}
+if (func(this))
+{
+this.owner.alert(ite + " 아이템을 " + this.x + ", " + this.y + ", " + this.z + " 좌표에 설치했습니다.", true);
+this.item.resize(0);
+}
+else this.owner.alert("일부 조건이 맞지 않아 " + ite + " 아이템을 설치하지 못했습니다.", true);
+}
+}
+
+void cmloop(mapdata@ map)
+{
+for (int i = map.carrier_missiles.length - 1; i > -1; i--)
+{
+carrier_missile@ this = map.carrier_missiles[i];
+if ((this.owner is null ? true : this.owner.map !is this.map))
+{
+this.mid.destroy();
+spawn_obj(this.x, this.y, this.z, this.map, "carrier_missile", 1, false);
+if (!this.sendback) spawn_obj(this.x, this.y, this.z, this.map, this.item, this.item_amount);
+map.carrier_missiles.remove_at(i);
+continue;
+}
+if (this.x == this.targetx and this.y == this.targety and this.z == this.targetz)
+{
+if (!this.sendback)
+{
+play("carrier_missile_deposit", this.x, this.y, this.z, this.map);
+if (this.act)
+{
+this.deploy(this.item);
+}
+else
+{
+this.owner.alert(this.item + " 아이템이 전송되었습니다.", true);
+spawn_timeitem(this.x, this.y, this.z, this.map, this.item, this.item_amount);
+this.item.resize(0);
+}
+this.sendback = true;
+this.targetx = this.owner.x;
+this.targety = this.owner.y;
+this.targetz = this.owner.z;
+continue;
+}
+else
+{
+play("carrier_missileclick", this.x, this.y, this.z, this.map);
+this.mid.destroy();
+this.owner.give("carrier_missile", 1);
+if (!this.item.is_empty()) this.owner.give(this.item, 1);
+this.owner.alert("carrier missile이 돌아옵니다.");
+map.carrier_missiles.remove_at(i);
+continue;
+}
+}
+if (this.mtimer.elapsed > this.mtime)
+{
+this.mtimer.force(0);
+if (this.sendback)
+{
+if (this.owner.x != this.targetx) this.targetx = this.owner.x;
+if (this.owner.y != this.targety) this.targety = this.owner.y;
+if (this.owner.z != this.targetz) this.targetz = this.owner.z;
+}
+if (this.x < this.targetx)
+this.x++;
+else if (this.x > this.targetx)
+this.x--;
+if (this.y < this.targety)
+this.y++;
+else if (this.y > this.targety)
+this.y--;
+if (this.z < this.targetz)
+this.z++;
+else if (this.z > this.targetz)
+this.z--;
+this.mid.update(this.x, this.y, this.z);
+}
+}
+}
+
+void spawn_carrier_missile(int x, int y, int z, int targetx, int targety, int targetz, mapdata@ map, player@ owner, const string& in item, bool acting = false, int user_value = 0)
+{
+carrier_missile s;
+s.x = x;
+s.y = y;
+s.z = z;
+s.targetx = targetx;
+s.targety = targety;
+s.targetz = targetz;
+@ s.map = map;
+@ s.owner = owner;
+s.item = item;
+s.act = acting;
+s.user_value = user_value;
+@ s.mid = spawn_moving_sound("carrier_missile_loop", x, y, z, map);
+map.carrier_missiles.insert_last(s);
+}
+
+funcdef bool deploy_hash(carrier_missile@ this);
+dictionary carrierdict;
+void install_carrier_missile_hash()
+{
+carrierdict.set("motion_bomb", @ carrier_hash_motion_bomb);
+carrierdict.set("timebomb", @ carrier_hash_timebomb);
+carrierdict.set("wirebomb", @ carrier_hash_wirebomb);
+carrierdict.set("impact_bomb", @ carrier_hash_impact_bomb);
+carrierdict.set("mine", @ carrier_hash_mine);
+carrierdict.set("ultrabomb_silencer", @ carrier_hash_ultrabomb_silencer);
+carrierdict.set("remote_gun", @ carrier_hash_remote_gun);
+carrierdict.set("remote_anti-air_gun", @ carrier_hash_remote_gun_air);
+carrierdict.set("bomb_cracker", @ carrier_hash_bomb_cracker);
+carrierdict.set("sound_grenade", @ carrier_hash_sound_grenade);
+carrierdict.set("stun_grenade", @ carrier_hash_stun_grenade);
+}
+
+bool carrier_hash_timebomb(carrier_missile@ this)
+{
+placetimebomb(this.x, this.y, this.z, this.map, this.owner.name, this.lifetimer.elapsed);
+return true_t;
+}
+bool carrier_hash_remote_gun(carrier_missile@ this)
+{
+if (remgun_at(this.x, this.y, this.z, this.map)) return false_t;
+placetimeremgun(this.x, this.y, this.z, this.map, this.owner.name, this.user_value);
+return true_t;
+}
+bool carrier_hash_remote_gun_air(carrier_missile@ this)
+{
+if (remgun_at(this.x, this.y, this.z, this.map)) return false_t;
+placetimeremgun(this.x, this.y, this.z, this.map, this.owner.name, this.user_value, true);
+return true_t;
+}
+bool carrier_hash_motion_bomb(carrier_missile@ this)
+{
+spawn_motion_bomb(this.x, this.y, this.z, this.map, this.owner.name);
+return true_t;
+}
+bool carrier_hash_mine(carrier_missile@ this)
+{
+int d = get_mine_depth(this.x, this.y, this.z, this.map);
+if (d == 0) return false_t;
+place_mine(this.x, this.y, this.z, this.map, this.owner.name, d);
+return true_t;
+}
+bool carrier_hash_impact_bomb(carrier_missile@ this)
+{
+spawn_impact_bomb(this.x, this.y, this.z, this.map, this.owner.name);
+return true_t;
+}
+bool carrier_hash_wirebomb(carrier_missile@ this)
+{
+if (get_tile_at(this.x, this.y, this.z, this.map, false).is_empty()) return false_t;
+int wirebombslength = this.map.wirebombs.length;
+for (uint i = 0; i < wirebombslength; i++)
+{
+wirebomb@ temp = this.map.wirebombs[i];
+if (this.distancecheck(temp.x, temp.y, temp.z) <= 15) return false_t;
+}
+place_wirebomb(this.x, this.y, this.z, this.map, this.owner.name, this.owner);
+return true_t;
+}
+bool carrier_hash_bomb_cracker(carrier_missile@ this)
+{
+spawn_bomb_cracker(this.x, this.y, this.z, this.map, 3);
+return true_t;
+}
+bool carrier_hash_ultrabomb_silencer(carrier_missile@ this)
+{
+return setup_ultrabomb_silencer(this.x, this.y, this.z, this.map);
+}
+bool carrier_hash_stun_grenade(carrier_missile@ this)
+{
+placestun_grenade(this.x, this.y, this.z, this.map, this.owner.name);
+return true_t;
+}
+bool carrier_hash_sound_grenade(carrier_missile@ this)
+{
+placesound_grenade(this.x, this.y, this.z, this.map, this.owner.name);
+return true_t;
+}

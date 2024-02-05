@@ -1,0 +1,28 @@
+dictionary@ array_to_dictionary(string[]@ arr)
+{
+dictionary new;
+int arrlength = arr.length;
+for (uint i = 0; i < arrlength; i++)
+{
+new.set(arr[i], 0);
+}
+return new;
+}
+
+uint string_to_hash(const string& in str)
+{
+uint hash = 0;
+int str_size = str.size;
+for (uint i = 0; i < str_size; i++)
+{
+hash = 65599 * hash + character_to_ascii(str[i]);
+}
+return hash ^ (hash >> 16);
+}
+
+#include "hash_constants/ascii.bgt"
+#include "hash_constants/order.bgt"
+#include "hash_constants/maporder.bgt"
+#include "hash_constants/menu.bgt"
+#include "hash_constants/CKEY.bgt"
+#include "hash_constants/utilitymenu.bgt"

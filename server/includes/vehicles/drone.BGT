@@ -1,0 +1,48 @@
+drone@ spawn_drone()
+{
+drone v;
+v.type = "drone";
+v.hovering = true;
+v.maxhealth = 50000;
+v.defense = 500;
+v.maxspeed = 36;
+v.groundlimit = 1;
+v.accelpower = 0.006;
+v.decelpower = 0.006;
+v.breakpower = 0.0125;
+v.vfueltime = 3000;
+v.vfuelspeed = 36;
+v.vfuelpitch = 4;
+v.vsspawn = 1000;
+v.vsstart = 2500;
+v.vsstop = 700;
+v.autopilot = true;
+v.gear1_maxpitch = 220;
+v.explode_min = 11000;
+v.explode_max = 19000;
+v.maxpassengers = -1;
+v.hit_percent = 40;
+v.alarmmode = 0;
+string[] templist = {"ancient_wing", "Arctic_Warfare_Suppressed_Sniper_Rifle", "barrett_m82_sniper_rifle", "browning_m2_heavy_50_cal_machine_gun", "bazooka", "bfg9000_argent_plasma_launcher", "cannon", "dragunov_sniper_rifle", "dragunov_sniper_rifle_gen_2", "fn_minimi_machine_gun", "gauss_gun", "item_grabber", "m134_minigun", "mk48_light_machine_gun", "mg4_light_machine_gun", "nak_nk1000_decimater", "rpg7_anti-tank_rocket_launcher", "t1_rocket_launcher", "warp_box"};
+@ v.noitems = array_to_dictionary(templist);
+return v;
+}
+
+class drone : vehicle
+{
+void destroy(player@ pilot, bool hardfall)
+{
+if (hardfall)
+{
+pilot.health = -1;
+return;
+}
+int damage = random(explode_min, explode_max);
+if (pilot.wear_text.exists("safety_helmet"))
+{
+damage >>= 2;
+pilot.equip("safety_helmet");
+}
+pilot.health -= damage;
+}
+}

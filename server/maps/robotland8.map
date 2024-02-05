@@ -1,0 +1,18 @@
+
+mapname:robotland8
+maxx:100
+maxy:100
+maxz:100
+zone:0:100:0:100:0:100:robot land ultimate level
+travelpoint:0:100:0:0:0:100:세이프존:3001:3001:30:포탈:0
+zone:0:100:0:0:0:100:여기를 통해 탈출하세요.
+travelpoint:0:100:100:100:0:100:세이프존:3001:3001:30:포탈:0
+zone:0:100:100:100:0:100:여기를 통해 탈출하세요.
+src:0:100:0:100:0:100:rain3
+tile:0:100:0:100:0:0:spring
+robots:0:100:0:100:0:0:3:500:lion,man_eater,mutant_wolf:.:1
+public:0
+noitem:-50000000:50000000:-50000000:50000000:-50000000:50000000:nuclear_bomb
+startingx:50
+startingy:50
+startingz:0

@@ -1,0 +1,9 @@
+
+mapname:robot공장
+owner:dream
+maxx:1000
+maxy:1000
+survival:0
+tile:0:1000:0:1000:0:0:carpet
+fightingstate:1
+zone:0:1000:0:1000:0:1000:robot_공장

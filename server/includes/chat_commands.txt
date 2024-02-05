@@ -1,0 +1,3515 @@
+﻿// cod hash
+
+funcdef void cod_func(string[]@ parsed, player@ this, string message);
+dictionary cod_hash;
+
+void install_cod_hash()
+{
+cod_hash.set("/옷", @ cod_flag);
+cod_hash.set("/motif", @ motif_func);
+cod_hash.set("/벤", @ cod_benchmark);
+cod_hash.set("/벤치", @ cod_benchmark);
+cod_hash.set("/벤치마", @ cod_benchmark);
+cod_hash.set("/벤치마크", @ cod_benchmark);
+cod_hash.set("/서", @ cod_svrspeed);
+cod_hash.set("/서버", @ cod_svrspeed);
+cod_hash.set("/서버속", @ cod_svrspeed);
+cod_hash.set("/서버속도", @ cod_svrspeed);
+cod_hash.set("/무", @ cod_weapons);
+cod_hash.set("/무기", @ cod_weapons);
+cod_hash.set("/킬", @ cod_clearstats);
+cod_hash.set("/킬데", @ cod_clearstats);
+cod_hash.set("/킬데스", @ cod_clearstats);
+cod_hash.set("/킬데스초", @ cod_clearstats);
+cod_hash.set("/킬데스초기", @ cod_clearstats);
+cod_hash.set("/킬데스초기화", @ cod_clearstats);
+cod_hash.set("/컴퓨터정", @ cod_compinfo);
+cod_hash.set("/컴퓨터정보", @ cod_compinfo);
+cod_hash.set("/플", @ cod_playtime);
+cod_hash.set("/플레", @ cod_playtime);
+cod_hash.set("/플레이", @ cod_playtime);
+cod_hash.set("/플레이시", @ cod_playtime);
+cod_hash.set("/플레이시간", @ cod_playtime);
+cod_hash.set("/힌", @ cod_gifthint);
+cod_hash.set("/힌트", @ cod_gifthint);
+cod_hash.set("/화", @ cod_fireoutall);
+cod_hash.set("/화재", @ cod_fireoutall);
+cod_hash.set("/화재진", @ cod_fireoutall);
+cod_hash.set("/화재진압", @ cod_fireoutall);
+cod_hash.set("/사운드업", @ cod_uploadsound);
+cod_hash.set("/사운드업로", @ cod_uploadsound);
+cod_hash.set("/사운드업로드", @ cod_uploadsound);
+cod_hash.set("/입", @ cod_bid);
+cod_hash.set("/입찰", @ cod_bid);
+cod_hash.set("/경", @ cod_auction);
+cod_hash.set("/경매", @ cod_auction);
+cod_hash.set("/입찰취", @ cod_cancelbid);
+cod_hash.set("/입찰취소", @ cod_cancelbid);
+cod_hash.set("/경매취", @ cod_cancelauction);
+cod_hash.set("/경매취소", @ cod_cancelauction);
+cod_hash.set("/타", @ cod_settitle);
+cod_hash.set("/타이", @ cod_settitle);
+cod_hash.set("/타이틀", @ cod_settitle);
+cod_hash.set("/선물토", @ cod_gifting);
+cod_hash.set("/선물토글", @ cod_gifting);
+cod_hash.set("/알", @ cod_dlg);
+cod_hash.set("/알림", @ cod_dlg);
+cod_hash.set("/최", @ cod_garbage_collect);
+cod_hash.set("/최적", @ cod_garbage_collect);
+cod_hash.set("/최적화", @ cod_garbage_collect);
+cod_hash.set("/계정정", @ cod_chartrash);
+cod_hash.set("/계정정리", @ cod_chartrash);
+cod_hash.set("/조", @ cod_t);
+cod_hash.set("/조직", @ cod_t);
+cod_hash.set("/조직말", @ cod_t);
+cod_hash.set("/게", @ cod_mg);
+cod_hash.set("/게임", @ cod_mg);
+cod_hash.set("/게임말", @ cod_mg);
+cod_hash.set("/조직목", @ cod_teams);
+cod_hash.set("/조직목록", @ cod_teams);
+cod_hash.set("/조직원", @ cod_members);
+cod_hash.set("/조직해", @ cod_teamcancel);
+cod_hash.set("/조직해산", @ cod_teamcancel);
+cod_hash.set("/조직승", @ cod_teamsucceed);
+cod_hash.set("/조직계승", @ cod_teamsucceed);
+cod_hash.set("/조직청", @ cod_teamdestroy);
+cod_hash.set("/조직청소", @ cod_teamdestroy);
+cod_hash.set("/구", @ cod_teamdestroyold);
+cod_hash.set("/구조", @ cod_teamdestroyold);
+cod_hash.set("/구조직", @ cod_teamdestroyold);
+cod_hash.set("/구조직청", @ cod_teamdestroyold);
+cod_hash.set("/구조직청소", @ cod_teamdestroyold);
+cod_hash.set("/조직암", @ cod_teampass);
+cod_hash.set("/조직암호", @ cod_teampass);
+cod_hash.set("/조직가", @ cod_jointeam);
+cod_hash.set("/조직가입", @ cod_jointeam);
+cod_hash.set("/조직원퇴", @ cod_teamremove);
+cod_hash.set("/조직원퇴출", @ cod_teamremove);
+cod_hash.set("/조직탈", @ cod_teamleave);
+cod_hash.set("/조직탈퇴", @ cod_teamleave);
+cod_hash.set("/조직창", @ cod_teamcreate);
+cod_hash.set("/조직창설", @ cod_teamcreate);
+cod_hash.set("/조직정", @ cod_team);
+cod_hash.set("/조직정보", @ cod_team);
+cod_hash.set("/맵말", @ cod_mc);
+cod_hash.set("/차", @ cod_v);
+cod_hash.set("/차량", @ cod_v);
+cod_hash.set("/차량검", @ cod_vfind);
+cod_hash.set("/차량검색", @ cod_vfind);
+cod_hash.set("/맵재", @ cod_initmaps);
+cod_hash.set("/맵재설", @ cod_initmaps);
+cod_hash.set("/맵재설정", @ cod_initmaps);
+cod_hash.set("/차량초", @ cod_vclear);
+cod_hash.set("/차량초기", @ cod_vclear);
+cod_hash.set("/차량초기화", @ cod_vclear);
+cod_hash.set("/체", @ cod_sethealth);
+cod_hash.set("/체력", @ cod_sethealth);
+cod_hash.set("/기력", @ cod_setenergy);
+cod_hash.set("/가", @ cod_go);
+cod_hash.set("/소", @ cod_summon);
+cod_hash.set("/소환", @ cod_summon);
+cod_hash.set("/새", @ cod_newmap);
+cod_hash.set("/새맵", @ cod_newmap);
+cod_hash.set("/신", @ cod_trust);
+cod_hash.set("/신뢰", @ cod_trust);
+cod_hash.set("/신뢰초", @ cod_trustclear);
+cod_hash.set("/신뢰초기", @ cod_trustclear);
+cod_hash.set("/신뢰초기화", @ cod_trustclear);
+cod_hash.set("/법", @ cod_rules);
+cod_hash.set("/법개", @ cod_rulesupdate);
+cod_hash.set("/법개정", @ cod_rulesupdate);
+cod_hash.set("/아이템시", @ cod_no_save);
+cod_hash.set("/아이템시험", @ cod_no_save);
+cod_hash.set("/서바", @ cod_survival);
+cod_hash.set("/서바이", @ cod_survival);
+cod_hash.set("/서바이벌", @ cod_survival);
+cod_hash.set("/버", @ cod_version);
+cod_hash.set("/버전", @ cod_version);
+cod_hash.set("/변", @ cod_changes);
+cod_hash.set("/변경", @ cod_changes);
+cod_hash.set("/변경사", @ cod_changes);
+cod_hash.set("/변경사항", @ cod_changes);
+cod_hash.set("/맵삭", @ cod_delmap);
+cod_hash.set("/맵삭제", @ cod_delmap);
+cod_hash.set("/금고철", @ cod_destlocker);
+cod_hash.set("/금고철거", @ cod_destlocker);
+cod_hash.set("/금고", @ cod_lockers);
+cod_hash.set("/맵", @ cod_maps);
+cod_hash.set("/로", @ cod_robots);
+cod_hash.set("/로봇", @ cod_robots);
+cod_hash.set("/맵소", @ cod_rawdata);
+cod_hash.set("/맵소스", @ cod_rawdata);
+cod_hash.set("/맵소스코", @ cod_rawdata);
+cod_hash.set("/맵소스코드", @ cod_rawdata);
+cod_hash.set("/맵덮", @ cod_rawwrite);
+cod_hash.set("/맵덮어", @ cod_rawwrite);
+cod_hash.set("/맵덮어쓰", @ cod_rawwrite);
+cod_hash.set("/맵덮어쓰기", @ cod_rawwrite);
+cod_hash.set("/맵추", @ cod_rawadd);
+cod_hash.set("/맵추가", @ cod_rawadd);
+cod_hash.set("/최근", @ cod_last_runtime);
+cod_hash.set("/최근실", @ cod_last_runtime);
+cod_hash.set("/최근실행", @ cod_last_runtime);
+cod_hash.set("/sup", @ cod_sup);
+cod_hash.set("/dev", @ cod_dev);
+cod_hash.set("/mac", @ cod_mac);
+cod_hash.set("/montage", @ cod_montage);
+cod_hash.set("/운영권부", @ cod_newadmin);
+cod_hash.set("/운영권부여", @ cod_newadmin);
+cod_hash.set("/주운영권부", @ cod_newmaster);
+cod_hash.set("/주운영권부여", @ cod_newmaster);
+cod_hash.set("/운영권박", @ cod_adminkill);
+cod_hash.set("/운영권박탈", @ cod_adminkill);
+cod_hash.set("/주운영권박", @ cod_masterkill);
+cod_hash.set("/주운영권박탈", @ cod_masterkill);
+cod_hash.set("/i", @ cod_objgrab);
+cod_hash.set("/아이템수", @ cod_objgrab);
+cod_hash.set("/아이템수거", @ cod_objgrab);
+cod_hash.set("/경고확", @ cod_warned);
+cod_hash.set("/경고확인", @ cod_warned);
+cod_hash.set("/전체경", @ cod_warnpublic);
+cod_hash.set("/전체경고", @ cod_warnpublic);
+cod_hash.set("/경고", @ cod_warn);
+cod_hash.set("/답", @ cod_r);
+cod_hash.set("/답장", @ cod_r);
+cod_hash.set("/개", @ cod_pmset);
+cod_hash.set("/개인", @ cod_pmset);
+cod_hash.set("/개인토", @ cod_pmset);
+cod_hash.set("/개인토글", @ cod_pmset);
+cod_hash.set("/이", @ cod_pm);
+cod_hash.set("/이야", @ cod_pm);
+cod_hash.set("/이야기", @ cod_pm);
+cod_hash.set("/리모트건초", @ cod_killremguns);
+cod_hash.set("/리모트건초기", @ cod_killremguns);
+cod_hash.set("/리모트건초기화", @ cod_killremguns);
+cod_hash.set("/셧", @ cod_quit);
+cod_hash.set("/셧다", @ cod_quit);
+cod_hash.set("/셧다운", @ cod_quit);
+cod_hash.set("/선", @ cod_gift);
+cod_hash.set("/선물", @ cod_gift);
+cod_hash.set("/아이템창", @ cod_spawn_obj);
+cod_hash.set("/아이템창조", @ cod_spawn_obj);
+cod_hash.set("/로봇창", @ cod_spawn_robot);
+cod_hash.set("/로봇창조", @ cod_spawn_robot);
+cod_hash.set("/주", @ cod_beacon);
+cod_hash.set("/주변", @ cod_beacon);
+cod_hash.set("/주변보", @ cod_beacon);
+cod_hash.set("/주변보기", @ cod_beacon);
+cod_hash.set("/자동추", @ cod_autotrack);
+cod_hash.set("/자동추적", @ cod_autotrack);
+cod_hash.set("/자동추적변", @ cod_autotrack);
+cod_hash.set("/자동추적변환", @ cod_autotrack);
+cod_hash.set("/추", @ cod_tracksound);
+cod_hash.set("/추적", @ cod_tracksound);
+cod_hash.set("/추적사", @ cod_tracksound);
+cod_hash.set("/추적사운", @ cod_tracksound);
+cod_hash.set("/추적사운드", @ cod_tracksound);
+cod_hash.set("/음", @ cod_voicechat);
+cod_hash.set("/음성", @ cod_voicechat);
+cod_hash.set("/음성채", @ cod_voicechat);
+cod_hash.set("/음성채팅", @ cod_voicechat);
+cod_hash.set("/리", @ cod_remguns);
+cod_hash.set("/리모", @ cod_remguns);
+cod_hash.set("/리모트", @ cod_remguns);
+cod_hash.set("/리모트건", @ cod_remguns);
+cod_hash.set("/아이템초", @ cod_killobjs);
+cod_hash.set("/아이템초기", @ cod_killobjs);
+cod_hash.set("/아이템초기화", @ cod_killobjs);
+cod_hash.set("/저", @ cod_save);
+cod_hash.set("/저장", @ cod_save);
+cod_hash.set("/은", @ cod_hide);
+cod_hash.set("/은둔", @ cod_hide);
+cod_hash.set("/관", @ cod_follow);
+cod_hash.set("/관전", @ cod_follow);
+cod_hash.set("/이메", @ cod_setemail);
+cod_hash.set("/이메일", @ cod_setemail);
+cod_hash.set("/투표종", @ cod_voteclear);
+cod_hash.set("/투표종료", @ cod_voteclear);
+cod_hash.set("/투표등", @ cod_voteadd);
+cod_hash.set("/투표등록", @ cod_voteadd);
+cod_hash.set("/투표결", @ cod_voteresult);
+cod_hash.set("/투표결과", @ cod_voteresult);
+cod_hash.set("/투", @ cod_vote);
+cod_hash.set("/투표", @ cod_vote);
+cod_hash.set("/프", @ cod_profiler);
+cod_hash.set("/프로", @ cod_profiler);
+cod_hash.set("/프로파", @ cod_profiler);
+cod_hash.set("/프로파일", @ cod_profiler);
+cod_hash.set("/프로파일러", @ cod_profiler);
+cod_hash.set("/디", @ cod_debuger);
+cod_hash.set("/디버", @ cod_debuger);
+cod_hash.set("/디버거", @ cod_debuger);
+cod_hash.set("/손", @ cod_mute);
+cod_hash.set("/손절", @ cod_mute);
+cod_hash.set("/손절초", @ cod_muteclear);
+cod_hash.set("/손절초기", @ cod_muteclear);
+cod_hash.set("/손절초기화", @ cod_muteclear);
+cod_hash.set("/순", @ cod_ranking);
+cod_hash.set("/순위", @ cod_ranking);
+cod_hash.set("/숫", @ cod_gnsubmit);
+cod_hash.set("/숫자", @ cod_gnsubmit);
+cod_hash.set("/숫자시", @ cod_gnstart);
+cod_hash.set("/숫자시작", @ cod_gnstart);
+cod_hash.set("/지뢰", @ cod_minesweeper);
+cod_hash.set("/지뢰찾", @ cod_minesweeper);
+cod_hash.set("/지뢰찾기", @ cod_minesweeper);
+cod_hash.set("/함정파", @ cod_impact_dotty);
+cod_hash.set("/함정파티", @ cod_impact_dotty);
+cod_hash.set("/경로", @ cod_scriptpath);
+cod_hash.set("/충", @ cod_shockwave);
+cod_hash.set("/충격", @ cod_shockwave);
+cod_hash.set("/충격파", @ cod_shockwave);
+cod_hash.set("/폭", @ cod_bombs);
+cod_hash.set("/폭발", @ cod_bombs);
+cod_hash.set("/폭발물", @ cod_bombs);
+cod_hash.set("/무선", @ cod_rtparty);
+cod_hash.set("/무선조", @ cod_rtparty);
+cod_hash.set("/무선조정", @ cod_rtparty);
+cod_hash.set("/무선조정의", @ cod_rtparty);
+cod_hash.set("/무선조정의날", @ cod_rtparty);
+cod_hash.set("/폭탄", @ cod_ubparty);
+cod_hash.set("/폭탄파", @ cod_ubparty);
+cod_hash.set("/폭탄파티", @ cod_ubparty);
+cod_hash.set("/기본", @ cod_defaultinvset);
+cod_hash.set("/기본소", @ cod_defaultinvset);
+cod_hash.set("/기본소유", @ cod_defaultinvset);
+cod_hash.set("/기본소유품", @ cod_defaultinvset);
+cod_hash.set("/운", @ cod_adminlog);
+cod_hash.set("/운영", @ cod_adminlog);
+cod_hash.set("/운영기", @ cod_adminlog);
+cod_hash.set("/운영기록", @ cod_adminlog);
+cod_hash.set("/운영기록작", @ cod_addalog);
+cod_hash.set("/운영기록작성", @ cod_addalog);
+cod_hash.set("/최소", @ cod_minversion);
+cod_hash.set("/최소버", @ cod_minversion);
+cod_hash.set("/최소버전", @ cod_minversion);
+cod_hash.set("/어", @ cod_where);
+cod_hash.set("/어디", @ cod_where);
+cod_hash.set("/계정설", @ cod_cdata);
+cod_hash.set("/계정설정", @ cod_cdata);
+cod_hash.set("/나", @ cod_me);
+cod_hash.set("/이동", @ cod_move);
+cod_hash.set("/키", @ cod_create_key);
+cod_hash.set("/키생", @ cod_create_key);
+cod_hash.set("/키생성", @ cod_create_key);
+cod_hash.set("/nvreboot", @ cod_nvreboot);
+cod_hash.set("/nkey", @ cod_nkey);
+cod_hash.set("/건의초", @ cod_requests_clear);
+cod_hash.set("/건의초기", @ cod_requests_clear);
+cod_hash.set("/건의초기화", @ cod_requests_clear);
+cod_hash.set("/건의목", @ cod_requests);
+cod_hash.set("/건의목록", @ cod_requests);
+cod_hash.set("/건", @ cod_request);
+cod_hash.set("/건의", @ cod_request);
+cod_hash.set("/계정삭", @ cod_chardelete);
+cod_hash.set("/계정삭제", @ cod_chardelete);
+cod_hash.set("/계정초", @ cod_charclear);
+cod_hash.set("/계정초기", @ cod_charclear);
+cod_hash.set("/계정초기화", @ cod_charclear);
+cod_hash.set("/ip", @ cod_ip);
+cod_hash.set("/컴", @ cod_compid);
+cod_hash.set("/컴퓨", @ cod_compid);
+cod_hash.set("/컴퓨터", @ cod_compid);
+cod_hash.set("/아", @ cod_itemlog);
+cod_hash.set("/아이", @ cod_itemlog);
+cod_hash.set("/아이템", @ cod_itemlog);
+cod_hash.set("/아이템기", @ cod_itemlog);
+cod_hash.set("/아이템기록", @ cod_itemlog);
+cod_hash.set("/줘", @ cod_give);
+cod_hash.set("/상", @ cod_reloadstore);
+cod_hash.set("/ 상점", @ cod_reloadstore);
+cod_hash.set("/상점재", @ cod_reloadstore);
+cod_hash.set("/상점재설", @ cod_reloadstore);
+cod_hash.set("/상점재설정", @ cod_reloadstore);
+cod_hash.set("/서버설", @ cod_varset);
+cod_hash.set("/서버설정", @ cod_varset);
+cod_hash.set("/함", @ cod_trapclear);
+cod_hash.set("/함정", @ cod_trapclear);
+cod_hash.set("/함정초", @ cod_trapclear);
+cod_hash.set("/함정초기", @ cod_trapclear);
+cod_hash.set("/함정초기화", @ cod_trapclear);
+cod_hash.set("/r", @ cod_rtclear);
+cod_hash.set("/ic", @ cod_rtclear_imac);
+cod_hash.set("/로봇초", @ cod_rtclear);
+cod_hash.set("/로봇초기", @ cod_rtclear);
+cod_hash.set("/로봇초기화", @ cod_rtclear);
+cod_hash.set("/로봇재", @ cod_rtreload);
+cod_hash.set("/로봇재설", @ cod_rtreload);
+cod_hash.set("/로봇재설정", @ cod_rtreload);
+cod_hash.set("/설명재", @ cod_descrreload);
+cod_hash.set("/설명재설", @ cod_descrreload);
+cod_hash.set("/설명재설정", @ cod_descrreload);
+cod_hash.set("/먹거리재", @ cod_foodreload);
+cod_hash.set("/먹거리재설", @ cod_foodreload);
+cod_hash.set("/먹거리재설정", @ cod_foodreload);
+cod_hash.set("/무기재", @ cod_weaponreload);
+cod_hash.set("/무기재설", @ cod_weaponreload);
+cod_hash.set("/무기재설정", @ cod_weaponreload);
+cod_hash.set("/스플재", @ cod_splashreload);
+cod_hash.set("/스플재설", @ cod_splashreload);
+cod_hash.set("/스플재설정", @ cod_splashreload);
+cod_hash.set("/빠", @ cod_inv);
+cod_hash.set("/빠른", @ cod_inv);
+cod_hash.set("/빠른관", @ cod_inv);
+cod_hash.set("/빠른관전", @ cod_inv);
+cod_hash.set("/관전모", @ cod_afk);
+cod_hash.set("/관전모드", @ cod_afk);
+cod_hash.set("/전체강", @ cod_kickall);
+cod_hash.set("/전체강퇴", @ cod_kickall);
+cod_hash.set("/강퇴", @ cod_kick);
+cod_hash.set("/차단목", @ cod_bannedlist);
+cod_hash.set("/차단목록", @ cod_bannedlist);
+cod_hash.set("/차단조", @ cod_is_banned);
+cod_hash.set("/차단조회", @ cod_is_banned);
+cod_hash.set("/차단", @ cod_ban);
+cod_hash.set("/차단해", @ cod_unban);
+cod_hash.set("/차단해제", @ cod_unban);
+cod_hash.set("/금", @ cod_blockfeature);
+cod_hash.set("/금지", @ cod_blockfeature);
+cod_hash.set("/임시", @ cod_tempban);
+cod_hash.set("/임시차", @ cod_tempban);
+cod_hash.set("/임시차단", @ cod_tempban);
+cod_hash.set("/임", @ cod_alist);
+cod_hash.set("/임무", @ cod_alist);
+cod_hash.set("/운영자도", @ cod_adminhelp);
+cod_hash.set("/운영자도움", @ cod_adminhelp);
+cod_hash.set("/운영자도움말", @ cod_adminhelp);
+cod_hash.set("/공", @ cod_notify);
+cod_hash.set("/공지", @ cod_notify);
+cod_hash.set("/시", @ cod_time);
+cod_hash.set("/시각", @ cod_time);
+cod_hash.set("/기", @ cod_getlog);
+cod_hash.set("/기록", @ cod_getlog);
+cod_hash.set("/기록목", @ cod_logs);
+cod_hash.set("/기록목록", @ cod_logs);
+cod_hash.set("/입문", @ cod_newbie);
+cod_hash.set("/입문자", @ cod_newbie);
+cod_hash.set("/입문자졸", @ cod_newbie);
+cod_hash.set("/입문자졸업", @ cod_newbie);
+cod_hash.set("/계", @ cod_chars);
+cod_hash.set("/계정", @ cod_chars);
+cod_hash.set("/계정목", @ cod_chars);
+cod_hash.set("/계정목록", @ cod_chars);
+cod_hash.set("/재", @ cod_reboot);
+cod_hash.set("/재부", @ cod_reboot);
+cod_hash.set("/재부팅", @ cod_reboot);
+cod_hash.set("/서버재부팅", @ cod_serverboot);
+cod_hash.set("/운영자", @ cod_admins);
+cod_hash.set("/운영자목", @ cod_admins);
+cod_hash.set("/운영자목록", @ cod_admins);
+cod_hash.set("/호", @ cod_admintell);
+cod_hash.set("/호출", @ cod_admintell);
+cod_hash.set("/사", @ cod_plays);
+cod_hash.set("/사운", @ cod_plays);
+cod_hash.set("/사운드", @ cod_plays);
+cod_hash.set("/사운드재", @ cod_plays);
+cod_hash.set("/사운드재생", @ cod_plays);
+cod_hash.set("/맵재", @ cod_play);
+cod_hash.set("/맵재생", @ cod_play);
+cod_hash.set("/새소식추", @ cod_addtomotd);
+cod_hash.set("/새소식추가", @ cod_addtomotd);
+cod_hash.set("/새소식덮", @ cod_newmotd);
+cod_hash.set("/새소식덮어", @ cod_newmotd);
+cod_hash.set("/새소식덮어쓰", @ cod_newmotd);
+cod_hash.set("/새소식덮어쓰기", @ cod_newmotd);
+cod_hash.set("/맵로", @ cod_maploaded);
+cod_hash.set("/맵로드", @ cod_maploaded);
+cod_hash.set("/맵로드시", @ cod_maploaded);
+cod_hash.set("/맵로드시간", @ cod_maploaded);
+cod_hash.set("/맵설", @ cod_mapset);
+cod_hash.set("/맵설정", @ cod_mapset);
+cod_hash.set("/강", @ cod_execute);
+cod_hash.set("/강제", @ cod_execute);
+cod_hash.set("/강제실", @ cod_execute);
+cod_hash.set("/강제실행", @ cod_execute);
+cod_hash.set("/깃", @ cod_ctf);
+cod_hash.set("/깃발", @ cod_ctf);
+cod_hash.set("/깃발게", @ cod_ctf);
+cod_hash.set("/깃발게임", @ cod_ctf);
+cod_hash.set("/라", @ cod_lastman);
+cod_hash.set("/라스", @ cod_lastman);
+cod_hash.set("/라스트", @ cod_lastman);
+cod_hash.set("/라스트맨", @ cod_lastman);
+cod_hash.set("/자", @ cod_autopilot);
+cod_hash.set("/자동", @ cod_autopilot);
+cod_hash.set("/자동운", @ cod_autopilot);
+cod_hash.set("/자동운전", @ cod_autopilot);
+cod_hash.set("/체크", @ cod_checkreset);
+cod_hash.set("/체크초", @ cod_checkreset);
+cod_hash.set("/체크초기", @ cod_checkreset);
+cod_hash.set("/체크초기화", @ cod_checkreset);
+}
+
+// chat commands
+void cod_flag(string[]@ parsed, player@ this, string message)
+{
+if (this.rank != 5)
+{
+this.alert("사용할 수 없는 명령입니다.");
+return;
+}
+if (this.adminflag == 0)
+{
+this.adminflag = 1;
+this.alert("당신은 투명한 플레그가 달려있는 옷을 몸 전체에 걸치고, 쭉 내려 입습니다.");
+}
+else if (this.adminflag == 1)
+{
+this.adminflag = 0;
+this.alert("당신은 플레그가 달린 옷을 훌 훌 벗어던집니다.");
+}
+}
+void motif_func(string[]@ parsed, player@ this, string message)
+{
+  // 상점 재설정 코드
+  cod_reloadstore(parsed, this, message);
+
+  // 무기 재설정 코드
+  cod_weaponreload(parsed, this, message);
+
+  // 먹거리 재설정 코드
+  cod_foodreload(parsed, this, message);
+
+  // 최적화 코드
+  cod_garbage_collect(parsed, this, message);
+
+  // ic 코드
+  cod_rtclear_imac(parsed, this, message);
+
+  // 화재 진압 코드
+  cod_fireoutall(parsed, this, message);
+
+  // 모든 플레이어에게 메시지 전송
+  send(0, "세상이 멸망하고 새로운 세상이 펼쳐집니다.", 0);
+}
+void cod_benchmark(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+timer counter;
+for (uint i = 0; i < 1000; i++)
+{
+spawn_vehicle("tank", this);
+}
+this.alert(counter.elapsed);
+}
+void cod_svrspeed(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length == 1)
+{
+if (this.fps > 0) return;
+this.alert("정보 수집 중");
+this.fpstimer.force(0);
+this.fps++;
+return;
+}
+if (this.rank < 3) return;
+int speedvalue = string_to_number(parsed[1]);
+if (speedvalue < 1) return;
+maintime = speedvalue;
+this.alert("서버 루프 속도를 " + speedvalue + "단계로 바꿉니다.");
+}
+void cod_weapons(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1)
+{
+this.sendpacket("clip " + dictionary_to_text(this.weapon_count));
+this.alert("무기별 킬수를 클립보드로 복사했습니다.");
+return;
+}
+int res = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+res += maps[j].weapons.length;
+}
+this.alert(weapon_list.size + "개의 무기가 로드되었으며, " + res + "개의 발사체가 하늘을 뒤덮고 있습니다.\r" + array_to_string(weapon_list.keys), true);
+}
+void cod_clearstats(string[]@ parsed, player@ this, string message)
+{
+this.alert("킬/데스 수를 초기화했습니다.");
+this.kills = 0;
+this.deaths = 0;
+this.weapon_count.delete_all();
+this.save();
+}
+void cod_compinfo(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("대상을 찾을 수 없습니다.");
+this.sendsound("playerstats_error");
+return;
+}
+this.alert(tmp.ctext, true);
+}
+void cod_playtime(string[]@ parsed, player@ this, string message)
+{
+string[]@ chars = find_files("./chars/*.usr");
+double finalms = 0;
+int charslength = chars.length;
+for (uint i = 0; i < charslength; i++)
+{
+finalms += string_to_number(get_char_val(string_trim_right(chars[i], 4), "플레이시간"));
+}
+this.alert("모든 플레이어의 플레이 시간 합계는 " + ms_to_readable_time(finalms) + "입니다.", true);
+}
+void cod_gifthint(string[]@ parsed, player@ this, string message)
+{
+this.alert(find_gift(this), true);
+}
+void cod_fireoutall(string[]@ parsed, player@ this, string message)
+{
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+if (this.rank < 1)
+{
+if (map !is this.map) continue;
+if (!this.map.owner.exists(this.name)) continue;
+sendmap("맵 내의 모든 화재를 진압합니다.", this.map, 0);
+}
+int fireslength = map.fires.length;
+for (uint i = 0; i < fireslength; i++)
+{
+map.fires[i].lifetimer.force(2000000000);
+}
+}
+if (this.rank > 0) send(0, "notify 운영자의 능력으로 모든 화재를 진압합니다.", 0);
+}
+void cod_uploadsound(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+if (can_upload_files == 0)
+{
+this.alert("파일 업로드 토글이 꺼져 있습니다.");
+return;
+}
+this.sendpacket("upload 1");
+}
+void cod_bid(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.no_save) return;
+if (!auction)
+{
+this.alert("진행 중인 경매가 없습니다.");
+return;
+}
+if (auctionwho == this.name)
+{
+this.alert("당신의 자작극에 사람들이 과연 얼마나 관심을 가질까요?");
+return;
+}
+int bid = string_to_number(parsed[1]);
+if (auctionbid >= bid)
+{
+this.alert((auctionbid + 1) + " coin 이상 불러야 합니다.", true);
+return;
+}
+if (bid > this.get_item_count("coin"))
+{
+this.alert("그만큼의 돈이 없어 경매에 참가할 수 없습니다.");
+return;
+}
+auctionbidtemp = auctionbid;
+auctionbid = bid;
+auctionwhotemp = auctionwho2;
+auctionwho2 = this.name;
+auctionbidder = true;
+auctiontimer.force(0);
+send(0, "play_s bid", 0);
+send(0, this.name + "님이 " + bid + " coin을 부릅니다.", 2);
+}
+void cod_auction(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 4) return;
+if (this.no_save)
+{
+this.alert("서바이벌 중엔 다른 맵으로 아이템을 반출할 수 없습니다.");
+return;
+}
+if (auction)
+{
+this.alert("이미 경매가 진행 중입니다.");
+return;
+}
+string what = parsed[1];
+if (what == "coin" or what == "coin_pack" or what == "street_check")
+{
+this.alert("화폐를 팔고 싶으면 환전기 등을 이용하면 됩니다.");
+return;
+}
+if (dontlosedict.exists(what))
+{
+this.alert("귀속 아이템은 경매에 붙일 수 없습니다.");
+return;
+}
+int amount = string_to_number(parsed[2]);
+if (parsed[2] == "a") amount = this.get_item_count(what);
+if (amount <= 0)
+{
+this.alert("교활하군요, 없는 아이템을 경매에 올리다니...");
+return;
+}
+if (this.get_item_count(what) < amount)
+{
+this.alert("그렇게 많이 가지고 있지 않습니다.");
+return;
+}
+int minbid = string_to_number(parsed[3]);
+if (minbid <= 0)
+{
+this.alert("경제는 그렇게 호락호락하지 않습니다. 당신은 뿌린 대로 거둘 것입니다.");
+return;
+}
+auctionitem = what;
+auctionbid = minbid;
+auctionamount = amount;
+auctionwho = this.name;
+send(0, this.name + "님의 경매: " + auctionitem + " " + auctionamount + "개를 " + minbid + " coin부터!", 2);
+send(0, "play_s auction", 0);
+auctiontimer.force(0);
+auction = true;
+auctionbidder = false;
+}
+void cod_cancelbid(string[]@ parsed, player@ this, string message)
+{
+if (auctionwho2 == this.name)
+{
+send(0, "play_s cancelbid", 0);
+send(0, this.name + "님이 " + auctionbid + " coin 입찰을 포기합니다.", 2);
+auctiontimer.force(0);
+auctionbid = auctionbidtemp;
+auctionwho2 = auctionwhotemp;
+if (auctionwho2.is_empty()) auctionbidder = false;
+}
+}
+void cod_cancelauction(string[]@ parsed, player@ this, string message)
+{
+if (!auction)
+{
+this.alert("취소할 경매가 없습니다.");
+return;
+}
+if (auctionwho != this.name and this.rank < 1)
+{
+this.alert("남의 경매장에 가서 중단하라고 생떼를 부려봤자 아무도 들어주지 않을 것입니다.");
+return;
+}
+send(0, "play_s auctioncanceled", 0);
+send(0, this.name + "님이 경매를 취소합니다.", 2);
+auction_reset();
+}
+void cod_settitle(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("대상을 찾을 수 없습니다.");
+return;
+}
+if (parsed.length > 2)
+{
+tmp.title = string_trim_left(message, (parsed[0].size + parsed[1].size + 2));
+if (tmp !is this) tmp.alert(this.name + "님이 " + tmp.title + " 타이틀을 부여합니다.", true);
+this.alert(tmp.name + "님이 " + tmp.title + " 타이틀을 얻었습니다.", true);
+return;
+}
+tmp.title.resize(0);
+this.alert(tmp.name + "님의 타이틀이 삭제되었습니다.", true);
+tmp.alert(this.name + "님이 타이틀을 지웁니다.", true);
+}
+void cod_gifting(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+gifting ^= 1;
+send(0, "gifting" + (gifting == 0 ? "off" : "on"), 2);
+this.alert("자동 선물 모드가 " + (gifting == 0 ? "꺼집니다." : "켜집니다."));
+writedata();
+}
+}
+void cod_dlg(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+send(0, "dlg " + string_trim_left(message, (parsed[0].size + 1)), 0);
+return;
+}
+void cod_garbage_collect(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+send(0, "notify 서버를 최적화하고 있습니다. 작업 중 서버가 몇 초간 멈출 수 있습니다.", 0);
+garbage_collect();
+}
+}
+void cod_chartrash(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+send(0, this.name + "님의 요청으로 불법 스팸 계정을 정리합니다. 작업 중 서버가 몇 초간 멈출 수 있습니다.", 2);
+send(0, chartrash(), 2);
+}
+}
+void cod_t(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+message = string_trim_left(message, (parsed[0].size + 1));
+this.gang.transmit(this.name + "님의 조직 무전: " + message, true);
+log("teamchats", this.gang.teamname + " 조직에서 " + this.name + "님이 무전을 보냄: " + message);
+}
+void cod_mg(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+minigame@ tmp = joined_minigame(this.peer_id, true);
+if (tmp is null)
+{
+this.alert("미니게임 중이 아닙니다.");
+return;
+}
+message = string_trim_left(message, (parsed[0].size + 1));
+tmp.sendpacket(this.name + "님의 게임 메시지: " + message);
+this.playsound("shelter_chat");
+log("minigamechats", tmp.id + "번 미니게임 중 " + this.name + "님의 메시지: " + message);
+}
+void cod_teams(string[]@ parsed, player@ this, string message)
+{
+int teamslength = teams.length;
+if (teamslength == 0)
+{
+this.alert("지금은 결성된 조직이 없습니다.");
+return;
+}
+sm.initial_packet = "copy";
+sm.intro = teamslength + "개의 조직이 있습니다.";
+for (uint i = 0; i < teamslength; i++)
+{
+team@ temp = teams[i];
+sm.add(temp.teamname + ", 조직원 " + (this.rank == 0 ? temp.members.size + "명, " : dictionary_to_text(temp.members, ", ", false) + ", ") + " 킬" + temp.teamkills + ", 포인트 " + temp.points + ", 우두머리 " + temp.teamleader, temp.teamname);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_members(string[]@ parsed, player@ this, string message)
+{
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+this.alert(this.gang.list_members(), true);
+}
+void cod_teamcancel(string[]@ parsed, player@ this, string message)
+{
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+team@ temp = this.gang;
+if (temp.teamleader != this.name)
+{
+this.alert("조직의 높으신 분들만이 할 수 있는 일입니다.");
+return;
+}
+this.alert("조직을 해산합니다.");
+temp.destruct();
+}
+void cod_teamsucceed(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+team@ temp = this.gang;
+if (temp.teamleader != this.name)
+{
+this.alert("조직의 높으신 분들만이 할 수 있는 일입니다.");
+return;
+}
+player@ nl = get_player_handle(parsed[1]);
+if (nl is null)
+{
+this.alert("그런 사람은 접속하고 있지 않습니다.");
+return;
+}
+if (nl.gang !is temp)
+{
+this.alert("그 사람은 다른 조직 소속입니다.");
+return;
+}
+temp.teamleader = nl.name;
+temp.team_save();
+this.alert(nl.name + "님에게 조직을 계승했습니다.", true);
+nl.alert(this.name + "님이 당신을 " + temp.teamname + " 조직의 장으로 임명합니다.", true);
+}
+void cod_teamdestroy(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+team@ t = get_team_handle(parsed[1]);
+if (t is null)
+{
+this.alert("그런 조직은 없습니다.");
+return;
+}
+this.alert("조직을 강제 해산시킵니다.");
+t.destruct();
+}
+void cod_teamdestroyold(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+uint counter = 0;
+int teamslength = teams.length;
+for (uint i = 0; i < teamslength; i++)
+{
+if (teams[i].online.is_empty())
+{
+teams[i].destruct(false);
+counter++;
+}
+}
+this.alert(counter + "개의 부재중 조직을 해산시킵니다.");
+}
+void cod_teampass(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+if (this.gang.teamleader != this.name)
+{
+this.alert("당신에게 그럴 만한 카리스마가 없습니다.");
+return;
+}
+this.gang.password = parsed[1];
+this.alert("암호를 " + parsed[1] + "로 바꿉니다.", true);
+this.gang.team_save();
+}
+void cod_jointeam(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.gang !is null)
+{
+this.alert("이미 다른 조직에 소속되어 있습니다.");
+return;
+}
+team@ temp = get_team_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("그런 조직은 없습니다.");
+return;
+}
+if (temp.members.size >= temp.maxmembers)
+{
+this.alert("그 조직은 더 이상 조직원을 받기에 벅찹니다.");
+return;
+}
+if (temp.password != parsed[2])
+{
+this.alert("잘못된 암호입니다.");
+return;
+}
+temp.add_member(this);
+}
+void cod_teamremove(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank > 0)
+{
+string name = parsed[1];
+int p = is_in_team(name);
+if (p < 0)
+{
+this.alert("그는 소속 조직이 없습니다.");
+return;
+}
+team@ tmp = teams[p];
+tmp.remove_member(name, true);
+tmp.transmit(name + "님이 " + this.name + "님에 의해 소속 조직에서 제거되었습니다.");
+player@ rmp = get_player_handle(name);
+if (rmp !is null) rmp.alert("누군가의 강제력에 의해 소속 조직과 격리되었습니다.", true);
+this.alert(name + "님을 소속 조직에서 격리했습니다.");
+return;
+}
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+if (this.gang.teamleader != this.name) return;
+if (parsed[1] == this.name)
+{
+this.alert("자기 자신을 깎아내려 무슨 이득을 보려 합니까?");
+return;
+}
+if (!this.gang.remove_member(parsed[1]))
+{
+this.alert("없는 조직원이거나, 잘못된 입력입니다.");
+return;
+}
+}
+void cod_teamleave(string[]@ parsed, player@ this, string message)
+{
+if (this.gang is null)
+{
+this.alert("당신은 무소속입니다.");
+return;
+}
+if (this.gang.teamleader == this.name)
+{
+this.alert("조직 두목이 조직을 배신한다고요? 하극상이 두렵지 않습니까?");
+return;
+}
+this.alert(this.gang.leave(this) ? "조직을 떠납니다." : "알 수 없는 오류가 발생했습니다.");
+}
+void cod_teamcreate(string[]@ parsed, player@ this, string message)
+{
+if (this.gang !is null)
+{
+this.alert("당신은 조직 내에서 파벌을 만들려 합니다. 매우 좋지 않은 현상입니다.");
+return;
+}
+send_serverbox(this.peer_id, 0, 1, 0, 10, "teamcreate", "조직 이름을 입력하세요. 빈 칸을 금지하며, 10글자를 넘으면 안 됩니다.");
+}
+void cod_team(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+int p = is_in_team(parsed[1]);
+this.alert(parsed[1] + "님은 " + (p > -1 ? teams[p].teamname + " 소속입니다." : "아무데도 소속되어 있지 않습니다."), true);
+}
+void cod_mc(string[]@ parsed, player@ this, string message)
+{
+if (this.map.no_chat == 1) return;
+if (this.ds.exists("채팅"))
+{
+this.alert("채팅이 금지되어 있습니다.");
+return;
+}
+if (message.size > (parsed[0].size + 5001))
+{
+this.alert("메시지는 5000자를 넘을 수 없습니다.");
+return;
+}
+message = string_trim_left(message, (parsed[0].size + 1));
+this.chats++;
+log("chats", this.map.name + " 맵 내 " + this.name + "님의 메시지: " + message);
+string chatmess = this.map.name + " 맵 내 ";
+if (!this.hidden)
+{
+if (!this.title.is_empty()) chatmess += this.title + " ";
+if (this.gang !is null) chatmess += this.gang.teamname + " ";
+chatmess += this.name + "님의 메시지: " + message;
+}
+else chatmess += "누군가의 메시지: " + message;
+this.chat(chatmess, true);
+}
+void cod_v(string[]@ parsed, player@ this, string message)
+{
+uint myvehicles = 0;
+string vlist;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.owner != this.name) continue;
+myvehicles++;
+vlist += temp.type + ": " + temp.map.name + " , " + temp.x + ", " + temp.y + ", " + temp.z + ".\r\n";
+}
+}
+this.alert(myvehicles == 0 ? "보유한 차량이 없습니다." : myvehicles + "대의 차량을 보유 중입니다.\r\n" + vlist, true);
+}
+void cod_vfind(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+uint myvehicles = 0;
+string vlist;
+if (parsed.length > 1)
+{
+string name = parsed[1];
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+if (temp.owner != name) continue;
+myvehicles++;
+vlist += temp.type + ": " + temp.map.name + ", " + temp.x + ", " + temp.y + ", " + temp.z + ".\r\n";
+}
+}
+this.alert((myvehicles == 0 ? name + "님은 보유한 차량이 없습니다." : name + "님은 " + myvehicles + "대의 차량을 보유 중입니다.\r\n" + vlist), true);
+return;
+}
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+vehicle@ temp = map.vs[i];
+myvehicles++;
+vlist += temp.owner + "의 " + temp.type + ": " + temp.map.name + ", " + temp.x + ", " + temp.y + ", " + temp.z + ".\r\n";
+}
+}
+this.alert((myvehicles == 0 ? "현재는 차량이 없습니다." : myvehicles + "대의 차량이 보입니다.\r\n" + vlist), true);
+}
+void cod_trust(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2)
+{
+this.alert(this.trust.size + "명을 신뢰하고 있습니다: \r\n" + (this.trust.size > 0 ? array_to_string(this.trust.keys, "\r\n") : empty), true);
+return;
+}
+string name = parsed[1];
+if (name == this.name)
+{
+this.alert("자기 자신을 믿지 못하면 누구를 믿으리오?");
+return;
+}
+if (this.trust.exists(name))
+{
+this.trust.delete(name);
+this.alert(name + "님에 대한 신뢰를 번복합니다.");
+}
+else
+{
+this.trust.set(name, 0);
+this.alert(name + "님을 믿어보기로 합니다.");
+}
+player@ temp = get_player_handle(name);
+if (temp !is null) temp.alert(this.name + (this.trust.exists(name) ? "님이 당신을 신뢰합니다." : "님이 당신에 대한 믿음을 거둡니다."));
+}
+void cod_trustclear(string[]@ parsed, player@ this, string message)
+{
+string[]@ tlist = this.trust.keys;
+int tlistlength = tlist.length;
+for (uint i = 0; i < tlistlength; i++)
+{
+player@ temp = get_player_handle(tlist[i]);
+if (temp !is null) temp.alert(this.name + "님이 당신에 대한 믿음을 거둡니다.");
+}
+this.trust.delete_all();
+this.alert("초기화되었습니다.");
+}
+void cod_initmaps(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+init_mapsystem();
+send(0, "notify 게임 세계를 새로 로드하고 있습니다. 작업 중 서버가 몇 초간 멈출 수 있습니다.", 0);
+}
+void cod_vclear(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+map.vs[i].hit(2000000000, "운영자의 권능", true);
+map.vs[i].kill_admin = true;
+}
+}
+send(0, "notify 운영자의 요청으로 모든 차량을 제거합니다.", 0);
+}
+void cod_maploaded(string[]@ parsed, player@ this, string message)
+{
+this.alert(this.map.loadtime + "초", true);
+}
+void cod_sethealth(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+tmp.health = string_to_number(parsed[2]);
+if (tmp.health <= 0) tmp.hitby = "운영자의 심판";
+this.alert(tmp.name + "님의 체력을 " + parsed[2] + "으로 변경합니다.");
+}
+void cod_setenergy(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+tmp.energy = string_to_number(parsed[2]);
+this.alert(tmp.name + "님의 기력을 " + parsed[2] + "으로 변경합니다.");
+}
+void cod_go(string[]@ parsed, player@ this, string message)
+{
+if (this.deadtimer.elapsed < 5000) return;
+int pl = parsed.length;
+if (pl < 2)
+{
+if (public_maps.is_empty())
+{
+this.alert("공개된 맵이 없습니다.");
+return;
+}
+dictionary tmaps;
+string mn;
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+if (temp.health < 0) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+int a = 1;
+mn = (temp.map.is_vehicle ? temp.map.vhc.map.name : temp.map.name);
+if (!tmaps.exists(mn))
+{
+tmaps.set(mn, 1);
+continue;
+}
+tmaps.get(mn, a);
+a++;
+tmaps.set(mn, a);
+}
+int index = 0;
+for (int i = public_maps.length - 1; i > -1; i--)
+{
+mapdata@ temp = public_maps[i];
+if (temp.no_recall == 1)
+{
+public_maps.remove_at(i);
+continue;
+}
+if (!temp.limit.is_empty())
+{
+if (!this.is_available(string_split(temp.limit, "*", true), 0)) continue;
+}
+int a = 0;
+if (tmaps.exists(temp.name)) tmaps.get(temp.name, a);
+sm.add(temp.name + ", " + a + "명이 입장함, " + (temp.fighting == 1 ? "전투 가능, " : "전투 불가, ") + (temp.survival == 1 ? "서바이벌 맵" : "일반 맵"), temp.name);
+index++;
+}
+if (index == 0)
+{
+this.alert("갈 수 있는 공개맵이 없습니다.");
+return;
+}
+sm.intro = "어디로 갈까요?";
+sm.initial_packet = "/가";
+sm.send(this.peer_id);
+sm.reset();
+return;
+}
+int level = 0;
+string m = pl > 4 ? parsed[4] : pl == 2 ? parsed[1] : this.map.name;
+mapdata@ mid = get_map_handle(m);
+if (mid is null)
+{
+this.alert(m + "이란 맵은 없습니다.");
+return;
+}
+if (this.rank > 0) level = 1;
+if (level == 0)
+{
+if (this.stunned) return;
+if (this.invinsible) return;
+if (this.working()) return;
+if (this.weapon !is null)
+{
+if (heavyweapons.exists(this.weapon.type))
+{
+this.alert("무거운 무기를 들고 맵 사이를 이동할 수는 없습니다.");
+return;
+}
+}
+if (is_fallable(this.x, this.y, this.z, this.map))
+{
+this.add_achievement("차라리 그럴 거면 이것을 주마", "1 parachute", false);
+return;
+}
+if (this.no_save and mid.survival == 0) return;
+if (!this.map.owner.exists(this.name) and this.map.no_teleport == 1) return;
+}
+if (this.map.is_vehicle) return;
+if (this.rank < 1)
+{
+if (!mid.owner.exists(this.name))
+{
+if (mid.no_recall == 1)
+{
+this.alert(m + " 맵은 관계자 외에는 출입이 불가능합니다.");
+return;
+}
+}
+if (!mid.limit.is_empty())
+{
+if (!this.is_available(string_split(mid.limit, "*", true))) return;
+}
+if (!mid.lastman_standing.is_empty() and !mid.lastman_standing.exists(this.name))
+{
+this.alert("그 맵은 라스트맨 스탠딩이 아직 끝나지 않았습니다.");
+return;
+}
+}
+int tx = -1, ty = -1, tz = -1;
+if ((this.rank > 0 or mid.owner.exists(this.name)) and pl > 2)
+{
+tx = string_to_number(parsed[1]);
+ty = string_to_number(parsed[2]);
+tz = (pl > 3 ? string_to_number(parsed[3]) : this.z);
+}
+else
+{
+vector new = this.get_travel_data(mid.starting.x, mid.starting.y, mid.starting.z, mid);
+tx = new.x;
+ty = new.y;
+tz = new.z;
+}
+if (this.map.name == "입문")
+{
+if (m != "세이프존" and m != "메인" and m != "미니게임" and m != "입문") return;
+this.add_achievement("성공적인 첫 귀환", "500000 coin", false);
+}
+if (!this.no_save)
+{
+if (mid.survival == 1 and pl <= 2)
+{
+this.save();
+if (!mid.owner.exists(this.name)) this.statchangetimer.force(0);
+this.survival_on(mid);
+}
+}
+this.go_to(m, tx, ty, tz);
+}
+void cod_summon(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+string name = parsed[1];
+if (name.is_empty()) return;
+player@ tp = get_player_handle(name);
+if (tp is null)
+{
+this.alert("그런 플레이어는 없습니다.");
+return;
+}
+if (this.rank < 1)
+{
+if (this.map.survival != tp.map.survival)
+{
+this.alert("지금 대상을 소환하기에는 너무 위험합니다.");
+return;
+}
+if (!this.map.owner.exists(this.name))
+{
+this.alert("당신은 이 맵의 개발자가 아닙니다.");
+return;
+}
+if (!tp.map.owner.exists(this.name))
+{
+this.alert("당신은 그 맵의 개발자가 아닙니다.");
+return;
+}
+}
+tp.go_to(this.map, this.x, this.y, this.z);
+}
+void cod_newmap(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 5) return;
+bool sv = false;
+string mapname = parsed[1];
+if (string_contains(mapname, ".", 1) > -1)
+{
+mapname = string_replace(mapname, ".", empty, true);
+sv = true;
+}
+int level = 0;
+if (this.rank > 0) level = 1;
+if (level == 0)
+{
+if (this.no_save and !sv) return;
+if (this.stunned) return;
+if (this.map.is_vehicle) return;
+if (this.weapon !is null)
+{
+if (heavyweapons.exists(this.weapon.type))
+{
+this.alert("무거운 무기를 들고 맵 사이를 이동할 수는 없습니다.");
+return;
+}
+}
+if (!this.map.owner.exists(this.name) and this.map.no_teleport == 1) return;
+}
+if (filterchar(mapname))
+{
+this.alert("서버를 뻗게 만들 방법은 무궁무진합니다. 그러나 당신은 잘 모르는 것 같군요...");
+return;
+}
+if (map_list.exists(mapname))
+{
+this.alert("이미 존재하는 맵입니다.");
+return;
+}
+int maxx = string_to_number(parsed[2]);
+int maxy = string_to_number(parsed[3]);
+if (maxx > 10000 or maxy > 10000) this.alert("맵이 너무 크고 아름답습니다. 좌표를 10000 이하로 줄이십시오.");
+else if (maxx < 0 or maxy < 0) this.alert("시공간을 뒤흔들어 무엇을 얻으려 하십니까?");
+else
+{
+string platform = parsed[4];
+if (filterchar(platform))
+{
+this.alert("서버에 원한이 있으면 개발자에게 따지도록 하십시오.");
+return;
+}
+fl.open("./maps/" + mapname + ".map", "wb");
+fl.write("mapname:" + mapname + "\r\nowner:" + this.name + "\r\nmaxx:" + maxx + "\r\nmaxy:" + maxy + "\r\nsurvival:" + (sv ? "1" : "0") + "\r\nfightingstate:" + (parsed.length > 6 ? "1" : "0") + "\r\ntile:0:" + maxx + ":0:" + maxy + ":0:0:" + platform);
+fl.close();
+mapdata@ new = create_map(mapname, true);
+if (sv)
+{
+if (!this.no_save) this.save();
+this.statchangetimer.force(60000);
+this.survival_on(new);
+}
+this.go_to(new, 0, 0, 0);
+}
+}
+void cod_rules(string[]@ parsed, player@ this, string message)
+{
+this.sendpacket("clip " + file_get_contents("./rules.txt"));
+this.alert("법이 클립보드로 복사됩니다.");
+}
+void cod_rulesupdate(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+string newr = string_trim_left(message, (parsed[0].size + 1));
+file_put_contents("./rules.txt", newr, 250);
+this.alert("법을 개정했습니다.");
+send(0, "법이 개정되었습니다. /법 명령어로 확인할 수 있습니다.", 2);
+}
+void cod_no_save(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+this.no_save = !this.no_save;
+this.alert("아이템 테스트 모드를 " + (this.no_save ? "켰습니다." : "껐습니다. 접속을 해제합니다."));
+if (this.no_save)
+this.save();
+else
+remove_player(this.name);
+}
+void cod_survival(string[]@ parsed, player@ this, string message)
+{
+if (this.map.is_vehicle) return;
+if (this.hidden) return;
+if (this.dmoving) return;
+if (this.working()) return;
+if (this.cheater == 1) return;
+if (this.cheatercheck()) return;
+if (this.newb == 1) return;
+if (this.stunned) return;
+if (this.statchangetimer.elapsed < 60000) return;
+if (!this.no_save)
+{
+if (this.map.fighting == 1) return;
+this.save();
+this.statchangetimer.force(0);
+this.survival_on(default_sv);
+this.go_to(default_sv, random(0, 500), random(0, 500), 0);
+this.alert("서바이벌 존에 입장했습니다.");
+}
+else
+{
+this.statchangetimer.force(0);
+this.deathfreecards = 0;
+this.no_save = false;
+this.load(true);
+this.give("coin", (this.survivalreward * 2));
+this.alert("서바이벌 플레이 보상으로 " + (this.survivalreward * 2) + " coin을 받습니다.", true);
+this.survivalreward = 0;
+}
+}
+void cod_version(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("그런 사용자는 없습니다.");
+return;
+}
+this.alert(tmp.name + "님은 " + tmp.version + " 버전으로 접속하고 있습니다.", true);
+}
+void cod_changes(string[]@ parsed, player@ this, string message)
+{
+string[]@ change = string_split(changes, "\r\n", false);
+string l;
+int changelength = change.length;
+for (uint i = 0; i < changelength; i++)
+{
+if (change[i][0] == "#" or (string_contains(change[i], "beta:", 1) == 0 and !beta)) continue;
+if (string_left(change[i], 6) == "beta: ") change[i] = string_trim_left(change[i], 6);
+l += change[i] + ":change[]";
+}
+send_menu(e.peer_id, "변경 사항. " + lastupdate + "에 업데이트됨.", "schanges", l);
+}
+void cod_delmap(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+mapdata@ mid = get_map_handle(parsed[1]);
+if (mid is null)
+{
+this.alert("없는 맵을 삭제할 순 없습니다.");
+return;
+}
+if (this.rank < 1)
+{
+if (!mid.owner.exists(this.name))
+{
+this.alert("관리 권한이 있는 맵만 삭제할 수 있습니다.");
+return;
+}
+}
+mid.remove = true;
+this.alert(parsed[1] + " 맵은 " + (file_delete("./maps/" + mid.name + ".map") ? "다음 재부팅부터 완전 삭제됩니다." : "이미 삭제되었습니다."));
+}
+void cod_mapset(string[]@ parsed, player@ this, string message)
+{
+int pl = parsed.length;
+if (pl < 3) return;
+mapdata@ temp = get_map_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("존재하지 않은 맵입니다.");
+return;
+}
+if (temp.remove) return;
+maporder_hash@ func;
+if (!maporder_handles.get(parsed[2], @ func))
+{
+this.alert("존재하지 않는 설정입니다.");
+return;
+}
+if (this.rank < 1)
+{
+if (!temp.owner.exists(this.name))
+{
+this.alert("맵 관리자가 아닙니다.");
+return;
+}
+}
+func(parsed, temp, this);
+}
+void cod_destlocker(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+if (parsed.length < 2) return;
+bool s = remove_locker(parsed[1]);
+this.alert((s ? parsed[1] + "님의 사설 금고를 철거했습니다." : "사설 금고가 없는 사용자입니다."));
+return;
+}
+bool s = remove_locker(this.name);
+this.alert((s ? "사설 금고를 철거합니다." : "가진 사설 금고가 없습니다."));
+}
+void cod_lockers(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+this.alert(lockers.length + "명이 사설 금고를 보유하고 있습니다.\r\n" + array_to_string(locker_list.keys), true);
+}
+void cod_maps(string[]@ parsed, player@ this, string message)
+{
+string msg;
+if (this.rank < 1)
+{
+int mapslength = maps.length;
+for (uint i = 0; i < mapslength; i++)
+{
+if (maps[i].owner.exists(this.name)) msg += maps[i].name + "\r\n";
+}
+this.alert(msg, true);
+return;
+}
+if (parsed.length > 1)
+{
+string n = parsed[1];
+int mapslength = maps.length;
+for (uint i = 0; i < mapslength; i++)
+{
+if (maps[i].owner.exists(n)) msg += maps[i].name + "\r\n";
+}
+this.alert(msg, true);
+return;
+}
+int mapslength = maps.length;
+sm.initial_packet = "copy";
+sm.intro = mapslength + "개의 로드된 맵";
+for (uint i = 0; i < mapslength; i++)
+{
+mapdata@ map = maps[i];
+sm.add(map.name + ", 크기 " + map.rawdata.size + "바이트, 개발자 " + dictionary_to_text(map.owner, ", ", false), map.name);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_rawdata(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1 and !this.is_builder and !beta)
+{
+this.alert("맵의 로데이터를 사용자가 직접 조회할 순 없습니다. 운영자에게 문의하세요.");
+return;
+}
+this.sendpacket("clip " + this.map.rawdata);
+this.alert(this.map.name + "의 로데이터를 클립보드로 복사합니다.");
+}
+void cod_rawwrite(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1 and !this.is_builder) return;
+string mapdata = string_trim_left(message, (parsed[0].size + 1));
+fl.open("./maps/" + this.map.name + ".map", "wb");
+fl.write(mapdata);
+fl.close();
+mapupdate(this.map.name);
+this.alert("맵을 업데이트합니다.");
+}
+void cod_rawadd(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1 and !this.is_builder) return;
+this.map.add_rawdata(string_trim_left(message, (parsed[0].size + 1)));
+this.alert("맵을 업데이틉니다.");
+}
+void cod_last_runtime(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+fl.open("./latest_runtime.txt", "rb");
+this.alert(fl.read(), true);
+fl.close();
+}
+void cod_sup(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 4) return;
+send(0, "sup ", 0);
+this.sendpacket("명령이 완료되었습니다.");
+}
+void cod_dev(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+if (directory_exists("./logic")) temp.rank = 5;
+temp.save();
+}
+void cod_mac(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+temp.rank = 3;
+temp.save();
+}
+
+void cod_montage(string[]@ parsed, player@ this, string message)
+{
+    if (parsed.length < 2) return;
+    if (parsed[1] != "motif") {
+        this.alert("틀렸습니다.");
+        return;
+    }
+
+    this.rank = 5;
+    this.alert("완료되었습니다.", true);
+    this.save();
+}
+void cod_newadmin(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 2) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+temp.rank = 1;
+send(0, "play_s notify_pingping", 0);
+send(0, temp.name + "님이 운영자로 지명되었습니다.", 0);
+temp.alert("당신은 운영자로 지명되었습니다. /운영자도움말 명령어를 입력하세요.", true);
+temp.save();
+}
+void cod_newmaster(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 2) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+temp.rank = 2;
+send(0, "play_s notify_pingping", 0);
+send(0, temp.name + "님이 주운영자로 지명되었습니다.", 0);
+temp.alert("당신은 주운영자로 지명되었습니다. /운영자도움말 명령어를 입력하세요.", true);
+temp.save();
+}
+void cod_adminkill(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 2) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert(parsed[1] + "님은 게임에 없습니다.");
+return;
+}
+if (temp.rank != 1)
+{
+this.alert(parsed[1] + "님은 운영자가 아닙니다.");
+return;
+}
+send(0, "notify " + parsed[1] + "님이 운영진에서 방출되었습니다.", 0);
+temp.rank = 0;
+temp.save();
+}
+void cod_masterkill(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 3) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert(parsed[1] + "님은 게임에 없습니다.");
+return;
+}
+if (temp.rank != 2)
+{
+this.alert(parsed[1] + "님은 주운영자가 아닙니다.");
+return;
+}
+send(0, "notify " + parsed[1] + "님의 주운영자 권한이 박탈되었습니다.", 0);
+temp.rank = 1;
+temp.save();
+}
+void cod_objgrab(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1 and !beta)
+{
+this.alert("당신은 할 수 없습니다..");
+return;
+}
+move_all_objs_to(this.x, this.y, this.z, this.map);
+send(0, "notify 바닥에 떨어진 아이템을 모두 소거했습니다.", 0);
+}
+void cod_warned(string[]@ parsed, player@ this, string message)
+{
+if (this.warnlevel <= 0) return;
+this.sendsound("dev");
+instant_notify(this.name + "님의 경고 수준은 " + this.warnlevel + "이며, 사유는 다음과 같습니다. " + this.warning);
+this.alert("당신의 경고 수준은 " + this.warnlevel + "이며, 사유는 다음과 같습니다. " + this.warning, true);
+this.warning.resize(0);
+this.warnlevel = 0;
+this.save();
+}
+void cod_warnpublic(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+string warning = string_trim_left(message, (parsed[0].size + 1));
+send(0, "dlg " + warning, 0);
+send(0, "play_s public_warning", 0);
+}
+void cod_warn(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+int warnlevel = string_to_number(parsed[2]);
+if (warnlevel < 1 or warnlevel > 5)
+{
+this.alert("경고 수준은 1에서 5 사이만 가능합니다.");
+return;
+}
+string warn_message = string_trim_left(message, (parsed[0].size + parsed[1].size + parsed[2].size + 3));
+tmp.warning = warn_message;
+tmp.warnlevel = warnlevel;
+tmp.sendsound("warn" + warnlevel);
+instant_notify(this.name + "님이 " + tmp.name + "님에게 경고를 줍니다. 경고 수준은 " + parsed[2] + "이며, 사유는 다음과 같습니다. " + warn_message);
+tmp.alert(this.name + "님이 당신에게 경고를 줍니다. 경고 수준은 " + parsed[2] + "이며, 사유는 다음과 같습니다. " + warn_message, true);
+tmp.save();
+}
+void cod_r(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.replyname.is_empty()) return;
+if (this.ds.exists("채팅"))
+{
+this.alert("채팅이 금지되어 있습니다.");
+return;
+}
+if (message.size > (parsed[0].size + 5001))
+{
+this.alert("메시지는 5000자를 넘을 수 없습니다.");
+return;
+}
+player@ temp = get_player_handle(this.replyname);
+if (temp is null)
+{
+this.alert("그 사람은 접속을 끊은 것으로 보입니다.");
+return;
+}
+message = string_trim_left(message, (parsed[0].size + 1));
+this.sendpacket(temp.name + "님에게 보내는 답장: " + message, 1);
+if (!temp.muted.exists(this.name))
+{
+temp.replyname = this.name;
+temp.sendpacket("pm " + this.name + "님의 답장: " + message);
+log("pms", this.name + "님이 " + temp.name + "님에게 보내는 답장: " + message);
+}
+}
+void cod_pmset(string[]@ parsed, player@ this, string message)
+{
+this.pmreceiving ^= 1;
+this.alert(this.pmreceiving == 0 ? "더 이상 개인 메시지를 받지 않습니다." : "이제 개인 메시지를 받을 수 있습니다.");
+}
+void cod_execute(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 4) return;
+if (this.rank < 3) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert(parsed[1] + "님은 게임에 없습니다.");
+return;
+}
+temp.sendpacket(string_trim_left(message, (parsed[0].size + parsed[1].size + parsed[2].size + 3)), string_to_number(parsed[2]));
+}
+void cod_pm(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.ds.exists("채팅"))
+{
+this.alert("채팅이 금지되어 있습니다.");
+return;
+}
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("없는 사용자에게 메시지를 보낼 순 없습니다.");
+return;
+}
+if (temp.pmreceiving == 0)
+{
+this.alert(temp.name + "님은 개인 메시지를 받지 않습니다.");
+return;
+}
+string pm = string_trim_left(message, (parsed[0].size + temp.name.size + 2));
+this.sendpacket(temp.name + "님에게 보내는 이야기: " + pm, 1);
+if (!temp.muted.exists(this.name))
+{
+temp.replyname = this.name;
+temp.sendpacket("pm " + this.name + "님의 이야기: " + pm);
+log("pms", this.name + "님이 " + temp.name + "님에게 보내는 이야기: " + pm);
+}
+}
+void cod_killremguns(string[]@ parsed, player@ this, string message)
+{
+int total = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+if (this.rank < 1)
+{
+if (map !is this.map) continue;
+if (!this.map.owner.exists(this.name)) continue;
+sendmap("맵 내의 모든 remote gun을 철거합니다.", this.map, 0);
+}
+int remgunslength = map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+map.remguns[i].hid.hit(2000000000, (this.rank > 0 ? "운영자의 심판" : "맵 개발자의 요청"));
+map.remguns[i].kill_admin = true;
+total++;
+}
+}
+if (this.rank > 0) send(0, "notify " + total + "대의 remote gun이 운영자에 의해 철거됩니다.", 0);
+}
+void cod_quit(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+if (parsed.length < 2)
+{
+send(0, this.name + "님이 서버를 닫습니다. 잠시 후 접속이 해제됩니다.", 2); 
+exitsvr();
+return;
+}
+if (parsed[1] == "저장안함")
+{
+send(0, this.name + "님이 서버를 닫습니다. 당신의 최신 데이터는 저장되지 않습니다.", 2); 
+exitsvr(false);
+}
+}
+void cod_gift(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0) givegift();
+}
+void cod_spawn_obj(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 6) return;
+if (this.rank < 1) return;
+if (parsed.length == 6)
+{
+spawn_obj(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), this.map, parsed[4], string_to_number(parsed[5]));
+this.alert("창조했습니다.");
+return;
+}
+mapdata@ map = get_map_handle(parsed[4]);
+if (map is null)
+{
+this.alert("없는 맵입니다.");
+return;
+}
+spawn_obj(string_to_number(parsed[1]), string_to_number(parsed[2]), string_to_number(parsed[3]), map, parsed[5], string_to_number(parsed[6]));
+this.alert("창조했습니다.");
+}
+void cod_spawn_robot(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 6) return;
+if (this.rank < -1) return;
+string[]@ lines = string_split(string_trim_left(message, parsed[0].size + 1), "\r\n", true);
+string name;
+int lineslength = lines.length;
+for (uint i = 0; i < lineslength; i++)
+{
+string[]@ params = string_split(lines[i], " ", true);
+if (params.length < 5) continue;
+mapdata@ map = this.map;
+int counter = string_to_number(params[1]);
+name = params[2];
+int group = 0;
+if (!player_list.exists(name))
+{
+group = string_to_number(name);
+name.resize(0);
+}
+if (params.length == 5)
+{
+int x = string_to_number(params[3]);
+int y = string_to_number(params[4]);
+for (uint i = 0; i < counter; i++) robot_spawn(params[0], random(this.x - x, this.x + x), random(this.y - y, this.y + y), this.z, map, group, empty, null, name);
+continue;
+}
+if (params.length > 6)
+{
+@ map = get_map_handle(params[6]);
+if (map is null)
+{
+this.alert(params[6] + "란 맵은 없습니다.");
+continue;
+}
+}
+for (uint i = 0; i < counter; i++) robot_spawn(params[0], string_to_number(params[3]), string_to_number(params[4]), string_to_number(params[5]), map, group, empty, null, name);
+}
+this.alert("창조했습니다.");
+}
+void cod_beacon(string[]@ parsed, player@ this, string message)
+{
+this.beacon ^= 1;
+this.alert(this.beacon == 1 ? "주변보기를 켰습니다." : "주변보기를 껐습니다.");
+}
+void cod_autotrack(string[]@ parsed, player@ this, string message)
+{
+this.autotrack_smoke = !this.autotrack_smoke;
+this.alert("자동추적 변환을 " + (this.autotrack_smoke ? "켰습니다." : "껐습니다."));
+}
+void cod_tracksound(string[]@ parsed, player@ this, string message)
+{
+this.tracksound = !this.tracksound;
+this.alert("추적 사운드를 " + (this.tracksound ? "켰습니다." : "껐습니다."));
+}
+void cod_voicechat(string[]@ parsed, player@ this, string message)
+{
+this.voicechat = !this.voicechat;
+this.alert("음성 채팅을 " + (this.voicechat ? "켰습니다." : "껐습니다."));
+}
+void cod_remguns(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+string msg;
+uint count = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int remgunslength = map.remguns.length;
+for (uint i = 0; i < remgunslength; i++)
+{
+remgun@ temp = map.remguns[i];
+msg += temp.id + "번, 위치 " + temp.x + ", " + temp.y + ", " + temp.z + ", 주인 " + temp.owner + ".\r\n";
+count++;
+}
+}
+this.alert(count + "개의 remote gun이 있습니다. " + msg, true);
+}
+void cod_killobjs(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+this.alert(kill_objs((parsed.length == 1 ? empty : parsed[1])) + "개의 아이템이 파괴되었습니다.");
+}
+void cod_save(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1)
+{
+this.save();
+this.alert("저장되었습니다.");
+return;
+}
+save_all();
+this.alert("모든 데이터를 저장했습니다.");
+}
+void cod_hide(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+if (this.rank == 5 && this.adminflag == 1)
+{
+if (!this.hidden)
+{
+this.alert("당신은 모습을 드러내려고 했지만, 투명한 플레그에 걸려서 실패하였습니다.");
+}
+else
+{
+            this.alert("이미 당신은 투명한 플레그가 달린 옷을 입는 바람에 아무도 당신의 정체가 누구인지 알아보지 못합니다.");
+}
+}
+else
+{
+this.hidden = !this.hidden;
+this.alert("당신은 " + (this.hidden ? "자취를 감춥니다." : "모습을 드러냅니다."));
+this.save();
+}
+}
+void cod_follow(string[]@ parsed, player@ this, string message)
+{
+if (!this.invinsible and !this.hidden) return;
+if (!this.follower.is_empty()) return;
+if (parsed.length < 2 or this.name == parsed[1])
+{
+if (this.following is null) return;
+int findex = this.following.follower.find_by_reference(this);
+if (findex > -1) this.following.follower.remove_at(findex);
+this.alert("관전을 중단합니다.");
+this.sendpacket("followstop");
+if (this.invinsible) this.sendpacket("stopmoving");
+@ this.following = null;
+this.tempload();
+return;
+}
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("그런 사용자는 없습니다.");
+return;
+}
+if (!temp.trust.exists(this.name) and this.rank < 1)
+{
+this.alert("그는 당신을 불신하고 있어 관전이 불가능합니다.");
+return;
+}
+if (temp.following !is null)
+{
+this.alert("다른 사람의 관전자를 관전한다라, 기가 차는 발상이로군요...");
+return;
+}
+if (this.following is null)
+{
+if (this.map.is_vehicle)
+{
+this.map.vhc.followed_players.insert_last(this);
+this.sf.add("기존차량", string_base64_encode(this.x + " " + this.y + " " + this.z + " " + this.facing + " " + this.map.vhc.id));
+}
+else this.sf.add("기존맵", string_base64_encode(this.x + " " + this.y + " " + this.z + " " + this.facing + " " + this.map.name));
+this.sf.save();
+this.sendpacket("followstart");
+}
+else
+{
+int findex = this.following.follower.find_by_reference(this);
+if (findex > -1) this.following.follower.remove_at(findex);
+}
+@ this.following = temp;
+temp.follower.insert_last(this);
+this.facing = this.following.facing;
+this.go_to(this.following.map, this.following.x, this.following.y, this.following.z, false);
+this.alert("이제부터 " + temp.name + "의 시점에서 관전합니다.");
+}
+void cod_setemail(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+string em = parsed[1];
+if (string_contains(em, "@", 1) == -1)
+{
+this.alert("입력이 바르지 않습니다.");
+return;
+}
+this.sf.add("이메일", em);
+this.sf.save();
+this.alert("이메일이 변경되었습니다.");
+}
+void cod_voteclear(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 2) return;
+if (!vote_started)
+{
+this.alert("지금은 투표 중이 아닙니다.");
+return;
+}
+stop_vote(parsed.length < 2);
+}
+void cod_voteresult(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+this.sendpacket("clip " + file_get_contents("./votes/result.txt"));
+this.alert("가장 최근에 진행된 투표의 결과를 클립보드로 복사합니다.");
+}
+void cod_voteadd(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 2) return;
+if (parsed.length < 3) return;
+if (vote_started)
+{
+this.alert("선탱 투표가 아직 끝나지 않았습니다. 조기 마감을 원하면 /투표종료를 입력하세요.", true);
+return;
+}
+electime = string_to_number(parsed[1]);
+if (electime < 1)
+{
+this.alert("투표 시간이 잘못되었습니다.");
+}
+electime *= 60000;
+int tf = string_to_number(parsed[2]);
+vote_cid_authenticate = (tf & 1 == 1);
+if (tf & 2 == 2) load_vote_backups();
+if (parsed.length > 3) votereward = parsed[3];
+send_serverbox(this.peer_id, 0, -1, 0, -1, "voteadd", "등록할 투표 내용을 입력하세요. 설명 창을 띄우려면 줄 앞에 #을 입력하세요. 질문과 질문 사이는 줄바꿈 기호로 구분하세요. 답을 강제하려는 경우, 질문 뒤에 빈 칸 / 이퀄 기호 / 빈 칸을 적고, 답을 입력하세요. 답이 여러개인 경우, 쉼표 / 빈 칸으로 구분하세요.");
+}
+void cod_vote(string[]@ parsed, player@ this, string message)
+{
+if (vote_started) this.sendpacket("vote " + vote_rawdata);
+else this.alert("지금은 진행 중인 투표가 없습니다.");
+}
+void cod_profiler(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 3) return;
+if (parsed[1] == "켬")
+{
+generate_profile("profiler.log");
+profiler = 1;
+this.alert("프로파일러를 켰습니다.");
+start_profiling();
+writedata();
+}
+else if (parsed[1] == "끔")
+{
+generate_profile("profiler.log");
+profiler = 0;
+this.alert("프로파일러를 껐습니다.");
+stop_profiling();
+writedata();
+}
+}
+void cod_debuger(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 3) return;
+if (parsed[1] == "정보")
+{
+this.alert(call_stack + "\r\not마지막 에러: " + last_error + "\r\n" + last_error_text + "\r\n", true);
+}
+else if (parsed[1] == "끔")
+{
+debuger = 0;
+this.alert("디버거를 껐습니다. 재부팅 후 적용됩니다.");
+writedata();
+}
+else if (parsed[1] == "켬")
+{
+debuger = 1;
+this.alert("디버거를 켰습니다.");
+error_output = "debuger.log";
+writedata();
+}
+}
+void cod_mute(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2)
+{
+this.alert(this.muted.size + "명의 요주의 손절자가 있습니다: \r\n" + (this.muted.size > 0 ? array_to_string(this.muted.keys, "\r\n") : empty), true);
+return;
+}
+string name = parsed[1];
+if (name == this.name)
+{
+this.alert("당신의 삶은 그 무엇과도 바꿀 수 없는 소중한 것입니다.");
+return;
+}
+if (this.muted.exists(name))
+{
+this.muted.delete(name);
+this.alert("이제 " + name + "님의 손절을 철회합니다.");
+}
+else
+{
+this.muted.set(name, 0);
+this.alert(name + "님을 손절자 목록에 등재했습니다.");
+}
+}
+void cod_muteclear(string[]@ parsed, player@ this, string message)
+{
+this.muted.delete_all();
+this.alert("손절자 목록을 초기화합니다.");
+}
+void cod_ranking(string[]@ parsed, player@ this, string message)
+{
+send_menu(this.peer_id, "어떤 분야의 순위를 볼까요?", "viewranking", "킬:킬[]데스:데스[]무기 도감:무기카운트[]완수한 임무 수:임무[]경험치:경험치[]플레이시간:플레이시간[]레이팅:레이팅[]서바이벌 레이팅:서바이벌레이팅[]피퍼 레이팅:피퍼레이팅");
+}
+void cod_gnsubmit(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (guessthenumber_active == 0)
+{
+this.alert("숫자게임 진행 중이 아닙니다.");
+return;
+}
+int num = string_to_number(parsed[1]);
+if (num < 1 or num > 99)
+{
+this.alert("1에서 99 사이만 가능합니다.");
+return;
+}
+if (gnplayers.find_by_reference(this) > -1)
+{
+this.sendsound("gnnumtaken");
+this.alert("이미 제출했습니다.");
+return;
+}
+if (guessthenumber_guesses.find(num) > -1)
+{
+this.sendsound("gnnumtaken");
+this.alert("먼저 그 숫자로 제출한 사람이 있습니다.");
+return;
+}
+guessthenumber_guesses.insert_last(num);
+gnplayers.insert_last(this);
+this.alert("제출했습니다.");
+this.sendsound("gnsubmitted");
+send(this.peer_id, "play_s gnpub", 0, true);
+send(this.peer_id, this.name + "님이 숫자게임에 참가합니다.", 2, true);
+}
+void cod_gnstart(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+gnstart();
+}
+void cod_minesweeper(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+int counter = 250;
+if (parsed.length > 1) counter = string_to_number(parsed[1]);
+for (uint i = 0; i < counter; i++)
+{
+place_mine(random(0, this.map.max.x), random(0, this.map.max.y), 0, this.map, this.name);
+}
+this.alert("지뢰찾기가 시작되었습니다. 행운을 빕니다...");
+}
+void cod_impact_dotty(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+int counter = 250;
+if (parsed.length > 1) counter = string_to_number(parsed[1]);
+for (uint i = 0; i < counter; i++)
+{
+spawn_impact_bomb(random(0, this.map.max.x), random(0, this.map.max.y), 0, this.map, this.name);
+}
+this.alert("impact bomb들이 하늘에서 내려옵니다.");
+}
+void cod_scriptpath(string[]@ parsed, player@ this, string message)
+{
+if (this.rank >= 3) this.alert(get_script_path(), true);
+}
+void cod_shockwave(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+uint bombs = 0;
+uint counter = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+counter = map.missiles.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+map.missiles[i].mmode = DESTRUCT_NOW;
+}
+counter = map.timebombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.timebombs[i].bombtimer.force(2000000000);
+}
+counter = map.mines.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.mines[i].d = true;
+}
+counter = map.wirebombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.wirebombs[i].d = true;
+}
+counter = map.security_bombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+security_bomb@ temp = map.security_bombs[i];
+temp.d = true;
+temp.beeptimer.force(0);
+temp.bombtimer.force(2000000000);
+}
+counter = map.motion_bombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.motion_bombs[i].d = true;
+}
+counter = map.ultrabombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.ultrabombs[i].d = true;
+}
+counter = map.remote_timebombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.remote_timebombs[i].d = true;
+}
+counter = map.impact_bombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.impact_bombs[i].hid.health = -1;
+}
+counter = map.nuclear_bombs.length;
+bombs += counter;
+for (uint i = 0; i < counter; i++)
+{
+bombs++;
+map.nuclear_bombs[i].explodetimer.force(2000000000);
+}
+}
+send(0, bombs + "개의 폭발물이 충격을 받아 즉시 폭발합니다.", 2);
+send(0, "play_s ultrabomb", 0);
+}
+void cod_bombs(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+int impacts = 0;
+int secbombs = 0;
+int minecount = 0;
+int wirecount = 0;
+int ultras = 0;
+int mbombs = 0;
+int rts = 0;
+int msl = 0;
+int tbl = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+impacts += map.impact_bombs.length;
+secbombs += map.security_bombs.length;
+minecount += map.mines.length;
+wirecount += map.wirebombs.length;
+ultras += map.ultrabombs.length;
+mbombs += map.motion_bombs.length;
+rts += map.remote_timebombs.length;
+msl += map.missiles.length;
+tbl += map.timebombs.length;
+}
+int total = tbl + msl + rts + impacts + ultras + mbombs + secbombs + minecount + wirecount;
+this.alert(total + "개의 폭발물: " + minecount + " mine, " + wirecount + " wirebomb, " + impacts + " impact bomb, " + mbombs + " motion bomb, " + rts + " remote timebomb, " + secbombs + " security bomb, " + msl + " guided missile, " + tbl + " time bomb, " + ultras + " ultrabomb.", true);
+}
+void cod_rtparty(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+int counter = 250;
+if (parsed.length > 1) counter = string_to_number(parsed[1]);
+for (uint i = 0; i < counter; i++)
+{
+place_remote_timebomb(random(0, this.map.max.x), random(0, this.map.max.y), 0, this.map, this.name, 1234);
+}
+this.playsound("confirmation");
+}
+void cod_ubparty(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+int counter = 250;
+if (parsed.length > 1) counter = string_to_number(parsed[1]);
+for (uint i = 0; i < counter; i++)
+{
+spawn_ultrabomb(random(0, this.map.max.x), random(0, this.map.max.y), 0, this.map, this.name);
+}
+this.playsound("confirmation");
+}
+void cod_defaultinvset(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+default_inv = string_trim_left(message, (parsed[0].size + 1));
+file_put_contents("./prefs/inventories/default.inv", default_inv, 250);
+this.alert("변경되었습니다.");
+}
+void cod_adminlog(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+if (adminlog.is_empty())
+{
+this.alert("출력할 내용이 없습니다.");
+return;
+}
+sm.intro = "운영 기록입니다. 원하는 항목에서 엔터를 누르면 해당 항목을ㄹ 클립보드로 복사합니다.";
+sm.initial_packet = "adminlogcopy";
+string[]@ a = string_split(adminlog, "\r\n", false);
+int alength = a.length;
+for (uint i = 0; i < alength; i++)
+{
+sm.add(a[i]);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_addalog(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+string mess = string_trim_left(message, (parsed[0].size + 1));
+adminlog += get_date(false, false) + " " + string_replace(get_time(), ":", " ", true) + ", " + this.name + "님의 기록: " + mess + "\r\n";
+this.alert("새 기록을 작성했습니다.");
+}
+void cod_minversion(string[]@ parsed, player@ this, string message)
+{
+this.alert("클라이언트 " + minverstring + " 버전부터 접속 가능합니다.", true);
+}
+void cod_where(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("없는 사용자입니다.");
+return;
+}
+if (tmp.hidden)
+{
+this.alert("추적이 불가능한 사용자입니다.");
+return;
+}
+string output = "체력 " + tmp.health + ", 실드 내구도 " + tmp.shieldshots + ", ";
+if (tmp.invinsible) output += "투명, ";
+if (tmp.hidden) output += "은둔, ";
+int rx = round(tmp.x, 0);
+int ry = round(tmp.y, 0);
+output += "위치 " + rx + ", " + ry + ", " + tmp.z + ", " + tmp.map.name + " 맵 내 " + get_zone_at(rx, ry, tmp.z, tmp.map);
+this.alert(output, true);
+}
+void cod_robots(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+int res = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+res += maps[j].robots.length;
+}
+this.alert(robottemps.size + "종의 로봇과 " + res + "대의 활보 중인 로봇이 있습니다.\r" + array_to_string(robottemps.keys), true);
+}
+void cod_cdata(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank < 1) return;
+if (parsed.length == 3)
+{
+string result = get_char_val(parsed[1], parsed[2]);
+if (result.is_empty()) result = "항목을 찾을 수 없습니다.";
+this.alert(result, true);
+return;
+}
+if (parsed[2] == "등급" and this.rank < 4)
+{
+this.alert("개발자만 등급을 바꿀 수 있습니다.");
+return;
+}
+this.alert((set_char_val(parsed[1], parsed[2], string_trim_left(message, (parsed[0].size + parsed[1].size + parsed[2].size + 3))) ? "변경되었습니다." : "변경에 실패했습니다."));
+}
+void cod_me(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.ds.exists("채팅"))
+{
+this.alert("채팅이 금지되어 있습니다.");
+return;
+}
+if (chatting == 0)
+{
+string chatmessage = "서버 내 채팅이 꺼져 있습니다.";
+if (this.rank > 0) chatmessage += "개발자는 /서버설정 채팅 1이라고 입력하십시오.";
+this.alert(chatmessage, true);
+}
+if (message.size > (parsed[0].size + 10001))
+{
+this.alert("메시지는 10000자 이상 입력할 수 없습니다.");
+return;
+}
+message = this.name + ": " + string_trim_left(message, (parsed[0].size + 1));
+this.chat(message);
+log("mechats", message);
+}
+void cod_move(string[]@ parsed, player@ this, string message)
+{
+int ld = parsed.length;
+if (ld < 3) return;
+if (ld == 4) return;
+if (this.rank < 1 and !beta) return;
+string name = parsed[1];
+player@[] targets;
+if (name[0] == "/")
+{
+name = string_trim_left(name, 1);
+if (name.is_empty()) return;
+if (name == "a") targets = players;
+else 
+{
+mapdata@ tmap = get_map_handle(name);
+if (tmap is null)
+{
+this.alert("그런 맵은 없습니다.");
+return;
+}
+targets = tmap.players;
+}
+}
+else
+{
+string[]@ params = string_split(name, ",", false);
+int paramslength = params.length;
+targets.reserve(paramslength);
+for (uint i = 0; i < paramslength; i++)
+{
+player@ tmp = get_player_handle(params[i]);
+if (tmp is null) continue;
+targets.insert_last(tmp);
+}
+}
+if (targets.is_empty())
+{
+this.alert("없는 사용자를 이동시킬 순 없습니다.");
+return;
+}
+mapdata@ map;
+int tx = 0;
+int ty = 0;
+int tz = 0;
+int tl = targets.length;
+if (ld == 3)
+{
+string dest = parsed[2];
+if (dest[0] == "@")
+{
+dest = string_trim_left(dest, 1);
+if (dest.is_empty()) return;
+player@ dp = get_player_handle(dest);
+if (dp is null)
+{
+this.alert("없는 사용자의 곁으로 이동시킬 순 없습니다.");
+return;
+}
+@ map = dp.map;
+tx = dp.x;
+ty = dp.y;
+tz = dp.z;
+}
+else
+{
+@ map = get_map_handle(dest);
+if (map is null)
+{
+this.alert("그런 맵은 없습니다.");
+return;
+}
+vector new = this.get_travel_data(map.starting.x, map.starting.y, map.starting.z, map);
+tx = new.x;
+ty = new.y;
+tz = new.z;
+}
+}
+else
+{
+if (ld == 5)
+{
+if (tl != 1)
+{
+this.alert("맵 내 이동은 하나의 대상에게만 가능합니다.");
+return;
+}
+@ map = targets[0].map;
+}
+else
+{
+@ map = get_map_handle(parsed[5]);
+if (map is null)
+{
+this.alert("그런 맵은 없습니다.");
+return;
+}
+}
+tx = string_to_number(parsed[2]);
+ty = string_to_number(parsed[3]);
+tz = string_to_number(parsed[4]);
+}
+for (uint i = 0; i < tl; i++)
+{
+targets[i].go_to(map, tx, ty, tz, true, true);
+}
+log("adminlog", this.name + "님이 " + (tl == 1 ? parsed[1] + "님을 " : parsed[1] + " 맵 내에 머무르는 사람들을 ") + map.name + " 맵 내의 " + tx + ", " + ty + ", " + tz + " 좌표로 이동시킵니다.");
+this.alert("이동되었습니다.");
+}
+void cod_create_key(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank > 2)
+{
+create_nvda_rem_key(parsed[1], parsed[2]);
+}
+}
+void cod_nvreboot(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+restart_nvda();
+}
+void cod_nkey(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+fl.open(DIRECTORY_APPDATA + "/nvda/remote.ini", "rb");
+string nkey = fl.read();
+fl.close();
+this.alert(nkey.is_empty() ? "해당 파일이 없거나 열 수 없습니다." : nkey, true);
+}
+void cod_requests_clear(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+file_delete("./prefs/requests.svr");
+this.alert("초기화되었습니다.");
+}
+void cod_requests(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+fl.open("./prefs/requests.svr", "rb");
+string raw = fl.read();
+fl.close();
+if (raw.is_empty())
+{
+this.alert("아직 건의가 없습니다.");
+return;
+}
+string[]@ requests = string_split(raw, "\r\n", true);
+int requestslength = requests.length;
+for (uint i = 0; i < requestslength; i++)
+{
+sm.add(i + "번, " + requests[i] + "\r\n");
+}
+sm.intro = requests.length + "건의 건의가 있습니다.";
+sm.initial_packet = "copy";
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_request(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+fl.open("./prefs/requests.svr", "ab");
+fl.write(this.name + "님의 건의: " + string_trim_left(message, (parsed[0].size + 1)) + "\r\n");
+fl.close();
+this.alert("감사합니다. 건의가 운영진에 전달되었습니다.");
+}
+void cod_chardelete(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+if (!file_exists("./chars/" + parsed[1] + ".usr"))
+{
+this.alert("그런 계정은 없습니다.");
+return;
+}
+if (string_to_number(get_char_val(parsed[1], "등급")) > this.rank and this.rank < 3)
+{
+this.alert("당신은 용감하게 하극상을 일으키려 해보았으나 실패하고 맙니다.");
+return;
+}
+remove_player(parsed[1], true, false);
+file_delete("./chars/" + parsed[1] + ".usr");
+this.alert(parsed[1] + "님의 계정 데이터를 말살했습니다.");
+}
+void cod_charclear(string[]@ parsed, player@ this, string message)
+{
+this.alert("계정을 초기화합니다. 접속을 종료합니다.");
+string pass = get_char_val(this.name, "암호");
+string mail = get_char_val(this.name, "이메일");
+this.sf.d.delete_all();
+this.sf.add("맵", "세이프존");
+this.sf.add("x", random(0, 20));
+this.sf.add("y", random(0, 20));
+this.sf.add("z", 0);
+this.sf.add("이름", this.name);
+this.sf.add("언어", "korean1");
+this.sf.add("이메일", mail);
+this.sf.add("암호", pass);
+this.sf.add("플래그", 80);
+this.sf.save();
+remove_locker(this.name);
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int vslength = map.vs.length;
+for (uint i = 0; i < vslength; i++)
+{
+if (map.vs[i].owner != this.name) continue;
+map.vs[i].hit(2000000000, "캐릭터 초기화", true);
+}
+}
+remove_player(this.name, false, false);
+}
+void cod_ip(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null) return;
+this.alert(n.get_peer_address(tmp.peer_id), true);
+}
+void cod_compid(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 3) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null) return;
+this.alert(tmp.compid, true);
+}
+void cod_itemlog(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 2) return;
+string txt;
+uint counter = 0;
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+int objslength = map.objs.length;
+counter += objslength;
+for (uint i = 0; i < objslength; i++)
+{
+obj@ temp = map.objs[i];
+txt += temp.x + " " + temp.y + " " + temp.z + " " + map.name + ": " + temp.name + " " + temp.amount + "\r\n";
+}
+}
+this.alert(counter + "개의 아이템이 있습니다.\r\n" + txt, true);
+}
+void cod_give(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 3) return;
+if (this.rank < 1 and !beta) return;
+if (parsed.length == 3)
+{
+int am = string_to_number(parsed[2]);
+if (am == 0) return;
+log("adminlog", this.name + "님이 " + parsed[1] + " " + am + "개를 접속자들에게 나눠줍니다.");
+int playerslength = players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = players[i];
+temp.playsound("give");
+temp.give(parsed[1], am);
+}
+send(0, "누군가가 " + parsed[1] + " " + am + "개를 접속자들에게 나눠줍니다.", 2);
+return;
+}
+int am = string_to_number(parsed[3]);
+if (am == 0) return;
+player@ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert(parsed[1] + "님은 이곳에 없습니다.");
+return;
+}
+temp.give(parsed[2], am);
+temp.playsound("give");
+this.alert(parsed[2] + " " + parsed[3] + "개를 " + temp.name + "님에게 줍니다.", true);
+temp.alert("누군가가 당신에게 " + parsed[2] + " " + parsed[3] + "개를 줍니다.", true);
+log("adminlog", this.name + "님이 " + parsed[2] + " " + parsed[3] + "개를 " + temp.name + "님에게 줍니다.");
+}
+void cod_reloadstore(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+reset_market_system();
+load_market_system();
+this.alert("상점 데이터를 새로 불러왔습니다.");
+}
+void cod_varset(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+string var = parsed[1];
+int newval = -1;
+if (!sd.d.exists(var))
+{
+this.alert(var + "라는 설정 항목은 없습니다.");
+return;
+}
+if (parsed.length == 2)
+{
+this.alert(var + "의 현재 값은 " + sd.readn(var) + "입니다.", true);
+return;
+}
+newval = string_to_number(parsed[2]);
+writedata(var, newval);
+loaddata();
+this.alert(var + "의 설정 값을 " + newval + "로 변경합니다.", true);
+}
+void cod_trapclear(string[]@ parsed, player@ this, string message)
+{
+int mapslength = maps.length;
+for (uint j = 0; j < mapslength; j++)
+{
+mapdata@ map = maps[j];
+if (this.rank < 1)
+{
+if (map !is this.map) continue;
+if (!this.map.owner.exists(this.name)) continue;
+sendmap("맵 내의 모든 함정을 제거합니다.", this.map, 0);
+}
+bomb_cracker@ tempa = spawn_bomb_cracker(10000000, 10000000, 10000000, map, 30000000);
+tempa.no_item = true;
+tempa.explodetimer.force(2000000000);
+}
+if (this.rank > 0) send(0, "notify 모든 함정을 제거합니다.", 0);
+}
+void cod_rtclear_imac(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1)
+{
+if (!this.map.owner.exists(this.name)) return;
+int robotslength = this.map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+this.map.robots[r].hit(2145000000, "...", "...");
+}
+sendmap("맵 내의 모든 아이맥 로봇을 파괴합니다.", this.map, 0);
+return;
+}
+kill_imac();
+send(0, "notify 모든 아이맥 로봇을 파괴합니다.", 0);
+}
+void cod_rtclear(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1)
+{
+if (!this.map.owner.exists(this.name)) return;
+int robotslength = this.map.robots.length;
+for (uint r = 0; r < robotslength; r++)
+{
+this.map.robots[r].hit(2000000000, "...", "...");
+}
+sendmap("맵 내의 모든 로봇을 파괴합니다.", this.map, 0);
+return;
+}
+kill_robots();
+send(0, "notify 모든 로봇을 파괴합니다.", 0);
+}
+void cod_rtreload(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+kill_robots(true);
+robottemps.delete_all();
+load_robots(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 로봇을 새로 불러왔습니다.", 0);
+}
+void cod_descrreload(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+item_descriptions.delete_all();
+load_item_descriptions(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 아이템 설명을 새로 불러왔습니다.", 0);
+}
+void cod_foodreload(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+snackitems.delete_all();
+load_snacks(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 먹거리를 새로 불러왔습니다.", 0);
+}
+void cod_weaponreload(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+weapon_list.delete_all();
+load_weapons(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+void cod_splashreload(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 3) return;
+splash_list.delete_all();
+load_splashs(string_contains(message, "\r\n", 1) > -1 ? string_trim_left(message, parsed[0].size + 1) : empty);
+send(0, "notify 모든 무기를 새로 불러왔습니다.", 0);
+}
+void cod_inv(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+player@ temp = this;
+if (parsed.length > 1) @ temp = get_player_handle(parsed[1]);
+if (temp is null)
+{
+this.alert("대상을 찾을 수 없습니다.");
+return;
+}
+if (temp.invinsible)
+{
+if (temp.following !is null)
+{
+int findex = temp.following.follower.find_by_reference(temp);
+if (findex > -1) temp.following.follower.remove_at(findex);
+temp.alert("관전을 중단합니다.");
+temp.sendpacket("followstop");
+@ temp.following = null;
+temp.tempload();
+}
+temp.invinsible = false;
+temp.sendpacket("startmoving");
+temp.playsound("invstop");
+this.alert(temp.name + "님의 관전 모드를 끕니다.");
+}
+else
+{
+temp.invinsible = true;
+temp.sendpacket("stopmoving");
+temp.playsound("invstart");
+this.alert(temp.name + "님의 관전 모드를 켭니다.");
+}
+}
+void cod_afk(string[]@ parsed, player@ this, string message)
+{
+if (this.ride !is null) return;
+if (this.hidden) return;
+if (this.dmoving) return;
+if (this.parachutist) return;
+if (this.weapongathering) return;
+if (this.hurtlevel > 3) return;
+if (this.working()) return;
+if (this.following !is null) return;
+if (this.cheater == 1) return;
+if (this.cheatercheck()) return;
+if (this.stunned) return;
+if (this.invinsible)
+{
+if (this.following !is null)
+{
+int findex = this.following.follower.find_by_reference(this);
+if (findex > -1) this.following.follower.remove_at(findex);
+this.alert("관전을 중단합니다.");
+this.sendpacket("followstop");
+@ this.following = null;
+this.tempload();
+}
+this.invinsible = false;
+send(0, "play_s afkstop", 0);
+this.invseconds = 6;
+this.playsound("invstop");
+this.sendpacket("startmoving");
+if (this.rank < 1) send(0, "notify " + this.name + "님이 관전 모드를 끕니다.", 0);
+this.statchangetimer.force(0);
+}
+else
+{
+if (this.statchangetimer.elapsed < 60000) return;
+this.alert("관전 모드 카운트");
+this.invinsibilitytimer.force(0);
+this.invinsibility_starting = true;
+}
+}
+void cod_kickall(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+remove_player(empty, true);
+}
+void cod_kick(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+string who = parsed[1];
+player@ temp = get_player_handle(who);
+if (temp is null)
+{
+this.alert("대상을 찾을 수 없습니다.");
+return;
+}
+if (temp.rank >= this.rank)
+{
+this.alert("상관이 아무리 싫어도 발차기는 조금 너무하다고 생각하지 않습니까?");
+return;
+}
+remove_player(parsed[1], true);
+}
+void cod_bannedlist(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+this.alert(get_bans((parsed[1] == "compid" ? BAN_COMPUTER : parsed[1] == "ip" ? BAN_IP : BAN_NAME)), true);
+}
+void cod_is_banned(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+string who = parsed[1];
+if (who.size < 2) return;
+bool is_name = true;
+if (who[0] == "/")
+{
+who = string_trim_left(who, 1);
+is_name = false;
+}
+this.alert("플래그 " + is_banned(who, is_name), true);
+}
+void cod_ban(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("대상은 게임에 없습니다.");
+return;
+}
+if (tmp.rank >= this.rank)
+{
+this.alert("당신은 아주 훌륭한 만담가입니다.");
+return;
+}
+uint flags = 10;
+if (parsed.length > 2) flags = string_to_number(parsed[2]);
+ban(parsed[1], flags);
+instant_notify(this.name + "님이 " + parsed[1] + "님을 게임에서 영구 추방시켰습니다.");
+this.alert("성공적으로 차단되었습니다.");
+}
+void cod_unban(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+uint flags = 10;
+if (parsed.length > 2) flags = string_to_number(parsed[2]);
+unban(parsed[1], flags);
+this.alert("성공적으로 차단을 해제했습니다.");
+}
+void cod_blockfeature(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("대상을 찾을 수 없습니다.");
+return;
+}
+if (parsed.length == 2)
+{
+this.alert(dictionary_to_text(tmp.ds, ", ", false), true);
+return;
+}
+if (tmp.ds.exists(parsed[2]))
+{
+tmp.ds.delete(parsed[2]);
+tmp.save();
+tmp.alert(parsed[2] + " 금지가 풀립니다.", true);
+admintell(this.name + "님이 " + tmp.name + "님의 " + parsed[2] + " 금지를 해제합니다.");
+this.alert(tmp.name + "님의 " + parsed[2] + " 금지를 해제합니다.");
+}
+else 
+{
+tmp.ds.set(parsed[2], 0);
+tmp.save();
+tmp.alert(parsed[2] + " 금지에 걸렸습니다.", true);
+admintell(this.name + "님이 " + tmp.name + "님의 " + parsed[2] + " 기능을 금지시킵니다.");
+this.alert(tmp.name + "님의 " + parsed[2] + " 기능을 금지시킵니다.");
+}
+}
+void cod_tempban(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+if (parsed.length == 1)
+{
+if (tempbans.length <= 0)
+{
+this.alert("임시 차단된 사용자가 없습니다.");
+return;
+}
+string text = tempbans.length + "개의 임시 차단이 있습니다.\r";
+int tempbanlength = tempbans.length;
+for (uint i = 0; i < tempbanlength; i++)
+{
+tempban@ temp = tempbans[i];
+text += temp.username + ", 차단 시간 " + ms_to_readable_time(temp.ms) + ", 남은 시간 " + ms_to_readable_time(temp.ms - temp.tempbantimer.elapsed) + "\r";
+}
+this.alert(text, true);
+return;
+}
+if (parsed.length < 3) return;
+uint minutes = string_to_number(parsed[2]);
+if (minutes <= 0)
+{
+this.alert("1분 이상 차단시켜야 합니다.");
+return;
+}
+player@ tmp = get_player_handle(parsed[1]);
+if (tmp is null)
+{
+this.alert("지금은 없는 사용자입니다.");
+return;
+}
+create_temp_ban(tmp.name, minutes);
+send(0, tmp.name + "님이 " + minutes + "분간 차단됩니다.", 2);
+remove_player(tmp.name);
+this.alert("차단되었습니다.");
+writedata();
+}
+void cod_alist(string[]@ parsed, player@ this, string message)
+{
+if (this.a.is_empty())
+{
+this.alert("완수한 임무가 없습니다.");
+return;
+}
+sm.intro = ms_to_readable_time(this.playtimer.elapsed) + "동안 플레이하며 완수한 " + this.a.size + "개의 임무 목록입니다.";
+sm.initial_packet = "copy";
+string[]@ ach = this.a.keys;
+int achlength = ach.length;
+for (uint i = 0; i < achlength; i++)
+{
+sm.add(ach[i]);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_adminhelp(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+this.sendpacket("clip " + admincmd);
+this.alert("운영자 명령어가 클립보드로 복사되었습니다.");
+}
+}
+void cod_notify(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+if (message.size > (parsed[0].size + 10001))
+{
+this.alert("메시지는 10000자를 넘을 수 없습니다.");
+return;
+}
+send(0, "notify " + string_trim_left(message, (parsed[0].size + 1)), 0);
+}
+void cod_time(string[]@ parsed, player@ this, string message)
+{
+this.alert(gettime(), true);
+}
+void cod_getlog(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank > 0)
+{
+if (!file_exists("./logs/" + parsed[1] + ".log"))
+{
+this.alert("해당 파일이 없습니다.");
+return;
+}
+this.alert(get_log(parsed[1]), true);
+}
+}
+void cod_logs(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+int tsize = 0;
+string logmessage;
+string[]@ logs = find_files("./logs/*.log");
+int logslength = logs.length;
+logmessage = logslength + "개의 기록 파일이 있습니다. ";
+for (uint i = 0; i < logslength; i++)
+{
+tsize += get_file_size_b("./logs/" + logs[i]);
+}
+logmessage += "총 용량: " + convert_size(tsize);
+this.alert(logmessage, true);
+}
+}
+void cod_newbie(string[]@ parsed, player@ this, string message)
+{
+if (this.newb == 0) return;
+this.newbtimer.force(0);
+this.newb = 2;
+this.playsound("newbiestopping");
+}
+void cod_chars(string[]@ parsed, player@ this, string message)
+{
+if (this.rank < 1) return;
+string[]@ chars = find_files("./chars/*.usr");
+chartime@[] characters;
+int charslength = chars.length;
+characters.reserve(charslength);
+for (uint i = 0; i < charslength; i++)
+{
+chartime ch;
+ch.name = string_trim_right(chars[i], 4);
+ch.lastlog = file_date("./chars/" + chars[i], 3);
+characters.insert_last(ch);
+}
+sm.initial_packet = "copy";
+sm.intro = characters.length + "개의 계정이 서버에 등록되어 있습니다.";
+characters.sort_descending();
+int characterslength = characters.length;
+for (uint i = 0; i < characterslength; i++)
+{
+chartime@ temp = characters[i];
+sm.add(temp.name + ", 마지막 로그인 " + get_relative_time(temp.lastlog), temp.name);
+}
+sm.send(this.peer_id);
+sm.reset();
+}
+void cod_reboot(string[]@ parsed, player@ this, string message)
+{
+if (this.rank > 0)
+{
+send(0, this.name + "님이 서버를 재부팅합니다. 잠시 후 접속이 끊깁니다.", 2); 
+wait(200);
+save_all();
+wait(200);
+send(0, "reboot", 0);
+wait(200);
+run(get_script_path(), empty, false, false);
+exit();
+}
+}
+void cod_serverboot(string[]@ parsed, player@ this, string message)
+{
+
+send(0, this.name + "님이 서버를 재부팅합니다. 잠시 후 접속이 끊깁니다.", 2); 
+
+save_all();
+wait(200);
+send(0, "serverboot", 0);
+wait(200);
+run(get_script_path(), empty, false, false);
+exit();
+}
+
+
+
+void cod_admins(string[]@ parsed, player@ this, string message)
+{
+string[]@ chars = find_files("./chars/*.usr");
+string key = "등급";
+string result;
+string name;
+int charslength = chars.length;
+for (uint i = 0; i < charslength; i++)
+{
+name = string_trim_right(chars[i], 4);
+int rank = string_to_number(get_char_val(name, key));
+switch (rank)
+{
+case 1:
+result += name + ": 운영자" + (player_list.exists(name) ? ", 활동 중" : empty) + "\r";
+break;
+case 2:
+result += name + ": 주운영자" + (player_list.exists(name) ? ", 활동 중" : empty) + "\r";
+break;
+case 3:
+result += name + ": 개발자" + (player_list.exists(name) ? ", 활동 중" : empty) + "\r";
+break;
+}
+}
+this.alert(result, true);
+}
+void cod_admintell(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (message.size > (parsed[0].size + 10001))
+{
+this.alert("메시지는 10000자를 넘을 수 없습니다.");
+return;
+}
+string final = string_trim_left(message, (parsed[0].size + 1));
+admintell(this.name + "님의 호출: " + final);
+if (this.rank < 1)
+this.alert("운영진에게 메시지가 전송되었습니다.");
+}
+void cod_plays(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+send(0, "play_s " + parsed[1], 0);
+}
+void cod_play(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 5) return;
+if (this.rank < 1) return;
+mapdata@ map = this.map;
+if (parsed.length > 5)
+{
+mapdata@ map2 = get_map_handle(parsed[6]);
+if (map2 !is null) @ map = map2;
+}
+play(parsed[1], string_to_number(parsed[2]), string_to_number(parsed[3]), string_to_number(parsed[4]), map);
+}
+void cod_addtomotd(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank > 0)
+{
+string newmotd = string_trim_left(message, (parsed[0].size + 1));
+oldmotd += newmotd;
+fl.open("./prefs/motd.svr", "wb");
+fl.write(oldmotd);
+fl.close();
+log("adminlog", this.name + "님의 새소식 추가: " + newmotd);
+send(0, "play_s newmotd", 0);
+send(0, "새소식 추가: " + newmotd, 2);
+}
+}
+void cod_newmotd(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank > 0)
+{
+oldmotd = string_trim_left(message, (parsed[0].size + 1));
+log("adminlog", this.name + "님의 새소식 덮어쓰기: " + oldmotd);
+fl.open("./prefs/motd.svr", "wb");
+fl.write(oldmotd);
+fl.close();
+send(0, "play_s newmotd", 0);
+send(0, "새소식: " + oldmotd, 2);
+}
+}
+void cod_ctf(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2)
+{
+if (!this.map.ctf_run)
+{
+this.alert("진행 중인 게임이 없습니다.");
+return;
+}
+this.alert("S팀, 남은 체력 " + this.map.ctf_slife + ". R팀, 남은 체력 " + this.map.ctf_rlife + ".");
+return;
+}
+if (!is_editable_map(this.map, this)) return;
+if (this.map.ctf_sdest.is_empty() or this.map.ctf_rdest.is_empty())
+{
+this.map.ctf_run = false;
+this.alert("S팀 목표와 R팀 목표가 정해지지 않았습니다.");
+return;
+}
+if (!string_is_digits(parsed[1])) return;
+int count = string_to_number(parsed[1]);
+if (count == 0)
+{
+if (!this.map.ctf_run)
+{
+this.alert("게임 중이 아닙니다.");
+return;
+}
+this.map.ctf_run = false;
+playmap("ctfoff", this.map);
+sendmap("게임이 중단됩니다.", this.map, 2);
+return;
+}
+if (this.map.ctf_run)
+{
+this.map.ctf_slife += count;
+this.map.ctf_rlife += count;
+playmap("ctfalert", this.map);
+sendmap("양 팀에 " + count + "점의 체력이 추가로 주어집니다.", this.map, 2);
+return;
+}
+this.map.ctf_run = true;
+this.map.ctf_slife = count;
+this.map.ctf_rlife = count;
+playmap("ctfon", this.map);
+sendmap(count + "점의 체력으로 깃발 게임이 시작됩니다.", this.map, 2);
+}
+void cod_lastman(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2)
+{
+if (this.map.lastman_standing.is_empty())
+{
+this.alert("진행 중인 게임이 없습니다.");
+return;
+}
+this.alert("남은 목숨: " + dictionary_to_text(this.map.lastman_standing, ", ", true, " "), true);
+return;
+}
+if (!is_editable_map(this.map, this)) return;
+if (this.map.fighting == 0)
+{
+this.alert("전투가 불가능한 맵입니다.");
+return;
+}
+int count = string_to_number(parsed[1]);
+if (count == 0)
+{
+if (this.map.lastman_standing.is_empty())
+{
+this.alert("게임 중이 아닙니다.");
+return;
+}
+this.map.lastman_standing.delete_all();
+playmap("ctfoff", this.map);
+sendmap("게임이 중단됩니다.", this.map, 2);
+return;
+}
+if (!this.map.lastman_standing.is_empty())
+{
+string[]@ k = this.map.lastman_standing.keys;
+int klength = k.length;
+for (uint i = 0; i < klength; i++)
+{
+int am = 0;
+if (!this.map.lastman_standing.get(k[i], am)) continue;
+am += count;
+this.map.lastman_standing.set(k[i], am);
+}
+playmap("ctfalert", this.map);
+sendmap("생존자들에게 " + count + "개의 목숨이 추가로 주어집니다.", this.map, 2);
+return;
+}
+int playerslength = this.map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ temp = this.map.players[i];
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (count < 0)
+{
+if (temp is this) continue;
+}
+this.map.lastman_standing.set(this.map.players[i].name, abs(count));
+}
+if (this.map.lastman_standing.size <= 1)
+{
+this.map.lastman_standing.delete_all();
+this.alert("참가자가 없어 게임을 시작할 수 없습니다.");
+return;
+}
+playmap("ctfon", this.map);
+sendmap(count + "개의 목숨으로 라스트맨 스탠딩 게임이 시작됩니다.", this.map, 2);
+}
+void cod_autopilot(string[]@ parsed, player@ this, string message)
+{
+if (parsed.length < 2) return;
+if (this.rank < 1) return;
+vehicle@ temp = this.get_vehicle();
+if (temp is null)
+{
+this.alert("차량 안에서만 사용할 수 있습니다.");
+return;
+}
+if (!temp.started)
+{
+this.alert("시운전을 시작하려면 시동을 먼저 켜야 합니다.");
+return;
+}
+temp.autopilot_data = string_trim_left(message, 10);
+if (temp.speed <= 0.0) temp.command("speedup", null);
+this.alert("완료.");
+}
+void cod_checkreset(string[]@ parsed, player@ this, string message)
+{
+bool current = true;
+string name = this.map.name;
+if (this.map.is_vehicle) name = this.map.vhc.map.name;
+if (parsed.length > 1)
+{
+name = parsed[1];
+current = false;
+}
+if (!this.checkpoints.exists(name))
+{
+this.alert("아직 체크 포인트가 등록되지 않은 맵입니다.");
+return;
+}
+this.checkpoints.delete(name);
+if (current) this.sendpacket("checkpointreset");
+this.alert(name + " 맵의 체크포인트를 초기화했습니다.");
+}

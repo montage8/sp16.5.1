@@ -1,0 +1,382 @@
+const uint doorflag_auto = 1;
+const uint doorflag_smart = 2;
+const uint doorflag_no_enter_sound = 4;
+const uint doorflag_no_leave_sound = 8;
+const uint doorflag_limit = 536870912;
+const uint doorflag_oppo = 1073741824;
+door@[] doors(0);
+door@[] autodoors(0);
+
+class door
+{
+string name;
+int minx, maxx, miny, maxy, minz, maxz;
+double center_x, center_y, center_z, size_x, size_y, size_z;
+int finishx, finishy, finishz;
+int destx, desty, destz, startx, starty, startz;
+string open_sound, close_sound, loop_sound;
+bool smart = false, no_enter_sound = false, no_leave_sound = false;
+int root = 0;
+int movestarttime = 0;
+int movetime = 150;
+bool moving = false;
+bool engine = false;
+int engineloop;
+string text;
+string limit;
+
+bool& distancecheck()
+{
+if (mr.x < this.minx) return false_t;
+if (mr.x > this.maxx) return false_t;
+if (mr.y < this.miny) return false_t;
+if (mr.y > this.maxy) return false_t;
+if (me.z < this.minz) return false_t;
+if (me.z > this.maxz) return false_t;
+return true_t;
+}
+
+void start()
+{
+if (!no_enter_sound)
+{
+p.play_stationary(this.open_sound + ".ogg", false);
+send_reliable("xplay " + this.open_sound + " " + destx + " " + desty + " " + destz + " 1", 2);
+}
+can_move = false;
+jumplandz = 0;
+jumping = 0;
+falldist = 0;
+@ dmoving = this;
+doormovetimer.force(0);
+startx = mr.x;
+starty = mr.y;
+startz = me.z;
+if (this.smart)
+{
+destx = finishx + abs(minx - mr.x);
+desty = finishy + abs(miny - mr.y);
+destz = finishz + abs(minz - me.z);
+}
+else
+{
+destx = finishx;
+desty = finishy;
+destz = finishz;
+}
+}
+
+int& move_x()
+{
+if (mr.x > destx)
+{
+me.x--;
+mr.x--;
+return _pos1;
+}
+else if (mr.x < destx)
+{
+me.x++;
+mr.x++;
+return _pos1;
+}
+return _0;
+}
+int& move_y()
+{
+if (mr.y > desty)
+{
+me.y--;
+mr.y--;
+return _pos1;
+}
+else if (mr.y < desty)
+{
+me.y++;
+mr.y++;
+return _pos1;
+}
+return _0;
+}
+int& move_z()
+{
+if (me.z > destz)
+{
+me.z--;
+return _pos1;
+}
+else if (me.z < destz)
+{
+me.z++;
+return _pos1;
+}
+return _0;
+}
+
+void stop(bool forcefully = false)
+{
+if (!no_leave_sound)
+{
+send_reliable("xplay " + this.close_sound + " " + startx + " " + starty + " " + startz + " 1", 2);
+p.play_stationary(this.close_sound + ".ogg", false);
+}
+if (engine)
+{
+p.destroy_sound(engineloop);
+send_reliable("xmsoundstop", 2);
+}
+this.moving = false;
+@ dmoving = null;
+maptile@ tt = get_tile_handle_at(mr.x, mr.y, me.z);
+string text = (tt is null ? "air" : tt.type.is_empty() ? "air" : tt.type);
+if (forcefully)
+{
+can_move = true;
+send_reliable("iamnotdmoving " + text, 0);
+@ ctile = tt;
+oldme.x = me.x;
+oldme.y = me.y;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+return;
+}
+if (autodoorcheck()) return;
+can_move = true;
+send_reliable("iamnotdmoving " + text, 0);
+@ ctile = tt;
+oldme.x = me.x;
+oldme.y = me.y;
+oldme.z = me.z;
+reserve_tilecheck = 1;
+autotravelcheck();
+}
+}
+
+door@ dmoving;
+door@ temp_door;
+void doorcheckloop()
+{
+if (dmoving is null) return;
+if (!dmoving.moving)
+{
+if (doormovetimer.elapsed >= dmoving.movestarttime)
+{
+doormovetimer.force(0);
+if (dmoving.engine)
+{
+dmoving.engineloop = p.play_stationary(dmoving.loop_sound + ".ogg", true);
+send_reliable("xmsound " + dmoving.loop_sound + " " + dmoving.destx + " " + dmoving.desty + " " + dmoving.destz + " 1", 2);
+}
+dmoving.moving = true;
+return;
+}
+}
+else
+{
+if (doormovetimer.elapsed >= dmoving.movetime)
+{
+doormovetimer.force(0);
+int dmove = 0;
+switch (dmoving.root)
+{
+case 1:
+{
+dmove = dmoving.move_x();
+if (dmove == 1) break;
+dmove = dmoving.move_y();
+if (dmove == 1) break;
+dmove = dmoving.move_z();
+}
+break;
+case 2:
+{
+dmove = dmoving.move_y();
+if (dmove == 1) break;
+dmove = dmoving.move_x();
+if (dmove == 1) break;
+dmove = dmoving.move_z();
+}
+break;
+case 3:
+{
+dmove = dmoving.move_x();
+if (dmove == 1) break;
+dmove = dmoving.move_z();
+if (dmove == 1) break;
+dmove = dmoving.move_y();
+}
+break;
+case 4:
+{
+dmove = dmoving.move_y();
+if (dmove == 1) break;
+dmove = dmoving.move_z();
+if (dmove == 1) break;
+dmove = dmoving.move_x();
+}
+break;
+case 5:
+{
+dmove = dmoving.move_z();
+if (dmove == 1) break;
+dmove = dmoving.move_x();
+if (dmove == 1) break;
+dmove = dmoving.move_y();
+}
+break;
+case 6:
+{
+dmove = dmoving.move_z();
+if (dmove == 1) break;
+dmove = dmoving.move_y();
+if (dmove == 1) break;
+dmove = dmoving.move_x();
+}
+break;
+}
+if (dmove > 0)
+{
+can_doorloop = false;
+send_reliable("move_door " + me.x + " " + me.y + " " + me.z, 0);
+}
+}
+if (dmoving.destx != mr.x) return;
+if (dmoving.desty != mr.y) return;
+if (dmoving.destz != me.z) return;
+dmoving.stop();
+}
+}
+
+void destroy_all_doors()
+{
+if (dmoving !is null)
+{
+@ dmoving = null;
+can_move = true;
+}
+for (int i = doors.length - 1; i > -1; i--)
+{
+door@ handle = doors[i];
+if (handle.moving) handle.stop(true);
+doors.remove_at(i);
+}
+for (int i = autodoors.length - 1; i > -1; i--)
+{
+door@ handle = autodoors[i];
+if (handle.moving) handle.stop(true);
+autodoors.remove_at(i);
+}
+}
+
+void spawn_door(int minx, int maxx, int miny, int maxy, int minz, int maxz, int finishx, int finishy, int finishz, const string& in text, int speed, int root, const string& in name, uint flags = 0, const string& in limit = empty)
+{
+door d1;
+d1.name = name;
+d1.center_x = (minx + maxx) * 0.5;
+d1.size_x = abs(d1.center_x - minx);
+d1.minx = d1.center_x - d1.size_x;
+d1.maxx = d1.center_x + d1.size_x;
+d1.center_y = (miny + maxy) * 0.5;
+d1.size_y = abs(d1.center_y - miny);
+d1.miny = d1.center_y - d1.size_y;
+d1.maxy = d1.center_y + d1.size_y;
+d1.center_z = (minz + maxz) * 0.5;
+d1.size_z = abs(d1.center_z - minz);
+d1.minz = d1.center_z - d1.size_z;
+d1.maxz = d1.center_z + d1.size_z;
+d1.smart = (flags & doorflag_smart > 0);
+d1.no_enter_sound = (flags & doorflag_no_enter_sound > 0);
+d1.no_leave_sound = (flags & doorflag_no_leave_sound > 0);
+d1.finishx = finishx;
+d1.finishy = finishy;
+d1.finishz = finishz;
+d1.movetime = speed;
+d1.text = text;
+d1.limit = limit;
+d1.root = root;
+if (doorlist.exists(name))
+{
+doorlist.get(name, d1.movestarttime);
+d1.open_sound = name + "_open"; 
+d1.close_sound = name + "_close"; 
+d1.loop_sound = name + "_loop"; 
+if (preload_mode == 2)
+{
+if (!map_preload.exists(d1.open_sound + ".ogg"))
+{
+sound new1;
+if (new1.load(sndfolder + d1.open_sound + ".ogg")) map_preload.set(d1.open_sound + ".ogg", @ new1);
+}
+if (!map_preload.exists(d1.close_sound + ".ogg"))
+{
+sound new2;
+if (new2.load(sndfolder + d1.close_sound + ".ogg")) map_preload.set(d1.close_sound + ".ogg", @ new2);
+}
+if (!map_preload.exists(d1.loop_sound + ".ogg"))
+{
+sound new3;
+if (new3.load(sndfolder + d1.loop_sound + ".ogg")) map_preload.set(d1.loop_sound + ".ogg", @ new3);
+}
+}
+doorlist.get(name, d1.movestarttime);
+if (d1.movestarttime > 0) d1.engine = true;
+if (d1.no_enter_sound) d1.movestarttime = 0;
+}
+if (flags & doorflag_auto > 0) autodoors.insert_last(d1);
+else doors.insert_last(d1);
+}
+
+void spawn_door(int minx, int maxx, int miny, int maxy, int minz, int maxz, int finishx, int finishy, int finishz, const string& in text, int speed, int root, const string& in open, const string& in close, const string& in loop, int loop_start = 0, uint flags = 0, const string& in limit = empty)
+{
+door d1;
+d1.name = name;
+d1.center_x = (minx + maxx) * 0.5;
+d1.size_x = abs(d1.center_x - minx);
+d1.minx = d1.center_x - d1.size_x;
+d1.maxx = d1.center_x + d1.size_x;
+d1.center_y = (miny + maxy) * 0.5;
+d1.size_y = abs(d1.center_y - miny);
+d1.miny = d1.center_y - d1.size_y;
+d1.maxy = d1.center_y + d1.size_y;
+d1.center_z = (minz + maxz) * 0.5;
+d1.size_z = abs(d1.center_z - minz);
+d1.minz = d1.center_z - d1.size_z;
+d1.maxz = d1.center_z + d1.size_z;
+d1.smart = (flags & doorflag_smart > 0);
+d1.no_enter_sound = (flags & doorflag_no_enter_sound > 0);
+d1.no_leave_sound = (flags & doorflag_no_leave_sound > 0);
+d1.finishx = finishx;
+d1.finishy = finishy;
+d1.finishz = finishz;
+d1.movetime = speed;
+d1.text = text;
+d1.limit = limit;
+d1.root = root;
+d1.name = randomstring(10); 
+d1.open_sound = open; 
+d1.close_sound = close; 
+d1.loop_sound = loop; 
+if (preload_mode == 2)
+{
+if (!map_preload.exists(d1.open_sound + ".ogg"))
+{
+sound new1;
+if (new1.load(sndfolder + d1.open_sound + ".ogg")) map_preload.set(d1.open_sound + ".ogg", @ new1);
+}
+if (!map_preload.exists(d1.close_sound + ".ogg"))
+{
+sound new2;
+if (new2.load(sndfolder + d1.close_sound + ".ogg")) map_preload.set(d1.close_sound + ".ogg", @ new2);
+}
+if (!map_preload.exists(d1.loop_sound + ".ogg"))
+{
+sound new3;
+if (new3.load(sndfolder + d1.loop_sound + ".ogg")) map_preload.set(d1.loop_sound + ".ogg", @ new3);
+}
+}
+d1.movestarttime = loop_start;
+if (d1.movestarttime > 0) d1.engine = true;
+if (d1.no_enter_sound) d1.movestarttime = 0;
+if (flags & doorflag_auto > 0) autodoors.insert_last(d1);
+else doors.insert_last(d1);
+}

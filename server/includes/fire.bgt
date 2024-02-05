@@ -1,0 +1,114 @@
+class fire
+{
+int x;
+int y;
+int z;
+int spread;
+mapdata@ map;
+msound@ smid;
+timer hurttimer, lifetimer;
+int hurttime = 500;
+int lifetime;
+int dam;
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+void fireloop(mapdata@ map)
+{
+string hitn = "È­¿°";
+string name = "fire";
+for (int i = map.fires.length - 1; i > -1; i--)
+{
+fire@ this = map.fires[i];
+if (this.lifetimer.elapsed >= this.lifetime)
+{
+this.smid.destroy();
+play("fireout", this.x, this.y, this.z, map);
+map.fires.remove_at(i);
+continue;
+}
+if (this.hurttimer.elapsed >= this.hurttime)
+{
+this.hurttimer.force(0);
+int vslength = map.vs.length;
+for (uint x = 0; x < vslength; x++)
+{
+vehicle@ temp = map.vs[x];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= this.spread)
+{
+double def = temp.defense;
+temp.defense = 0;
+temp.hit((this.dam * (1 - (range / this.spread)) * (1 - (def * 0.0001))), hitn, false, true);
+temp.defense = def;
+}
+}
+int robotslength = map.robots.length;
+for (uint x = 0; x < robotslength; x++)
+{
+Robot@ temp = map.robots[x];
+if (temp.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= this.spread)
+{
+double def = temp.defense;
+temp.defense = 0;
+temp.hit((this.dam * (1 - (range / this.spread)) * (1 - (temp.fire_defense * 0.01))), hitn, name);
+temp.defense = def;
+}
+}
+int remgunslength = map.remguns.length;
+for (uint x = 0; x < remgunslength; x++)
+{
+remgun@ temp = map.remguns[x];
+if (temp.hid.health <= 0) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= this.spread)
+{
+double def = temp.hid.defense;
+temp.hid.defense = 0;
+temp.hid.hit(this.dam * (1 - (range / this.spread)), hitn, name);
+temp.hid.defense = def;
+}
+}
+int playerslength = map.players.length;
+for (uint p = 0; p < playerslength; p++)
+{
+player@ temp = map.players[p];
+if (temp.health <= 0) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (temp.temp_invinsible) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range <= this.spread)
+{
+if (temp.shielded) temp.shieldhit((this.dam * (1 - (range / this.spread))) ** 0.5);
+else
+{
+temp.health -= this.dam * (1 - (range / this.spread));
+temp.should_subtract = true;
+temp.playsound("hit" + temp.voice + random(1, 5));
+}
+temp.hitby = hitn;
+}
+}
+}
+}
+}
+void spawn_fire(int x, int y, int z, mapdata@ map, int dam = 5000, int life = random(60000, 300000), int range = 12, const string &in sn = "fire")
+{
+if (is_tile_water(x, y, z, map)) return;
+fire f1;
+f1.x = x;
+f1.y = y;
+f1.z = z;
+@ f1.map = map;
+f1.dam = dam;
+f1.spread = range;
+f1.lifetime = life;
+@ f1.smid = spawn_moving_sound(sn, x, y, z, map);
+map.fires.insert_last(f1);
+}

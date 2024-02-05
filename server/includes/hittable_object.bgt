@@ -1,0 +1,153 @@
+#include "./hittable_objects/health_orb.bgt"
+#include "./hittable_objects/plank.bgt"
+
+dictionary hobjs;
+class hittable
+{
+int x, y, z;
+int health, lifetime;
+mapdata@ map;
+string name;
+string tile;
+bool is_wall = false;
+string sound;
+int id;
+timer lifetimer;
+msound@ mid;
+string hitby = "¾øÀ½", hittype;
+uint defense = 0;
+int accumulated_damage = 0;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+void loop()
+{
+}
+void hit(int damage, const string& in hb, const string& in type = empty)
+{
+damage -= defense;
+if (damage <= 0) return;
+accumulated_damage += damage;
+hitby = hb;
+if (!hittype.is_empty()) hittype = type;
+}
+void onstop()
+{
+}
+void onhit()
+{
+}
+void onkill()
+{
+}
+}
+
+hittable@ get_hobj_handle(int id)
+{
+string name = id; // integer to char
+if (!hobjs.exists(name)) return null;
+hittable@ temp;
+hobjs.get(name, @ temp);
+return temp;
+}
+
+void hobjloop(mapdata@ map)
+{
+for (int i = map.hobjs.length - 1; i > -1; i--)
+{
+hittable@ this = map.hobjs[i];
+if (this.health <= 0)
+{
+if (!this.tile.is_empty()) sendmap("delsource " + this.id, map, 4);
+if (this.mid !is null) this.mid.destroy();
+hobjs.delete(this.id);
+map.hobjs.remove_at(i);
+continue;
+}
+if (this.lifetimer.elapsed > this.lifetime)
+{
+this.onstop();
+this.health = -1;
+}
+if (this.accumulated_damage > 0)
+{
+this.health -= this.accumulated_damage;
+this.accumulated_damage = 0;
+if (this.health <= 0) this.onkill();
+else this.onhit();
+}
+this.loop();
+}
+}
+
+void remove_hobj(int id)
+{
+hittable@ temp = get_hobj_handle(id);
+if (temp is null) return;
+temp.health = -1;
+}
+
+hittable@ spawn_hobj(int x, int y, int z, mapdata@ map, int health, int lifetime, const string& in sound = empty, const string& in tile = empty, const string& in name = empty)
+{
+int id;
+do
+{
+id = (1073741824 * random(0, 1)) + (32768 * random(0, 32767)) + random(0, 32767);
+}
+while (hobjs.exists(id));
+hittable h1;
+h1.x = x;
+h1.y = y;
+h1.z = z;
+@ h1.map = map;
+h1.name = name;
+h1.health = health;
+h1.lifetime = lifetime;
+h1.sound = sound;
+h1.id = id;
+if (!sound.is_empty())
+{
+if (tile.is_empty()) @ h1.mid = spawn_moving_sound(sound, x, y, z, map);
+}
+if (!tile.is_empty())
+{
+h1.tile = tile;
+sendmap("spawnsource " + x + " " + y + " " + z + " " + sound + " " + id + " " + tile, map, 4);
+}
+map.hobjs.insert_last(h1);
+hobjs.set(id, @ h1);
+return h1;
+}
+
+void update_hobj(int id, int x, int y, int z, const string& in tile = empty, bool move_players = false)
+{
+hittable@ temp = get_hobj_handle(id);
+if (temp is null) return;
+int oldx = temp.x;
+temp.x = x;
+int oldy = temp.y;
+temp.y = y;
+int oldz = temp.z;
+temp.z = z;
+temp.tile = tile;
+if (tile.is_empty()) sendmap("updatesource " + id + " " + x + " " + y + " " + z, temp.map, 4);
+else
+{
+sendmap("updatesource " + id + " " + x + " " + y + " " + z + " " + tile, temp.map, 4);
+temp.is_wall = (string_left(tile, 4) == "wall");
+}
+if (move_players)
+{
+int playerslength = temp.map.players.length;
+for (uint i = 0; i < playerslength; i++)
+{
+player@ pl = temp.map.players[i];
+if (pl.rx != oldx) continue;
+if (pl.ry != oldy) continue;
+if (pl.z != oldz) continue;
+pl.go_to(temp.map, x, y, z, false, false);
+}
+}
+}

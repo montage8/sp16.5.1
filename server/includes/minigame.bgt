@@ -1,0 +1,1127 @@
+minigame@[] minigames(0);
+enum minigamestatus
+{
+M_WAIT, M_PLAY, M_END
+}
+enum minigame_type
+{
+M_Pipper = 1
+}
+enum pippertype
+{
+Pipper_None, Pipper_Mine, Pipper_Single, Pipper_Pair, Pipper_Straight, Pipper_Pair_Straight, Pipper_Bomb, Pipper_Power_Bomb
+}
+const int Pipper_X = 100;
+int[] pipper_default_numbers = {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15};
+timer minigamemaintimer;
+dictionary minigame_list;
+dictionary minigamers;
+
+class minigame
+{
+int type;
+int x, y, z;
+int mode = M_WAIT;
+int turn = 0;
+int owner_peer;
+int id;
+joinplayer@[] joinplayers(0);
+joinspectator@[] joinspectators(0);
+bool is_a_stadium = false;
+hittable@ stadium_id;
+
+void add(int peer_id, bool overwrite = true)
+{
+player@ tp = get_pid_handle(peer_id);
+if (tp is null) return;
+if (overwrite)
+{
+int r = remove(peer_id);
+if (r == -1) owner_peer = peer_id;
+}
+if (mode == M_WAIT)
+{
+joinplayer j1;
+j1.peer = peer_id;
+@ j1.p = tp;
+j1.name = j1.p.name;
+j1.hand.reserve(32);
+joinplayers.insert_last(j1);
+minigamers.set(peer_id, @ this);
+sendpacket(j1.name + "님이 방에 들어옵니다.");
+}
+else
+{
+joinspectator j1;
+j1.peer = peer_id;
+@ j1.p = tp;
+j1.name = j1.p.name;
+joinspectators.insert_last(j1);
+minigamers.set(peer_id, @ this);
+tp.alert("이제부터 관중석으로 갑니다.");
+}
+}
+
+int& change_player_spectator(int peer_id)
+{
+if (mode == M_PLAY)
+{
+send_sidemenu(peer_id, "지금은 할 수 없습니다.");
+return _0;
+}
+player@ tp = get_pid_handle(peer_id);
+if (tp is null) return _neg1;
+int ret = 0;
+int joinplayerslength = joinplayers.length - 1;
+for (int i = joinplayerslength; i > -1; i--)
+{
+joinplayer@ temp = joinplayers[i];
+if (temp.peer != peer_id) continue;
+if (joinplayerslength == 0)
+{
+send_sidemenu(peer_id, "좋은 생각이 아닌 것 같습니다.");
+return _0;
+}
+sendpacket(temp.name + "님이 관중석으로 갑니다.");
+joinplayers.remove_at(i);
+ret = 1;
+break;
+}
+if (owner_peer == peer_id)
+{
+owner_peer = joinplayers[0].peer;
+sendpacket(joinplayers[0].name + "님은 이제부터 방장입니다.");
+}
+if (ret == 1)
+{
+send_sidemenu(peer_id);
+joinspectator j1;
+j1.peer = peer_id;
+@ j1.p = tp;
+j1.name = j1.p.name;
+joinspectators.insert_last(j1);
+return _pos1;
+}
+for (int i = joinspectators.length - 1; i > -1; i--)
+{
+if (joinspectators[i].peer != peer_id) continue;
+joinspectators.remove_at(i);
+ret = 1;
+break;
+}
+if (ret == 0) return _neg1;
+joinplayer j1;
+j1.peer = peer_id;
+@ j1.p = tp;
+j1.name = j1.p.name;
+j1.hand.reserve(32);
+joinplayers.insert_last(j1);
+sendpacket(j1.name + "님이 방에 들어옵니다.");
+send_sidemenu(peer_id);
+return _0;
+}
+
+int remove(int peer_id, bool kick = false)
+{
+int ret = 0;
+for (int i = joinplayers.length - 1; i > -1; i--)
+{
+joinplayer@ temp = joinplayers[i];
+if (temp.peer != peer_id) continue;
+if (mode == M_PLAY)
+{
+if (turn >= i)
+{
+turn--;
+if (turn < 0) turn = joinplayers.length - 2;
+}
+}
+sendpacket(temp.name + (kick ? "님이 밖으로 쫓겨납니다." : "님이 방을 떠납니다."));
+send_minigame_mainmenu("미니게임 메뉴", peer_id);
+minigamers.delete(temp.peer);
+joinplayers.remove_at(i);
+ret = 1;
+break;
+}
+if (joinplayers.is_empty()) return -1;
+if (joinplayers.length == 1 and this.mode == M_PLAY)
+{
+ret = -2;
+switch (type)
+{
+case M_Pipper:
+pipper_end(true);
+break;
+default:
+break;
+}
+}
+if (owner_peer == peer_id)
+{
+joinplayer@ new_owner = joinplayers[0];
+owner_peer = new_owner.peer;
+if (this.mode != M_PLAY) send_sidemenu(new_owner.peer, "방장이 되었습니다.");
+sendpacket(joinplayers[0].name + "님은 이제부터 방장입니다.");
+}
+for (int i = joinspectators.length - 1; i > -1; i--)
+{
+if (joinspectators[i].peer != peer_id) continue;
+if (kick) sendpacket(joinspectators[i].name + "님이 밖으로 쫓겨납니다.");
+send_minigame_mainmenu("미니게임 메뉴", peer_id);
+minigamers.delete(peer_id);
+joinspectators.remove_at(i);
+break;
+}
+return ret;
+}
+
+int remove_disconnected_player()
+{
+int ret = 0;
+int dc = 0;
+for (int i = joinplayers.length - 1; i > -1; i--)
+{
+joinplayer@ temp = joinplayers[i];
+if (mode == M_PLAY)
+{
+if (temp.disconnected)
+{
+player@ tp = get_player_handle(temp.name);
+if (tp is null)
+{
+dc++;
+continue;
+}
+temp.disconnected = false;
+@ temp.p = tp;
+temp.peer = temp.p.peer_id;
+minigamers.set(temp.peer, @ this);
+sendpacket(temp.name + "님이 재접속합니다.");
+continue;
+}
+else
+{
+if (!temp.p.disconnected) continue;
+temp.disconnected = true;
+minigamers.delete(temp.peer);
+sendpacket(temp.name + "님의 접속이 끊깁니다.");
+dc++;
+continue;
+}
+}
+if (!temp.p.disconnected) continue;
+temp.p.save();
+minigamers.delete(temp.peer);
+joinplayers.remove_at(i);
+ret++;
+}
+int final = joinplayers.length;
+if (mode == M_PLAY and final == dc and final > 0)
+{
+ret = -2;
+switch (type)
+{
+case M_Pipper:
+pipper_end(true);
+break;
+default:
+break;
+}
+joinplayers.resize(0);
+final = 0;
+}
+if (final == 0)
+{
+if (joinspectators.is_empty()) return -1;
+for (int i = joinspectators.length - 1; i > -1; i--)
+{
+change_player_spectator(joinspectators[i].peer);
+}
+}
+if (ret > 0) sendpacket(ret + "명의 유령 참가자가 쫓겨납니다.");
+int check = find_joinplayers(owner_peer);
+if (check < 0)
+{
+joinplayer@ new_owner = joinplayers[0];
+owner_peer = new_owner.peer;
+if (this.mode != M_PLAY) send_sidemenu(new_owner.peer, "방장이 되었습니다.");
+sendpacket(joinplayers[0].name + "님은 이제부터 방장입니다.");
+}
+for (int i = joinspectators.length - 1; i > -1; i--)
+{
+if (!joinspectators[i].p.disconnected) continue;
+minigamers.delete(joinspectators[i].peer);
+joinspectators.remove_at(i);
+}
+return ret;
+}
+
+int find_joinplayers(int peer_id)
+{
+int joinplayerslength = joinplayers.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+if (joinplayers[i].peer == peer_id) return i;
+}
+return -1;
+}
+
+int find_joinspectators(int peer_id)
+{
+int joinspectatorslength = joinspectators.length;
+for (uint i = 0; i < joinspectatorslength; i++)
+{
+if (joinspectators[i].peer == peer_id) return i;
+}
+return -1;
+}
+
+void sendpacket(string message, bool except_spectators = false)
+{
+int l = joinplayers.length;
+if (l == 0) return;
+message = string_encrypt(message, pcps);
+for (uint i = 0; i < l; i++)
+{
+n.send_reliable(joinplayers[i].peer, message, 2);
+}
+if (except_spectators) return;
+int joinspectatorslength = joinspectators.length;
+for (uint i = 0; i < joinspectatorslength; i++)
+{
+n.send_reliable(joinspectators[i].peer, message, 2);
+}
+}
+
+void playsound(const string& in sound)
+{
+int l = minigame_room.players.length;
+if (l == 0) return;
+double range = 75 / minigame_room.pan_step;
+string mess = string_encrypt("play_3ds " + sound + " " + x + " " + y + " " + z, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ temp = minigame_room.players[i];
+if (temp.distancecheck(x, y, z) < (range / temp.weaponsight))
+n.send_reliable(temp.peer_id, mess, 0);
+}
+}
+
+void create_player_menu()
+{
+int joinplayerslength = joinplayers.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+joinplayer@ temp = joinplayers[i];
+sm.add(temp.name + (temp.peer == owner_peer ? ", 방장" : empty), temp.peer);
+}
+}
+
+void create_spectator_menu()
+{
+int joinplayerslength = joinspectators.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+joinspectator@ temp = joinspectators[i];
+sm.add(temp.name + ", 관중", temp.peer);
+}
+}
+
+void send_sidemenu(int peer_id, const string& in intro_message = "방 메뉴")
+{
+sm.intro = intro_message;
+sm.initial_packet = "gamemenu";
+if (peer_id == owner_peer)
+{
+if (mode != M_PLAY) sm.add("게임 시작", "start");
+sm.add("방 설정", "option");
+}
+if (this.mode == M_PLAY)
+{
+switch (this.type)
+{
+case M_Pipper:
+{
+string mess;
+for (int i = this.joinplayers.length - 1; i > -1; i--)
+{
+joinplayer@ temp = this.joinplayers[i];
+mess += temp.name + " " + temp.hand.length;
+if (i > 0) mess += ", ";
+}
+sm.add(mess, "menu");
+int sttemp = this.pipper_starting_number + 1;
+sttemp = (sttemp == 16 ? Pipper_X : sttemp == Pipper_X + 1 ? 0 : sttemp);
+sm.add("족보: " + this.return_to_pipper_mode() + " " + (this.pipper_mode < Pipper_Single ? empty : ", " + (sttemp == 0 ? "상위 족보를 내야 합니다." : sttemp == Pipper_X ? "X부터 낼 수 있습니다." : sttemp + "부터 낼 수 있습니다.")), "menu");
+sm.add(this.joinplayers[this.turn].name + "님 차례", "menu");
+}
+}
+}
+else sm.add((find_joinplayers(peer_id) > -1 ? "관중석으로 이동" : "게임에 참가"), "change");
+sm.add("방으로 소환", "move");
+sm.add("참가자 보기", "kick");
+sm.add((this.mode == M_PLAY and find_joinplayers(peer_id) > -1 ? "마지막 게임 선언" : "나가기"), "leave");
+sm.channel = 6;
+sm.direct = true;
+sm.send(peer_id);
+sm.reset();
+}
+
+void send_optionmenu(int peer_id, const string& in intro_message = "방 설정 메뉴")
+{
+sm.intro = intro_message;
+sm.initial_packet = "option";
+sm.add((is_a_stadium ? "스타디움, 켬" : "스타디움, 끔"), "stadium");
+switch (this.type)
+{
+case M_Pipper:
+sm.add((pipper_adv ? "가변 X, 켬" : "가변 X, 끔"), "pipper_adv");
+break;
+}
+sm.channel = 6;
+sm.send(peer_id);
+sm.reset();
+}
+
+void stadium_install()
+{
+is_a_stadium = true;
+@ stadium_id = spawn_hobj(this.x, this.y, this.z, minigame_room, 2000000000, 2000000000, "stadium");
+}
+
+void stadium_remove()
+{
+is_a_stadium = false;
+if (stadium_id !is null) remove_hobj(stadium_id.id);
+}
+
+void global_end()
+{
+if (this.mode == M_PLAY) return;
+for (int i = joinplayers.length - 1; i > -1; i--)
+{
+joinplayer@ temp = joinplayers[i];
+if (!temp.last_game) continue;
+sendpacket(temp.name + "님이 방을 떠납니다.");
+send_minigame_mainmenu("미니게임 메뉴", temp.peer);
+minigamers.delete(temp.peer);
+joinplayers.remove_at(i);
+}
+}
+
+void autoplay_check()
+{
+if (this.mode != M_PLAY) return;
+switch (this.type)
+{
+case M_Pipper:
+{
+for (int i = joinplayers.length - 1; i > -1; i--)
+{
+if (i != turn) continue;
+joinplayer@ temp = joinplayers[i];
+if (!temp.disconnected) continue;
+if (temp.hand.is_empty()) continue;
+bool pass = true;
+int[] hand;
+int counter = temp.hand.length;
+for (uint j = 0; j < counter; j++)
+{
+hand = array<int>(4, hand[j]);
+if (this.pipper_is_legal(hand, i) and this.pipper_type_check(Pipper_Power_Bomb, hand[0]) >= Pipper_Single)
+{
+pipper_play(hand, Pipper_Power_Bomb);
+pass = false;
+break;
+}
+hand.remove_last();
+if (this.pipper_is_legal(hand, i) and this.pipper_type_check(Pipper_Bomb, hand[0]) >= Pipper_Single)
+{
+pipper_play(hand, Pipper_Bomb);
+pass = false;
+break;
+}
+if (pipper_starting_number >= temp.hand[j]) continue;
+hand.remove_last();
+if (this.pipper_is_legal(hand, i) and this.pipper_type_check(Pipper_Pair, hand[0]) >= Pipper_Single)
+{
+pipper_play(hand, Pipper_Pair);
+pass = false;
+break;
+}
+hand.remove_last();
+hand.insert_last(Pipper_X);
+if (this.pipper_is_legal(hand, i) and this.pipper_type_check(Pipper_Pair, hand[0]) >= Pipper_Single)
+{
+pipper_play(hand, Pipper_Pair);
+pass = false;
+break;
+}
+hand.remove_last();
+if (this.pipper_is_legal(hand, i) and this.pipper_type_check(Pipper_Single, hand[0]) >= Pipper_Single)
+{
+pipper_play(hand, Pipper_Single);
+pass = false;
+break;
+}
+}
+if (pass) pipper_pass();
+break;
+}
+}
+break;
+default:
+break;
+}
+}
+
+// pipper
+bool pipper_adv = true;
+int pipper_mode = Pipper_None;
+int pipper_starting_number = 0;
+int pipper_returnable_number = 0;
+int pipper_length = 0;
+int pipper_pass_count = 0;
+
+void pipper_set()
+{
+if (this.mode == M_PLAY)
+{
+pipper_end(true);
+return;
+}
+int jp = joinplayers.length;
+if (jp < 2 or jp > 6)
+{
+send_sidemenu(owner_peer, "2에서 6인 사이의 인원이 있어야 합니다.");
+return;
+}
+sendpacket("게임이 시작됩니다.");
+this.playsound("minigame_pipper_start" + (this.is_a_stadium ? "1" : "2"));
+this.mode = M_PLAY;
+int joinplayerslength = joinplayers.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+joinplayers[i].hand.resize(0);
+}
+pipper_mode = Pipper_None;
+pipper_starting_number = 0;
+pipper_returnable_number = 0;
+pipper_length = 0;
+pipper_pass_count = 0;
+int[] numbers = pipper_default_numbers;
+int xn = (pipper_adv ? jp : 4);
+for (uint i = 0; i < xn; i++)
+{
+numbers.insert_last(Pipper_X);
+}
+int pnum = -1;
+int counter = joinplayers.length;
+if (pipper_adv or counter == 4)
+{
+while (numbers.length > 0)
+{
+pnum++;
+if (pnum == counter) pnum = 0;
+int rand = random(0, numbers.length - 1);
+int selected = numbers[rand];
+joinplayers[pnum].hand.insert_last(selected);
+if (selected == 1) turn = pnum;
+numbers.remove_at(rand);
+}
+}
+else
+{
+int maximum = 0;
+switch (counter)
+{
+case 2: maximum = 32;
+break; case 3: maximum = 16;
+break; case 5: maximum = 4;
+break; case 6: maximum = 4;
+break;
+}
+int old_selected = 101;
+while (numbers.length > maximum)
+{
+pnum++;
+if (pnum == counter) pnum = 0;
+int rand = random(0, numbers.length - 1);
+int selected = numbers[rand];
+joinplayers[pnum].hand.insert_last(selected);
+if (selected < old_selected)
+{
+turn = pnum;
+old_selected = selected;
+}
+numbers.remove_at(rand);
+}
+}
+for (uint i = 0; i < counter; i++)
+{
+joinplayer@ temp = joinplayers[i];
+temp.hand.sort_ascending();
+if (turn == i)
+{
+pipper_send_hand(i, 0, "레드 타일을 뽑았습니다. 당신 차례.");
+send(joinplayers[i].peer, "play_s minigame_my_turn", 0);
+}
+else pipper_send_hand(i);
+}
+}
+
+void pipper_send_hand(int index, int code = 2, string starter = empty)
+{
+if (starter.is_empty())
+{
+switch (code)
+{
+case 0:
+starter = "당신 차례";
+break;
+case 1:
+starter = "피퍼 창으로 돌아가기";
+break;
+case 2:
+starter = "피퍼 창";
+break;
+case 3:
+starter = "당신 차례가 아닙니다.";
+break;
+case 4:
+starter = "그런 조합은 낼 수 없습니다.";
+break;
+default:
+starter = "알 수 없는 오류가 발생했습니다.";
+break;
+}
+}
+joinplayer@ temp = joinplayers[index];
+send(temp.peer, "pipper " + array_to_string_n(temp.hand, ",", temp.reverse_hand) + " " + starter, 6);
+}
+
+void pipper_play(int[]@ hand, int type)
+{
+pipper_pass_count = 0;
+pipper_length = 0;
+pipper_mode = type;
+pipper_starting_number = hand[0];
+joinplayer@ temp = joinplayers[turn];
+string mess, effect;
+string starting_text = (hand[0] == Pipper_X ? "X" : pipper_starting_number);
+switch (pipper_mode)
+{
+case Pipper_Single:
+mess = " 싱글.";
+effect = "single";
+break;
+case Pipper_Pair:
+mess = (hand[1] == Pipper_X ? " X 페어." : " 페어.");
+effect = "pair";
+break;
+case Pipper_Straight:
+{
+pipper_length = hand.length;
+int find_X = hand.find(Pipper_X);
+mess = "부터 " + (pipper_starting_number + pipper_length - 1) + "까지 " + (find_X == -1 ? empty : " X " + (pipper_length - find_X) + "개 넣어서 ") + "스트레이트.";
+effect = "straight";
+}
+break;
+case Pipper_Pair_Straight:
+{
+pipper_length = hand.length;
+int find_X = hand.find(Pipper_X);
+mess = "부터 " + (pipper_starting_number + (pipper_length >> 1) - 1) + "까지 " + (find_X == -1 ? empty : " X " + (pipper_length - find_X) + "개 넣어서 ") + "페어 스트레이트.";
+effect = "pair_straight";
+}
+break;
+case Pipper_Bomb:
+mess = " 밤!";
+effect = "bomb";
+break;
+case Pipper_Power_Bomb:
+mess = " 밤 투!";
+effect = "power_bomb";
+break;
+}
+if (!mess.is_empty()) sendpacket(temp.name + "님 " + starting_text + mess);
+if (!effect.is_empty()) this.playsound("minigame_pipper_" + effect);
+double cheer_level = 100 * hand.length / temp.hand.length;
+if (cheer_level >= 100)
+{
+pipper_end();
+return;
+}
+int tempnum;
+int counter = hand.length;
+for (uint i = 0; i < counter; i++)
+{
+tempnum = temp.hand.find(hand[i]);
+temp.hand.remove_at(tempnum);
+}
+pipper_send_hand(turn);
+turn--;
+if (turn < 0) turn = joinplayers.length - 1;
+if (pipper_auto_pass()) pipper_pass();
+else
+{
+joinplayer@ temp = joinplayers[turn];
+send(temp.peer, "speak_false 당신 차례", 0);
+send(temp.peer, "play_s minigame_my_turn", 0);
+}
+if (is_a_stadium)
+{
+if (cheer_level > 49) this.playsound("minigame_cheer" + random(3, 4));
+else if (cheer_level > 24) this.playsound("minigame_cheer" + random(1, 2));
+}
+}
+
+void pipper_end(bool canceled = false)
+{
+int kk = 0;
+int winner = turn;
+this.playsound("minigame_end");
+this.mode = M_WAIT;
+if (canceled)
+{
+sendpacket("게임이 취소되었습니다.");
+int joinplayerslength = joinplayers.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+send_sidemenu(joinplayers[i].peer);
+}
+}
+else
+{
+if (is_a_stadium) this.playsound("minigame_end" + random(1, 3));
+joinplayer@ temp2 = joinplayers[winner];
+int joinplayerslength = joinplayers.length;
+for (uint i = 0; i < joinplayerslength; i++)
+{
+joinplayer@ temp = joinplayers[i];
+if (i == winner)
+{
+this.playsound("minigame_winner");
+send_sidemenu(temp.peer, "당신이 이겼습니다!");
+continue;
+}
+kk = temp.hand.length;
+string message = "gameend " + temp2.name + "님이 이겼습니다. 남은 개수, " + kk;
+if (temp.hand.find(Pipper_X) > -1)
+{
+message += ", X를 1개 이상 가지고 있어 벌칙으로 추가 레이팅을 잃었습니다.";
+kk *= 3;
+}
+else kk *= 2;
+send_sidemenu(temp.peer, message);
+int rv = kk * (1 - 1 / (power(10, (temp.p.pipper_rating - temp2.p.pipper_rating) * 0.001) + 1));
+temp2.p.pipper_rating += rv;
+temp.p.pipper_rating -= rv;
+}
+}
+global_end();
+remove_disconnected_player();
+}
+
+const string& return_to_pipper_mode(int num = -1)
+{
+if (num < 0)
+{
+switch (pipper_mode)
+{
+case Pipper_Mine:
+ref_string = "없음, " + pipper_returnable_number + " 마인";
+return ref_string;
+case Pipper_Single:
+return "싱글";
+case Pipper_Pair:
+return "페어";
+case Pipper_Straight:
+ref_string = pipper_length + "개 스트레이트";
+return ref_string;
+case Pipper_Pair_Straight:
+ref_string = pipper_length + "개 페어 스트레이트";
+return ref_string;
+case Pipper_Bomb:
+return "밤";
+case Pipper_Power_Bomb:
+return "밤 투";
+default:
+return "없음";
+}
+}
+switch (num)
+{
+case Pipper_Single:
+return "싱글";
+case Pipper_Pair:
+return "페어";
+case Pipper_X:
+return "X 페어";
+case Pipper_Straight:
+return "스트레이트";
+case Pipper_Pair_Straight:
+return "페어 스트레이트";
+case Pipper_Bomb:
+return "밤";
+case Pipper_Power_Bomb:
+return "밤 투";
+default:
+break;
+}
+return "없음";
+}
+
+int pipper_validate_check(int[]@ hand)
+{
+if (hand.is_empty()) return Pipper_None;
+if (!pipper_is_legal(hand)) return Pipper_None;
+int pipper_type = pipper_get_type(hand);
+return pipper_type_check(pipper_type, hand[0], hand.length);
+}
+
+bool& pipper_is_legal(int[]@ hand, int selected = -1)
+{
+if (selected < 0 or selected >= joinplayers.length) selected = turn;
+joinplayer@ temp = joinplayers[selected];
+int[] temparray = temp.hand;
+int counter = hand.length;
+for (uint i = 0; i < counter; i++)
+{
+int tempnum = temparray.find(hand[i]);
+if (tempnum < 0) return false_t;
+temparray.remove_at(tempnum);
+}
+return true_t;
+}
+
+int pipper_type_check(int type, int starting_number = 0, int length = 0)
+{
+switch (type)
+{
+case Pipper_None:
+break;
+case Pipper_Mine:
+break;
+case Pipper_Single:
+if (starting_number <= pipper_starting_number) return Pipper_None;
+if (pipper_mode <= Pipper_Single) return type;
+break;
+case Pipper_Pair:
+if (starting_number <= pipper_starting_number) return Pipper_None;
+if (pipper_mode < Pipper_Single or pipper_mode == Pipper_Pair) return type;
+break;
+case Pipper_Straight:
+if (starting_number <= pipper_starting_number) return Pipper_None;
+if (pipper_mode < Pipper_Single or (pipper_mode == Pipper_Straight and pipper_length == length)) return type;
+break;
+case Pipper_Pair_Straight:
+if (starting_number <= pipper_starting_number) return Pipper_None;
+if (pipper_mode < Pipper_Single or (pipper_mode == Pipper_Pair_Straight and pipper_length == length)) return type;
+break;
+case Pipper_Bomb:
+if (pipper_mode < Pipper_Bomb) return type;
+if (starting_number <= pipper_starting_number or pipper_mode > Pipper_Bomb) return Pipper_None;
+return type;
+case Pipper_Power_Bomb:
+if (pipper_mode < Pipper_Power_Bomb) return type;
+if (starting_number <= pipper_starting_number or pipper_mode > Pipper_Power_Bomb) return Pipper_None;
+return type;
+default:
+break;
+}
+return Pipper_None;
+}
+
+int pipper_get_type(int[]@ hand)
+{
+int ret = Pipper_None;
+switch (hand.length) 
+{
+case 0:
+ret = Pipper_Mine;
+break;
+case 1:
+ret = Pipper_Single;
+break;
+case 2:
+ret = (hand[1] == hand[0] or hand[1] == Pipper_X ? Pipper_Pair : Pipper_Mine);
+break;
+case 3:
+ret = (hand[0] == hand[1] and hand[1] == hand[2] ? Pipper_Bomb : Pipper_Mine);
+break;
+case 4:
+ret = (hand[0] == hand[1] and hand[1] == hand[2] and hand[2] == hand[3] ? Pipper_Power_Bomb : Pipper_Mine);
+break;
+default:
+if (hand[0] != Pipper_X) ret = Pipper_Mine;
+break;
+}
+if (ret != Pipper_Mine) return ret;
+if (hand.length < 3) return Pipper_None;
+int counter = hand.length;
+int find_x = hand.find(Pipper_X);
+find_x = (find_x < 0 ? 0 : counter - find_x);
+int temp_x = find_x;
+int j;
+int tempnum;
+if (counter > 5 and (counter & 1) == 0 and (pipper_mode < Pipper_Single or pipper_mode == Pipper_Pair_Straight))
+{
+ret = Pipper_Pair_Straight;
+j = 0;
+tempnum = hand[0];
+for (uint i = 1; i < counter; i++)
+{
+if (hand[j + 1] == Pipper_X) break;
+if ((i & 1) == 0) tempnum++;
+if (tempnum != hand[j + 1])
+{
+if (temp_x == 0)
+{
+ret = Pipper_None;
+if (pipper_mode == Pipper_Pair_Straight) return ret;
+else break;
+}
+temp_x--;
+}
+else j++;
+}
+}
+if (ret == Pipper_Pair_Straight) return ret;
+temp_x = find_x;
+j = 0;
+tempnum = hand[0];
+for (uint i = 1; i < counter; i++)
+{
+if (hand[j + 1] == Pipper_X) break;
+tempnum++;
+if (tempnum != hand[j + 1])
+{
+if (temp_x == 0) return Pipper_None;
+temp_x--;
+}
+else j++;
+}
+return Pipper_Straight;
+}
+
+bool& pipper_mine(int index)
+{
+if (pipper_pass_count > 0) return false_t;
+string message;
+int tempnum;
+joinplayer@ temp = joinplayers[index];
+switch (pipper_mode)
+{
+case Pipper_Single:
+tempnum = temp.hand.find(pipper_starting_number);
+if (tempnum < 0) return false_t;
+if (tempnum > temp.hand.length - 2) return false_t;
+if (temp.hand[tempnum] != temp.hand[tempnum + 1]) return false_t;
+joinplayers[index];
+temp.hand.remove_at(tempnum);
+temp.hand.remove_at(tempnum);
+sendpacket(temp.name + "님 마인!");
+this.playsound("minigame_pipper_mine");
+pipper_mode = Pipper_Mine;
+break;
+case Pipper_Mine:
+tempnum = temp.hand.find(pipper_returnable_number);
+if (tempnum < 0) return false_t;
+temp.hand.remove_at(tempnum);
+sendpacket(temp.name + "님 리턴!");
+this.playsound("minigame_pipper_return");
+pipper_mode = Pipper_None;
+break;
+default:
+return false_t;
+}
+pipper_returnable_number = pipper_starting_number;
+pipper_starting_number = 0;
+pipper_length = 0;
+pipper_pass_count = 0;
+turn = index;
+if (temp.hand.is_empty())
+{
+pipper_end();
+return true_t;
+}
+@ temp = joinplayers[turn];
+pipper_send_hand(turn, 0);
+send(temp.peer, "play_s minigame_my_turn", 0);
+if (is_a_stadium)
+{
+this.playsound("minigame_cheer" + (temp.hand.length <= 4 ? random(3, 4) : random(1, 2)));
+}
+return true_t;
+}
+
+bool& pipper_auto_pass()
+{
+switch (pipper_mode)
+{
+case Pipper_Single:
+if (joinplayers[turn].hand.length == 1 and pipper_starting_number == Pipper_X) return true_t;
+break;
+case Pipper_Pair:
+if (joinplayers[turn].hand.length < 2) return true_t;
+if (joinplayers[turn].hand.length == 2 and pipper_starting_number == Pipper_X) return true_t;
+break;
+case Pipper_Straight:
+if (joinplayers[turn].hand.length < 3) return true_t;
+break;
+case Pipper_Pair_Straight:
+if (joinplayers[turn].hand.length < 3) return true_t;
+break;
+case Pipper_Bomb:
+if (joinplayers[turn].hand.length < 3) return true_t;
+if (joinplayers[turn].hand.length == 3 and pipper_starting_number == Pipper_X) return true_t;
+break;
+case Pipper_Power_Bomb:
+if (joinplayers[turn].hand.length < 4) return true_t;
+if (pipper_starting_number == Pipper_X) return true_t;
+break;
+}
+return false_t;
+}
+
+int& pipper_pass()
+{
+string message;
+this.playsound("minigame_pipper_pass");
+do
+{
+message += joinplayers[turn].name + " ";
+turn--;
+if (turn < 0) turn = joinplayers.length - 1;
+pipper_pass_count++;
+}
+while (pipper_auto_pass() and pipper_pass_count < (joinplayers.length - 1));
+message += "님 패스!";
+if (pipper_pass_count < (joinplayers.length - 1))
+{
+sendpacket(message);
+joinplayer@ temp = joinplayers[turn];
+send(temp.peer, "speak_false 당신 차례", 0);
+send(temp.peer, "play_s minigame_my_turn", 0);
+return _0;
+}
+pipper_pass_count = 0;
+pipper_starting_number = 0;
+pipper_length = 0;
+pipper_mode = Pipper_None;
+this.playsound("minigame_pipper_reset");
+joinplayer@ temp = joinplayers[turn];
+sendpacket(message + " " + temp.name + "님 선!");
+send(temp.peer, "speak_false 당신 차례", 0);
+send(temp.peer, "play_s minigame_my_turn", 0);
+if (joinplayers[turn].hand.length < 6 and is_a_stadium) this.playsound("minigame_cheer" + random(1, 2));
+return _pos1;
+}
+}
+
+class pipper_temp
+{
+int[] hand;
+int mode;
+}
+
+class joinplayer
+{
+string name;
+int peer;
+player@ p;
+bool last_game = false;
+bool disconnected = false;
+int last_game_counter = 0;
+int[] hand;
+bool reverse_hand = false;
+pipper_temp@[] pipper;
+}
+
+class joinspectator
+{
+string name;
+int peer;
+player@ p;
+}
+
+void minigameloop()
+{
+if (minigamemaintimer.elapsed < 500) return;
+minigamemaintimer.force(0);
+for (int i = minigames.length - 1; i > -1; i--)
+{
+minigame@ this = minigames[i];
+if (this.remove_disconnected_player() == -1)
+{
+this.stadium_remove();
+minigame_list.delete(this.id);
+minigames.remove_at(i);
+continue;
+}
+this.autoplay_check();
+}
+}
+
+minigame@ joined_minigame(uint peer_id, bool except_spectators = false)
+{
+if (!minigamers.exists(peer_id)) return null;
+minigame@ temp;
+minigamers.get(peer_id, @ temp);
+if (temp is null) return null;
+if (except_spectators)
+{
+if (temp.find_joinplayers(peer_id) < 0) return null;
+}
+return temp;
+}
+
+minigame@ get_minigame_handle(const string& in the_id)
+{
+if (!minigame_list.exists(the_id)) return null;
+minigame@ temp;
+minigame_list.get(the_id, @ temp);
+return temp;
+}
+
+minigame@ spawn_minigame(int x, int y, int z, player@ owner, int type)
+{
+minigame m2;
+m2.x = x;
+m2.y = y;
+m2.z = z;
+m2.owner_peer = owner.peer_id;
+m2.type = type;
+int temp_id;
+int random1 = 0;
+do
+{
+temp_id = random((random1 + 0), (random1 + 32767));
+random1 += 32768;
+}
+while (minigame_list.exists(temp_id));
+m2.id = temp_id;
+joinplayer j1;
+j1.peer = owner.peer_id;
+@ j1.p = owner;
+j1.name = owner.name;
+j1.hand.reserve(32);
+m2.joinplayers.insert_last(j1);
+minigamers.set(owner.peer_id, @ m2);
+minigames.insert_last(m2);
+minigame_list.set(m2.id, @ m2);
+return m2;
+}
+
+void send_minigame_mainmenu(const string& in message = "미니게임 메뉴", uint peer_id = 0)
+{
+sm.intro = message;
+sm.initial_packet = "gamemenu";
+sm.add("방 만들기", "create");
+sm.add("방 입장", "join");
+sm.channel = 6;
+sm.direct = true;
+sm.send((peer_id == 0 ? e.peer_id : peer_id));
+sm.reset();
+}

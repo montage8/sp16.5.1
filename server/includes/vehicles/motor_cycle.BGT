@@ -1,0 +1,26 @@
+vehicle spawn_motor_cycle()
+{
+vehicle v;
+v.type = "motor_cycle";
+v.maxhealth = 20000;
+v.defense = 500;
+v.maxspeed = 22;
+v.accelpower = 0.0066;
+v.decelpower = 0.0066;
+v.breakpower = 0.015;
+v.vfueltime = 1000;
+v.vfuelspeed = 22;
+v.vfuelpitch = 2;
+v.vsspawn = 1000;
+v.vsstart = 2588;
+v.vsstop = 700;
+v.gear1_maxpitch = 220;
+v.explode_min = 11000;
+v.explode_max = 19000;
+v.maxpassengers = -1;
+v.hit_percent = 40;
+v.alarmmode = 0;
+string[] nolist = {"ancient_wing", "Arctic_Warfare_Suppressed_Sniper_Rifle", "barrett_m82_sniper_rifle", "browning_m2_heavy_50_cal_machine_gun", "bazooka", "bfg9000_argent_plasma_launcher", "cannon", "dragunov_sniper_rifle", "dragunov_sniper_rifle_gen_2", "fn_minimi_machine_gun", "gauss_gun", "item_grabber", "m134_minigun", "mk48_light_machine_gun", "mg4_light_machine_gun", "nak_nk1000_decimater", "rpg7_anti-tank_rocket_launcher", "t1_rocket_launcher", "warp_box"};
+@ v.noitems = array_to_dictionary(nolist);
+return v;
+}

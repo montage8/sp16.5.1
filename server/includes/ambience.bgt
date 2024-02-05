@@ -1,0 +1,83 @@
+dictionary ambs;
+class amb
+{
+bool remove = false;
+string id, soundloop, owner;
+uint owner_hash = 0;
+int volume = 100;
+int minx, maxx, miny, maxy, minz, maxz;
+mapdata@ map;
+
+void update(int minx, int maxx, int miny, int maxy, int minz, int maxz, const string& in loop = empty, int volume = -1)
+{
+if (volume > -1) this.volume = volume;
+if (!loop.is_empty()) this.soundloop = loop;
+this.minx = minx;
+this.maxx = maxx;
+this.miny = miny;
+this.maxy = maxy;
+this.minz = minz;
+this.maxz = maxz;
+sendmap("destroyamb " + id, map, 4);
+sendmap("createamb " + minx + " " + maxx + " " + miny + " " + maxy + " " + minz + " " + maxz + " " + this.soundloop + " " + this.volume + " " + id, this.map, 4, (this.owner.is_empty() ? null : get_player_handle(this.owner)));
+}
+
+void update(const string& in loop = empty, int volume = -1)
+{
+if (volume > -1) this.volume = volume;
+if (!loop.is_empty()) this.soundloop = loop;
+sendmap("createamb " + minx + " " + maxx + " " + miny + " " + maxy + " " + minz + " " + maxz + " " + this.soundloop + " " + this.volume + " " + id, this.map, 4, (this.owner.is_empty() ? null : get_player_handle(this.owner)));
+}
+
+amb@ destroy()
+{
+sendmap("destroyamb " + id, map, 4);
+this.remove = true;
+ambs.delete(id);
+return null;
+}
+}
+
+amb@ spawn_amb(const string& in loop, int minx, int maxx, int miny, int maxy, int minz, int maxz, mapdata@ map, const string& in owner = empty, int volume = 100)
+{
+amb m1;
+do
+{
+m1.id = (1073741824 * random(0, 1)) + (32768 * random(0, 32767)) + random(0, 32767);
+}
+while (ambs.exists(m1.id));
+m1.soundloop = loop;
+@ m1.map = map;
+m1.minx = minx;
+m1.maxx = maxx;
+m1.miny = miny;
+m1.maxy = maxy;
+m1.minz = minz;
+m1.maxz = maxz;
+m1.volume = volume;
+if (!owner.is_empty())
+{
+m1.owner = owner;
+m1.owner_hash = string_to_hash(owner);
+}
+map.ambs.insert_last(m1);
+ambs.set(m1.id, @ m1);
+sendmap("createamb " + minx + " " + maxx + " " + miny + " " + maxy + " " + minz + " " + maxz + " " + loop + " " + volume + " " + m1.id, map, 4, (owner.is_empty() ? null : get_player_handle(owner)));
+return m1;
+}
+
+amb@ get_amb_handle(const string& in id)
+{
+if (!ambs.exists(id)) return null;
+amb@ temp;
+ambs.get(id, @ temp);
+return temp;
+}
+
+void ambloop(mapdata@ map)
+{
+for (int i = map.ambs.length - 1; i > -1; i--)
+{
+if (map.ambs[i].remove) map.ambs.remove_at(i);
+}
+}

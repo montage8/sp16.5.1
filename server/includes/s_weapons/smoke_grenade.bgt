@@ -1,0 +1,136 @@
+class smoke_grenade
+{
+string owner;
+timer looptimer;
+mapdata@ map;
+double x, y, z;
+int loop = 0;
+bool is_vehicle = false;
+
+double distancecheck(double xx, double yy, double zz)
+{
+return ((xx - x) * (xx - x) + (yy - y) * (yy - y) + (zz - z) * (zz - z)) ** 0.5;
+}
+}
+
+void smoke_grenadeloop(mapdata@ map)
+{
+int playerslength = map.players.length;
+int vslength = map.vs.length;
+int robotslength = map.robots.length;
+for (int i = map.smoke_grenades.length - 1; i > -1; i--)
+{
+smoke_grenade@ this = map.smoke_grenades[i];
+if (this.loop == 0)
+{
+if (this.looptimer.elapsed < (this.is_vehicle ? 500 : 1000)) continue;
+this.looptimer.force(0);
+if (!this.is_vehicle)
+{
+play("smoke_grenadeactive", this.x, this.y, this.z, this.map);
+play_dist("smoke_grenadeactivedist", this.x, this.y, this.z, this.map);
+}
+this.loop = 1;
+play("smoke_grenadeloop", this.x, this.y, this.z, this.map);
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.health <= 0) continue; 
+if (temp.newb == 1) continue;
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (temp.mask == 1) continue;
+double range = temp.distancecheck(this.x, this.y, this.z);
+if (range > 3) continue;
+double dam = random(2000, 3000) * abs(range - 3);
+if (dam < temp.health) temp.playsound("throwaway_sprayhit");
+temp.health -= dam;
+temp.statchangetimer.force(0);
+}
+}
+if (this.looptimer.elapsed < 500) continue;
+this.looptimer.force(0);
+this.loop++;
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+temp.smoketimer.force(0);
+temp.in_smoke = true;
+}
+}
+for (uint v = 0; v < robotslength; v++)
+{
+Robot@ temp = map.robots[v];
+if (temp.resist_smoke) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+temp.smoketimer.force(0);
+temp.in_smoke = true;
+}
+}
+for (uint i2 = 0; i2 < playerslength; i2++)
+{
+player@ temp = map.players[i2];
+if (temp.invinsible) continue;
+if (temp.hidden) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+temp.smoketimer.force(0);
+temp.in_smoke = true;
+}
+}
+for (uint v = 0; v < vslength; v++)
+{
+vehicle@ temp = map.vs[v];
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+temp.smoketimer.force(0);
+temp.in_smoke = true;
+}
+}
+for (uint v = 0; v < robotslength; v++)
+{
+Robot@ temp = map.robots[v];
+if (temp.resist_smoke) continue;
+if (temp.distancecheck(this.x, this.y, this.z) <= 15)
+{
+temp.smoketimer.force(0);
+temp.in_smoke = true;
+}
+}
+if (this.loop < 40) continue;
+map.smoke_grenades.remove_at(i);
+}
+}
+
+void placesmoke_grenade(double x, double y, double z, mapdata@ map, const string& in owner, bool is_vehicle = false)
+{
+smoke_grenade bomb1;
+bomb1.owner = owner;
+bomb1.x = x;
+bomb1.y = y;
+bomb1.z = z;
+@ bomb1.map = map;
+bomb1.is_vehicle = is_vehicle;
+if (!is_vehicle) play("smoke_grenadewarn", x, y, z, map);
+map.smoke_grenades.insert_last(bomb1);
+}
+
+smoke_grenade@ get_nearest_smoke(double x, double y, double z, mapdata@ map, const string &in owner)
+{
+double final = 30;
+smoke_grenade@ sg;
+int sglength = map.smoke_grenades.length;
+for (uint i = 0; i < sglength; i++)
+{
+smoke_grenade@ temp = map.smoke_grenades[i];
+if (temp.owner == owner) continue;
+double get_range = temp.distancecheck(x, y, z);
+if (get_range > final) continue;
+final = get_range;
+@ sg = temp;
+}
+return sg;
+}

@@ -1,0 +1,315 @@
+int hack_successtime = 13841;
+int hack_failedtime = 19006;
+minilocker@[] lockers(0);
+dictionary locker_list;
+class minilocker
+{
+bool remove = false;
+double code;
+double x, y, z;
+int security_boosts = 0;
+string owner;
+timer hacktimer;
+string hacker = "누군가";
+int hackmode = -1;
+int hacktime;
+bool hacking = false;
+vehicle@ vhc;
+void send(uint pid)
+{
+send_serverbox(pid, 0, -1, 1, 1, "lockcommand", "인출은 1, 예치는 2" + (vhc is null ? ", 암호 변경은 C" : empty) + "를 누르세요.");
+}
+
+dictionary inventory;
+string invstring;
+string[]@ itemnames;
+int count_total_items()
+{
+int amount = 0;
+int a;
+int inventorylength = itemnames.length;
+for (uint i = 0; i < inventorylength; i++)
+{
+if (!inventory.get(itemnames[i], a)) continue;
+amount += a;
+}
+return amount;
+}
+int get_item_count(const string& in item)
+{
+int amount = 0;
+if (!inventory.get(item, amount)) return _0;
+return amount;
+}
+void update_inv()
+{
+invstring.resize(0);
+@ itemnames = inventory.keys;
+string itemname;
+int val;
+int dslength = itemnames.length;
+for (uint i = 0; i < dslength; i++)
+{
+itemname = itemnames[i];
+inventory.get(itemname, val);
+invstring += itemname + "=" + val + ";";
+}
+}
+void delete_all_inv()
+{
+inventory.delete_all();
+invstring.resize(0);
+itemnames.resize(0);
+}
+void give(const string& in item, int amount, bool update_now = true)
+{
+if (!inventory.exists(item))
+{
+if (amount < 1) return;
+inventory.set(item, amount);
+}
+else
+{
+int a;
+inventory.get(item, a);
+int b = a + amount;
+if (b < 1) inventory.delete(item);
+else inventory.set(item, b);
+}
+if (update_now) update_inv();
+}
+void command(const string& in cmd, player@ temp)
+{
+if (cmd.is_empty()) return;
+string[]@ parsed = string_split(cmd, " ", false);
+uint ascii = character_to_ascii(parsed[0]);
+switch (ascii)
+{
+case ascii_1:
+{
+if (inventory.is_empty())
+{
+send_serverbox(temp.peer_id, 0, -1, 1, 1, "lockcommand", "안엔 아무것도 없습니다.");
+}
+else
+{
+string menuitems = "모두 꺼내기:invall[]";
+int a;
+int plength = itemnames.length;
+for (uint i = 0; i < plength; i++)
+{
+if (!inventory.get(itemnames[i], a)) continue;
+menuitems += itemnames[i] + ", " + a + ":" + itemnames[i] + "[]";
+}
+send_menu(temp.peer_id, "어떤 아이템을 꺼낼까요?", "locktake", menuitems);
+}
+}
+break; case ascii_2:
+{
+if (temp.itemnames.is_empty())
+{
+send_serverbox(temp.peer_id, 0, -1, 1, 1, "lockcommand", "가진 아이템이 없습니다.");
+return;
+}
+string menuitems = "모두 넣기:invall[]";
+int a;
+int plength = temp.itemnames.length;
+for (uint i = 0; i < plength; i++)
+{
+if (!temp.inventory.get(temp.itemnames[i], a)) continue;
+menuitems += temp.itemnames[i] + ", " + a + ":" + temp.itemnames[i] + "[]";
+}
+send_menu(temp.peer_id, "어떤 아이템을 넣을까요?", "lockgive", menuitems);
+}
+break; case ascii_c:
+{
+if (vhc !is null)
+{
+lockplay("doorclose");
+temp.alert("금고를 닫습니다.");
+}
+else if (temp.name == owner)
+{
+send_serverbox(temp.peer_id, 2, 4, 1, 12, "changelockcode", "새 암호를 입력하세요.");
+}
+else
+{
+send_serverbox(temp.peer_id, 0, -1, 1, 1, "lockcommand", "금고 주인만 할 수 있습니다.");
+}
+}
+break; default:
+{
+lockplay("doorclose");
+temp.alert("금고를 닫습니다.");
+}
+}
+}
+void lockplay(const string& in soundfile)
+{
+if (vhc !is null)
+{
+int interiorlength = vhc.interiors.length;
+for (uint i = 0; i < interiorlength; i++)
+{
+vehicle_interior@ temp = vhc.interiors[i];
+if (temp.type != INTERIOR_LOCKER) continue;
+play("locker2_" + soundfile, temp.x, temp.y, temp.z, vhc.inside);
+}
+return;
+}
+int l = locker_room.players.length;
+if (l == 0) return;
+string sendpacket = string_encrypt("play_3ds locker_" + soundfile + " " + this.x + " " + this.y + " " + this.z, pcps);
+for (uint i = 0; i < l; i++)
+{
+player@ temp = locker_room.players[i];
+if (temp.distancecheck(this.x, this.y, this.z) < 75)
+n.send_reliable(temp.peer_id, sendpacket, 0);
+}
+}
+}
+void savelockers()
+{
+string data;
+int lockerslength = lockers.length;
+for (uint i = 0; i < lockerslength; i++)
+{
+minilocker@ temp = lockers[i];
+data = "lockerx:" + temp.x + "\r\nlockery:" + temp.y + "\r\nlockerz:" + temp.z + "\r\ncode:" + temp.code + "\r\nsecurity_boosts:" + temp.security_boosts + "\r\nowner:" + temp.owner;
+if (!temp.invstring.is_empty()) data += "\r\ninventory:" + temp.invstring;
+fl.open("./lockers/" + temp.owner + ".locker", "wb");
+fl.write(data);
+fl.close();
+}
+}
+void load_locker(const string& in fn)
+{
+if (!fl.open("./lockers/" + fn + ".locker", "rb")) return;
+string[]@ sdata = string_split(fl.read(), "\r\n", false);
+fl.close();
+minilocker lock;
+string[] invvalues;
+int sdatalength = sdata.length;
+for (uint i = 0; i < sdatalength; i++)
+{
+string[]@ parsed = string_split(sdata[i], ":", false);
+if (parsed.length < 2) continue;
+switch (string_to_hash(parsed[0]))
+{
+case lock_security_boosts: lock.security_boosts = string_to_number(parsed[1]);
+break; case lock_inventory: invvalues = string_split(parsed[1], ";", false);
+break; case lock_code: lock.code = string_to_number(parsed[1]);
+break; case lock_lockerx: lock.x = string_to_number(parsed[1]);
+break; case lock_lockery: lock.y = string_to_number(parsed[1]);
+break; case lock_lockerz: lock.z = string_to_number(parsed[1]);
+break; case lock_owner: lock.owner = parsed[1];
+break;
+}
+}
+bool su = false;
+int invvalueslength = invvalues.length;
+for (uint i = 0; i < invvalueslength; i++)
+{
+string[]@ parsed = string_split(invvalues[i], "=", false);
+if (parsed.length < 2) continue;
+su = true;
+lock.give(parsed[0], string_to_number(parsed[1]), false);
+}
+if (su) lock.update_inv();
+lockers.insert_last(lock);
+locker_list.set(lock.owner, @ lock);
+}
+void create_new_locker(int x, int y, int z, const string& in owner, double code)
+{
+minilocker lock;
+lock.x = x;
+lock.y = y;
+lock.z = z;
+lock.code = code;
+lock.owner = owner;
+lockers.insert_last(lock);
+locker_list.set(owner, @ lock);
+}
+
+minilocker@ get_locker_handle(const string& in name)
+{
+if (!locker_list.exists(name)) return null;
+minilocker@ temp;
+locker_list.get(name, @ temp);
+return temp;
+}
+minilocker@ get_locker_at(int x, int y, int z, mapdata@ map, bool vcheck = true)
+{
+if (vcheck and map.is_vehicle)
+{
+int index = map.vhc.find_interior(x, y, z);
+if (index < 0) return null;
+vehicle_interior@ temp = map.vhc.interiors[index];
+if (temp.type != INTERIOR_LOCKER) return null;
+return map.vhc.locker;
+}
+if (map !is locker_room) return null;
+int lockerslength = lockers.length;
+for (uint i = 0; i < lockerslength; i++)
+{
+minilocker@ temp = lockers[i];
+if (temp.x != x) continue;
+if (temp.y != y) continue;
+if (temp.z != z) continue;
+return temp;
+}
+return null;
+}
+void load_all_lockers()
+{
+string[]@ lockers = find_files("./lockers/*.locker");
+int lockerslength = lockers.length;
+for (uint i = 0; i < lockerslength; i++)
+{
+load_locker(lockers[i]);
+}
+}
+void lockerloop()
+{
+for (int i = lockers.length - 1; i > -1; i--)
+{
+minilocker@ this = lockers[i];
+if (this.remove)
+{
+lockers.remove_at(i);
+continue;
+}
+if (this.hacking)
+{
+if (this.hacktimer.elapsed > this.hacktime)
+{
+this.hacking = false;
+player@ pl = get_player_handle(this.hacker);
+if (pl !is null)
+{
+if (this.hackmode == 1)
+{
+string text = this.code;
+text = string_trim_left(text, 2);
+if (text.size < 4) text += "0";
+if (text.size < 4) text += "0";
+if (text.size < 4) text += "0";
+pl.alert("해킹에 성공했습니다: " + text, true);
+}
+else pl.alert("해킹에 실패했습니다.", true);
+pl.sendpacket("startmoving");
+}
+this.hacker.resize(0);
+}
+}
+}
+}
+bool& remove_locker(const string& in name)
+{
+minilocker@ id = get_locker_handle(name);
+if (id is null) return false_t;
+id.remove = true;
+locker_list.delete(name);
+file_delete("./lockers/" + name + ".locker");
+return true_t;
+}

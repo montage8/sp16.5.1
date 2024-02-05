@@ -1,0 +1,40 @@
+sound hack_sound;
+double hack_sound_current = 0;
+string sldata = string_decompress(string_base64_decode("A1JJRkYCAgAAV0FWRWZtdCAQAAAAAQABANAHAAMEBAABAAgAZGF0YZABAACAgICAAwQEAwgIAxAQAyAgA0BAA4EAgQADgRCBEExJU1RGAAAASU5GT0lDUkQLAAAAMjAyMC0wNS0yMgAASUVORwcAAABRVUFEUkEAAUlTRlQVAAAAU09VTkQgRk9SR0UgUHJvIDEyLjEAAiA1MjI=")); 
+
+class speedhacktimer
+{
+double elapsed = 0;
+
+void force(double time)
+{
+elapsed = time;
+}
+}
+
+void speed_stop_reset()
+{
+hack_sound.stop();
+hack_sound.load_from_memory(sldata);
+hack_sound.volume = -100;
+hack_sound.play_looped();
+hack_sound_current = 0;
+}
+
+void speed_stop_is_hacking()
+{
+double elapsed = hack_sound.position;
+if (hack_sound_current == elapsed) return;
+double fix = elapsed - hack_sound_current;
+if (fix < 0) fix += 200;
+deathtimer.force(deathtimer.elapsed + fix);
+posetimer.force(posetimer.elapsed + fix);
+walktimer.force(walktimer.elapsed + fix);
+rolltimer.force(rolltimer.elapsed + fix);
+falltimer.force(falltimer.elapsed + fix);
+jumptimer.force(jumptimer.elapsed + fix);
+vrectimer.force(vrectimer.elapsed + fix);
+slidetimer.force(slidetimer.elapsed + fix);
+hack_sound_current += fix;
+if (hack_sound_current > 200) hack_sound_current -= 200;
+}
